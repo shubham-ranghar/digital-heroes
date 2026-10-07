@@ -534,7 +534,13 @@ export function MenuOverlay({
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0">
               <div className="min-h-0 lg:col-span-7">
                 <MenuSectionLabel>Browse</MenuSectionLabel>
-                <div className="mt-2 border-t border-line" aria-hidden />
+                <motion.div
+                  className="mt-2 h-px origin-left bg-line"
+                  initial={reduceMotion ? false : { scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.25, duration: DURATION.base, ease: EASE_OUT }}
+                  aria-hidden
+                />
                 <ul>
                   {browseLinks.map((link, index) => (
                     <BrowseRow
@@ -545,6 +551,7 @@ export function MenuOverlay({
                       index={index}
                       reduceMotion={reduceMotion}
                       mdUp={true}
+                      open={open}
                       onNavigate={onNavigate}
                     />
                   ))}
@@ -637,6 +644,7 @@ export function MenuOverlay({
             </div>
           </div>
         </motion.div>
+        </>
       ) : null}
     </AnimatePresence>,
     portalRoot,

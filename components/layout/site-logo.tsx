@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { LogoMark } from "@/components/layout/logo-mark";
 import { useNavTheme } from "@/hooks/use-nav-theme";
+import { DURATION, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const COLLAPSE_SCROLL_Y = 80;
@@ -29,14 +30,14 @@ export function SiteLogo({ className }: SiteLogoProps) {
 
   const transition = reduceMotion
     ? { duration: 0 }
-    : { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const };
+    : { duration: DURATION.base, ease: EASE_OUT };
 
   return (
     <Link
       ref={linkRef}
       href="/"
       className={cn(
-        "relative flex shrink-0 items-center transition-colors duration-200",
+        "relative flex shrink-0 items-center motion-transition-colors duration-300",
         collapsed ? "w-9" : "max-w-[min(100%,15rem)]",
         navTheme === "dark" ? "text-cream" : "text-navy",
         className,

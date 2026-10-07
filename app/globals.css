@@ -352,6 +352,12 @@ body.site-menu-open [data-mobile-subscribe-bar] {
   --normal-text: var(--navy);
 }
 
+[data-sonner-toast] {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
 [data-sonner-toast][data-type="success"] {
   --normal-bg: color-mix(in srgb, var(--status-active) 12%, var(--surface));
 }

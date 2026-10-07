@@ -1,16 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-
 import { SteppedEdge } from "@/components/editorial/stepped-edge";
 import { ParenLabel } from "@/components/editorial/paren-label";
+import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
 import {
   editorialBodyOnDark,
   editorialDisplayMd,
   editorialParenLabelOnDark,
 } from "@/lib/typography-editorial";
-import { motionEase, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const steps = [
@@ -32,8 +30,6 @@ const steps = [
 ];
 
 export function EditorialHowItWorks() {
-  const reduceMotion = useReducedMotion();
-
   return (
     <section
       id="how-it-works"
@@ -43,49 +39,39 @@ export function EditorialHowItWorks() {
     >
       <SteppedEdge position="top" color="var(--navy)" />
       <Container className="py-16 sm:py-24">
-        <ParenLabel className={editorialParenLabelOnDark}>How it works</ParenLabel>
-        <h2 className={cn(editorialDisplayMd, "mt-4 max-w-2xl text-cream")}>
-          Three steps to <em className="font-serif italic text-coral">play &amp; give</em>
-        </h2>
+        <Reveal>
+          <ParenLabel className={editorialParenLabelOnDark}>How it works</ParenLabel>
+          <h2 className={cn(editorialDisplayMd, "mt-4 max-w-2xl text-cream")}>
+            Three steps to <em className="font-serif italic text-coral">play &amp; give</em>
+          </h2>
+        </Reveal>
 
-        <motion.ol
+        <RevealStagger
+          as="ol"
           className="mt-14 grid gap-10 md:grid-cols-3"
-          variants={staggerContainer}
-          initial={reduceMotion ? false : "hidden"}
-          whileInView={reduceMotion ? undefined : "visible"}
-          viewport={{ once: true, margin: "-60px" }}
+          stagger={0.12}
         >
           {steps.map((step, index) => (
-            <motion.li
+            <RevealStaggerItem
               key={step.number}
-              variants={{
-                hidden: { opacity: 0, y: 24 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: { duration: 0.55, ease: motionEase },
-                },
-              }}
               className={cn(
                 "border-t border-cream/30 pt-6",
                 index === 1 && "md:translate-y-12",
                 index === 2 && "md:translate-y-24",
               )}
             >
-              <div>
-                <p
-                  className="font-serif text-[clamp(56px,6vw,96px)] italic leading-none text-coral"
-                >
-                  {step.number}
-                </p>
-                <h3 className="mt-3 font-sans text-[clamp(28px,2vw,32px)] font-light tracking-tight text-cream">
-                  {step.title}
-                </h3>
-                <p className={cn("mt-3", editorialBodyOnDark)}>{step.body}</p>
-              </div>
-            </motion.li>
+              <p
+                className="font-serif text-[clamp(56px,6vw,96px)] italic leading-none text-coral"
+              >
+                {step.number}
+              </p>
+              <h3 className="mt-3 font-sans text-[clamp(28px,2vw,32px)] font-light tracking-tight text-cream">
+                {step.title}
+              </h3>
+              <p className={cn("mt-3", editorialBodyOnDark)}>{step.body}</p>
+            </RevealStaggerItem>
           ))}
-        </motion.ol>
+        </RevealStagger>
       </Container>
       <SteppedEdge position="bottom" color="var(--cream)" />
     </section>
