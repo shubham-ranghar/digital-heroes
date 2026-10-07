@@ -22,6 +22,8 @@ type SteppedEdgeProps = {
   scrollTargetRef?: RefObject<HTMLElement | null>;
   playOnMount?: boolean;
   static?: boolean;
+  /** Fill the band rectangle (section seams). Overlay reveals should leave this off. */
+  fillBand?: boolean;
   variant?: "five" | "three";
 };
 
@@ -44,6 +46,7 @@ export function SteppedEdge({
   scrollTargetRef,
   playOnMount = false,
   static: staticVisible = false,
+  fillBand = true,
   variant = "five",
 }: SteppedEdgeProps) {
   const reduceMotion = useReducedMotion();
@@ -78,7 +81,10 @@ export function SteppedEdge({
         position === "top" ? "-mb-px" : "-mt-px",
         className,
       )}
-      style={{ height: bandHeight, backgroundColor: color }}
+      style={{
+        height: bandHeight,
+        backgroundColor: fillBand ? color : "transparent",
+      }}
       aria-hidden
     >
       <div
