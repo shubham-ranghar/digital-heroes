@@ -1,9 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
-import { fadeUp, staggerContainer } from "@/lib/motion";
+import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 type ScrollRevealProps = {
@@ -12,28 +11,9 @@ type ScrollRevealProps = {
   stagger?: boolean;
 };
 
-export function ScrollReveal({
-  children,
-  className,
-  stagger = false,
-}: ScrollRevealProps) {
-  const reduceMotion = useReducedMotion();
-
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-80px" }}
-      variants={stagger ? staggerContainer : fadeUp}
-    >
-      {children}
-    </motion.div>
-  );
+/** @deprecated Use Reveal / RevealStagger from @/components/motion/reveal */
+export function ScrollReveal({ children, className }: ScrollRevealProps) {
+  return <Reveal className={className}>{children}</Reveal>;
 }
 
 type RevealItemProps = {
@@ -42,15 +22,5 @@ type RevealItemProps = {
 };
 
 export function RevealItem({ children, className }: RevealItemProps) {
-  const reduceMotion = useReducedMotion();
-
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
-  return (
-    <motion.div className={cn(className)} variants={fadeUp}>
-      {children}
-    </motion.div>
-  );
+  return <div className={cn(className)}>{children}</div>;
 }

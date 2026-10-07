@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 
 import { SteppedEdge } from "@/components/editorial/stepped-edge";
 import { ParenLabel } from "@/components/editorial/paren-label";
+import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
 import { Button } from "@/components/ui/button";
 import type { HomepageCharities } from "@/lib/home/charities";
@@ -16,7 +16,6 @@ import {
   editorialParenLabelOnDark,
 } from "@/lib/typography-editorial";
 import { formatPlayedOnLabel } from "@/lib/scores/dates";
-import { motionEase } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type EditorialCharitySpotlightProps = {
@@ -39,7 +38,7 @@ function CharityCard({
   return (
     <article
       className={cn(
-        "flex h-full flex-col border border-cream/15 bg-surface/40",
+        "motion-card-hover flex h-full flex-col border border-cream/15 bg-surface/40",
         featured ? "min-h-[320px]" : "",
       )}
     >
@@ -96,7 +95,6 @@ function CharitiesEmptyState() {
 }
 
 export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightProps) {
-  const reduceMotion = useReducedMotion();
   const { featured, others, featuredEvents } = data;
   const hasCharities = Boolean(featured);
 
@@ -109,23 +107,22 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
     >
       <SteppedEdge position="top" color="var(--navy)" />
       <Container className="py-16 sm:py-24">
-        <ParenLabel className={editorialParenLabelOnDark}>Charities</ParenLabel>
-        <h2 className={cn(editorialDisplayMd, "mt-4 text-cream")}>
-          Causes members <em className="font-serif italic text-coral">fund</em>
-        </h2>
+        <Reveal>
+          <ParenLabel className={editorialParenLabelOnDark}>Charities</ParenLabel>
+          <h2 className={cn(editorialDisplayMd, "mt-4 text-cream")}>
+            Causes members <em className="font-serif italic text-coral">fund</em>
+          </h2>
+        </Reveal>
 
         {!hasCharities ? (
           <CharitiesEmptyState />
         ) : (
           <>
-            <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
-              <motion.div
-                className="lg:col-span-7"
-                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ ease: motionEase }}
-              >
+            <RevealStagger
+              className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8"
+              stagger={0.08}
+            >
+              <RevealStaggerItem className="lg:col-span-7">
                 <CharityCard
                   featured
                   name={featured!.name}
@@ -148,19 +145,20 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
                     Upcoming community events will be listed here.
                   </p>
                 )}
-              </motion.div>
+              </RevealStaggerItem>
               <div className="flex flex-col gap-6 lg:col-span-5">
                 {others.map((charity) => (
-                  <CharityCard
-                    key={charity.id}
-                    name={charity.name}
-                    slug={charity.slug}
-                    description={charity.description}
-                    imageSrc={charity.images[0] ?? null}
-                  />
+                  <RevealStaggerItem key={charity.id}>
+                    <CharityCard
+                      name={charity.name}
+                      slug={charity.slug}
+                      description={charity.description}
+                      imageSrc={charity.images[0] ?? null}
+                    />
+                  </RevealStaggerItem>
                 ))}
               </div>
-            </div>
+            </RevealStagger>
             <p className="mt-10">
               <Link href="/charities" className={editorialLinkOnDark}>
                 Browse causes

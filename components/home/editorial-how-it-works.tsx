@@ -53,6 +53,7 @@ export function EditorialHowItWorks() {
         >
           {steps.map((step, index) => (
             <RevealStaggerItem
+              as="li"
               key={step.number}
               className={cn(
                 "border-t border-cream/30 pt-6",

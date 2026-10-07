@@ -101,17 +101,25 @@ export function RevealStagger({
 type RevealStaggerItemProps = {
   children: ReactNode;
   className?: string;
+  as?: "div" | "li";
 };
 
-export function RevealStaggerItem({ children, className }: RevealStaggerItemProps) {
+export function RevealStaggerItem({
+  children,
+  className,
+  as = "div",
+}: RevealStaggerItemProps) {
   const reduceMotion = useReducedMotion();
 
   if (reduceMotion) {
-    return <div className={className}>{children}</div>;
+    const Tag = as;
+    return <Tag className={className}>{children}</Tag>;
   }
 
+  const MotionTag = motion[as];
+
   return (
-    <motion.div
+    <MotionTag
       className={cn(className)}
       variants={{
         hidden: { opacity: 0, y: 24 },
@@ -123,6 +131,6 @@ export function RevealStaggerItem({ children, className }: RevealStaggerItemProp
       }}
     >
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }

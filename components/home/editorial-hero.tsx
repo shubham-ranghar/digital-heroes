@@ -19,6 +19,7 @@ import { Container } from "@/components/layout/container";
 import { useCountUp } from "@/hooks/use-count-up";
 import { HERO_IMAGE_ALT, HERO_IMAGE_SRC } from "@/lib/home/hero-image";
 import type { HomeStats } from "@/lib/home/stats";
+import type { Variants } from "framer-motion";
 import {
   buttonMotionProps,
   DURATION,
@@ -43,7 +44,7 @@ const HERO_CONTENT_MAX =
 const HERO_TOP_PADDING = "pt-[calc(72px+clamp(32px,6vh,72px))]";
 const HERO_BOTTOM_PADDING = "pb-[clamp(32px,6vh,64px)]";
 
-const contentStagger = {
+const contentStagger: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: (index: number) => ({
     opacity: 1,

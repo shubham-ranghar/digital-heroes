@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 
-import { DURATION, EASE_OUT, motionEase } from "@/lib/motion";
+import { DURATION, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const COLUMN_STEPS = [1, 2, 3, 2, 1] as const;

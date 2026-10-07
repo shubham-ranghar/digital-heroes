@@ -395,8 +395,11 @@ export function MenuOverlay({
           }
           exit={
             reduceMotion
-              ? { opacity: 0 }
-              : { clipPath: "inset(0 0 100% 0)" }
+              ? { opacity: 0, transition: { duration: DURATION.fast } }
+              : {
+                  clipPath: "inset(0 0 100% 0)",
+                  transition: { duration: 0.5, ease: EASE_IN_OUT },
+                }
           }
           transition={{
             duration: reduceMotion ? DURATION.fast : 0.7,

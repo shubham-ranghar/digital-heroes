@@ -28,7 +28,11 @@ async function CharitySpotlightLoader() {
 
   const supabase = await createClient();
   const data = await getHomepageCharities(supabase);
-  return <EditorialCharitySpotlight data={data} />;
+  return (
+    <div className="motion-crossfade">
+      <EditorialCharitySpotlight data={data} />
+    </div>
+  );
 }
 
 export default async function Home() {
