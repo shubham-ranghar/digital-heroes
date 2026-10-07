@@ -29,6 +29,21 @@ import {
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
+const heroPanelSlide = {
+  initial: { x: "-100%" },
+  animate: { x: 0 },
+  transition: { duration: DURATION.hero, ease: EASE_IN_OUT },
+} as const;
+
+/** Stepped columns finish, short hold, then dismiss (aligned with page-open-edge). */
+const HERO_OPEN_EDGE_EXIT_DELAY = DURATION.base + 0.24 + 0.2;
+
+const heroPhotoEnter = {
+  initial: { opacity: 0, scale: 1.06, y: 20 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  transition: { duration: DURATION.hero, ease: EASE_OUT },
+} as const;
+
 const HERO_PANEL_CLIP_DESKTOP_WIDE =
   "polygon(0 0, 53.5% 0, 53.5% 12%, 46.5% 12%, 46.5% 24%, 39.5% 24%, 39.5% 100%, 0 100%)";
 
@@ -61,6 +76,36 @@ type EditorialHeroProps = {
   stats: HomeStats;
 };
 
+function HeroOpenEdge({ reduceMotion }: { reduceMotion: boolean | null }) {
+  const [done, setDone] = useState(false);
+
+  if (reduceMotion || done) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-x-0 top-0 z-[4] overflow-hidden bg-navy md:[clip-path:polygon(0_0,60%_0,60%_100%,0_100%)] xl:[clip-path:polygon(0_0,54%_0,54%_100%,0_100%)]"
+      aria-hidden
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{
+        delay: HERO_OPEN_EDGE_EXIT_DELAY,
+        duration: DURATION.base,
+        ease: EASE_OUT,
+      }}
+      onAnimationComplete={() => setDone(true)}
+    >
+      <SteppedEdge
+        position="top"
+        color="var(--navy)"
+        playOnMount
+        fillBand={false}
+      />
+    </motion.div>
+  );
+}
+
 export function EditorialHero({ stats }: EditorialHeroProps) {
   const reduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
@@ -85,12 +130,14 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
       id="welcome"
       className="relative isolate min-h-0 overflow-hidden bg-navy md:min-h-[100svh]"
     >
+      <HeroOpenEdge reduceMotion={reduceMotion} />
+
       <motion.div
-        className="relative z-0 aspect-[4/3] w-full shrink-0 md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
+        className="relative z-0 aspect-[4/3] w-full shrink-0 overflow-hidden md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
         data-nav-theme="dark"
-        initial={reduceMotion ? false : { opacity: 0, scale: 1.06 }}
-        animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-        transition={{ duration: DURATION.hero, ease: EASE_OUT }}
+        initial={reduceMotion ? false : heroPhotoEnter.initial}
+        animate={reduceMotion ? undefined : heroPhotoEnter.animate}
+        transition={heroPhotoEnter.transition}
         style={
           reduceMotion || !mdUp ? undefined : { y: photoY }
         }
@@ -111,42 +158,61 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
         />
       </motion.div>
 
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[1] hidden bg-navy md:block xl:hidden"
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden md:block xl:hidden"
         style={{ clipPath: HERO_PANEL_CLIP_DESKTOP_TABLET }}
         aria-hidden
-        initial={reduceMotion ? false : { x: "-100%" }}
-        animate={reduceMotion ? undefined : { x: 0 }}
-        transition={{ duration: DURATION.hero, ease: EASE_IN_OUT }}
-      />
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[1] hidden bg-navy xl:block"
+      >
+        <motion.div
+          className="absolute inset-0 bg-navy"
+          initial={reduceMotion ? false : heroPanelSlide.initial}
+          animate={reduceMotion ? undefined : heroPanelSlide.animate}
+          transition={heroPanelSlide.transition}
+        />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden xl:block"
         style={{ clipPath: HERO_PANEL_CLIP_DESKTOP_WIDE }}
         aria-hidden
-        initial={reduceMotion ? false : { x: "-100%" }}
-        animate={reduceMotion ? undefined : { x: 0 }}
-        transition={{ duration: DURATION.hero, ease: EASE_IN_OUT }}
-      />
+      >
+        <motion.div
+          className="absolute inset-0 bg-navy"
+          initial={reduceMotion ? false : heroPanelSlide.initial}
+          animate={reduceMotion ? undefined : heroPanelSlide.animate}
+          transition={heroPanelSlide.transition}
+        />
+      </div>
 
       <div className="relative z-[2] md:pointer-events-none md:min-h-[100svh]">
-        <motion.div
-          className="bg-navy md:hidden"
+        <div
+          className="relative overflow-hidden bg-navy md:hidden"
           style={{ clipPath: HERO_PANEL_CLIP_MOBILE }}
-          initial={reduceMotion ? false : { x: "-100%" }}
-          animate={reduceMotion ? undefined : { x: 0 }}
-          transition={{ duration: DURATION.hero, ease: EASE_IN_OUT }}
         >
-          <Container
-            data-nav-theme="dark"
-            className="pointer-events-auto flex flex-col gap-8 py-10"
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 bg-navy"
+            aria-hidden
+            initial={reduceMotion ? false : heroPanelSlide.initial}
+            animate={reduceMotion ? undefined : heroPanelSlide.animate}
+            transition={heroPanelSlide.transition}
+          />
+          <motion.div
+            className="relative z-10"
+            initial={reduceMotion ? false : heroPanelSlide.initial}
+            animate={reduceMotion ? undefined : heroPanelSlide.animate}
+            transition={heroPanelSlide.transition}
           >
-            <HeroCopy reduceMotion={reduceMotion} />
-            <HeroStats
-              currencySymbol={stats.currencySymbol}
-              totalRaisedDisplay={stats.totalRaisedDisplay}
-            />
-          </Container>
-        </motion.div>
+            <Container
+              data-nav-theme="dark"
+              className="pointer-events-auto flex flex-col gap-8 py-10"
+            >
+              <HeroCopy reduceMotion={reduceMotion} />
+              <HeroStats
+                currencySymbol={stats.currencySymbol}
+                totalRaisedDisplay={stats.totalRaisedDisplay}
+              />
+            </Container>
+          </motion.div>
+        </div>
 
         <Container
           data-nav-theme="dark"
@@ -156,24 +222,32 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
             HERO_BOTTOM_PADDING,
           )}
         >
-          <div className="flex min-h-0 flex-1 flex-col justify-center">
-            <div className={HERO_CONTENT_MAX}>
-              <HeroCopy reduceMotion={reduceMotion} />
+          <motion.div
+            className="flex min-h-0 flex-1 flex-col"
+            initial={reduceMotion ? false : heroPanelSlide.initial}
+            animate={reduceMotion ? undefined : heroPanelSlide.animate}
+            transition={heroPanelSlide.transition}
+          >
+            <div className="flex min-h-0 flex-1 flex-col justify-center">
+              <div className={HERO_CONTENT_MAX}>
+                <HeroCopy reduceMotion={reduceMotion} />
+              </div>
             </div>
-          </div>
-          <div className={cn(HERO_CONTENT_MAX, "shrink-0")}>
-            <HeroStats
-              currencySymbol={stats.currencySymbol}
-              totalRaisedDisplay={stats.totalRaisedDisplay}
-            />
-          </div>
+            <div className={cn(HERO_CONTENT_MAX, "shrink-0")}>
+              <HeroStats
+                currencySymbol={stats.currencySymbol}
+                totalRaisedDisplay={stats.totalRaisedDisplay}
+              />
+            </div>
+          </motion.div>
         </Container>
       </div>
       <SteppedEdge
         position="bottom"
         color="var(--navy)"
         className="relative z-[3]"
-        static
+        playOnMount={!reduceMotion}
+        static={Boolean(reduceMotion)}
       />
     </section>
   );

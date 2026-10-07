@@ -22,17 +22,22 @@ export function PageOpenEdge() {
   const pathKey = pathname.split("?")[0] ?? pathname;
   const [finished, setFinished] = useState(false);
 
-  if (reduceMotion || finished) {
+  // Homepage hero runs its own entrance; this overlay’s slide + transparent
+  // stepped band would show hero image through the band on reload.
+  if (reduceMotion || finished || pathKey === "/") {
     return null;
   }
+
+  const edgeColor = pageOpenEdgeColor(pathname);
 
   return (
     <motion.div
       key={pathKey}
       className={cn(
-        "pointer-events-none fixed inset-x-0 z-[45]",
+        "pointer-events-none fixed inset-x-0 z-[45] overflow-hidden",
         pageOpenEdgeInsetClass(pathname),
       )}
+      style={{ backgroundColor: edgeColor }}
       initial={{ y: 0 }}
       animate={{ y: "-110%" }}
       transition={{
@@ -45,9 +50,9 @@ export function PageOpenEdge() {
     >
       <SteppedEdge
         position="top"
-        color={pageOpenEdgeColor(pathname)}
+        color={edgeColor}
         playOnMount
-        fillBand={false}
+        fillBand
       />
     </motion.div>
   );
