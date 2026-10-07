@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -55,9 +57,13 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
   const [scoreValue, setScoreValue] = useState("");
   const [playedOn, setPlayedOn] = useState(todayIsoDate());
   const [editingScoreId, setEditingScoreId] = useState<string | undefined>();
+  const [manageTab, setManageTab] = useState<
+    "profile" | "subscription" | "scores"
+  >("profile");
 
   function openUser(user: AdminUserRow) {
     setSelected(user);
+    setManageTab("profile");
     setDisplayName(user.displayName ?? "");
     setRole(user.role);
     setPlan(user.plan ?? "monthly");
@@ -234,135 +240,250 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
       />
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Manage member</DialogTitle>
-          </DialogHeader>
+        <DialogContent
+          className="top-[max(1rem,env(safe-area-inset-top))] translate-x-[-50%] translate-y-0 sm:max-w-lg"
+        >
           {selected ? (
-            <div className="space-y-6">
-              <p className="text-xs text-muted-foreground break-all">{selected.id}</p>
-
-              <section className="space-y-3">
-                <h3 className="text-sm font-medium text-navy">Profile</h3>
-                <Input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Display name"
-                />
-                <Select
-                  value={role}
-                  onValueChange={(v) => v && setRole(v as "subscriber" | "admin")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="subscriber">Subscriber</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button type="button" size="sm" disabled={isPending} onClick={saveProfile}>
-                  Save profile
-                </Button>
-              </section>
-
-              <section className="space-y-3 border-t border-line pt-4">
-                <h3 className="text-sm font-medium text-navy">Subscription</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Select
-                    value={plan}
-                    onValueChange={(v) => v && setPlan(v as "monthly" | "yearly")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={subStatus}
-                    onValueChange={(v) =>
-                      v && setSubStatus(v as "active" | "cancelled" | "lapsed")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="lapsed">Lapsed</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <>
+              <DialogHeader className="shrink-0 gap-1 text-left">
+                <div className="flex flex-wrap items-center gap-2 pr-8">
+                  <DialogTitle className="text-base">
+                    {selected.displayName?.trim() || "Member"}
+                  </DialogTitle>
+                  <StatusPill value={selected.role} />
                 </div>
-                <Input
-                  type="date"
-                  value={renewalDate}
-                  onChange={(e) => setRenewalDate(e.target.value)}
-                />
-                <Button type="button" size="sm" disabled={isPending} onClick={saveSubscription}>
-                  Save subscription
-                </Button>
-              </section>
+                <DialogDescription className="text-left">
+                  {selected.email ?? "No email on file"}
+                </DialogDescription>
+                <p className="text-[0.6875rem] text-muted-foreground break-all">
+                  {selected.id}
+                </p>
+              </DialogHeader>
 
-              <section className="space-y-3 border-t border-line pt-4">
-                <h3 className="text-sm font-medium text-navy">Scores</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={45}
-                    placeholder="1–45"
-                    value={scoreValue}
-                    onChange={(e) => setScoreValue(e.target.value)}
-                  />
-                  <Input
-                    type="date"
-                    value={playedOn}
-                    onChange={(e) => setPlayedOn(e.target.value)}
-                  />
-                </div>
-                <Button type="button" size="sm" disabled={isPending} onClick={saveScore}>
-                  {editingScoreId ? "Update score" : "Add score"}
-                </Button>
-                <ul className="max-h-40 space-y-2 overflow-y-auto text-sm">
-                  {scores.map((score) => (
-                    <li
-                      key={score.id}
-                      className="flex items-center justify-between gap-2 rounded-lg bg-sand/40 px-2 py-1.5"
+              <Tabs
+                value={manageTab}
+                onValueChange={(value) =>
+                  value &&
+                  setManageTab(value as "profile" | "subscription" | "scores")
+                }
+                className="min-h-0 flex-1 gap-3"
+              >
+                <TabsList className="grid h-auto w-full grid-cols-3 gap-0.5 p-1">
+                  <TabsTrigger value="profile" className="px-2 py-1.5 text-xs sm:text-sm">
+                    Profile
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="subscription"
+                    className="px-2 py-1.5 text-xs sm:text-sm"
+                  >
+                    Plan
+                  </TabsTrigger>
+                  <TabsTrigger value="scores" className="px-2 py-1.5 text-xs sm:text-sm">
+                    Scores ({scores.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="profile" className="space-y-3 pt-0">
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Display name
+                    </span>
+                    <Input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Display name"
+                    />
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Role</span>
+                    <Select
+                      value={role}
+                      onValueChange={(v) => v && setRole(v as "subscriber" | "admin")}
                     >
-                      <span>
-                        {score.score} pts · {score.played_on}
-                      </span>
-                      <div className="flex gap-1">
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="subscriber">Subscriber</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    disabled={isPending}
+                    onClick={saveProfile}
+                  >
+                    Save profile
+                  </Button>
+                </TabsContent>
+
+                <TabsContent value="subscription" className="space-y-3 pt-0">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">Plan</span>
+                      <Select
+                        value={plan}
+                        onValueChange={(v) => v && setPlan(v as "monthly" | "yearly")}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">Status</span>
+                      <Select
+                        value={subStatus}
+                        onValueChange={(v) =>
+                          v && setSubStatus(v as "active" | "cancelled" | "lapsed")
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="lapsed">Lapsed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+                  </div>
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Renewal date
+                    </span>
+                    <Input
+                      type="date"
+                      value={renewalDate}
+                      onChange={(e) => setRenewalDate(e.target.value)}
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    disabled={isPending}
+                    onClick={saveSubscription}
+                  >
+                    Save subscription
+                  </Button>
+                </TabsContent>
+
+                <TabsContent value="scores" className="flex min-h-0 flex-col gap-3 pt-0">
+                  <div className="rounded-xl border border-line bg-sand/30 p-3 space-y-3">
+                    <p className="text-xs font-medium text-navy">
+                      {editingScoreId ? "Edit score" : "Add score"}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,5rem)_1fr]">
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-muted-foreground">Pts</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={45}
+                          placeholder="1–45"
+                          value={scoreValue}
+                          onChange={(e) => setScoreValue(e.target.value)}
+                        />
+                      </label>
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-muted-foreground">Played on</span>
+                        <Input
+                          type="date"
+                          value={playedOn}
+                          onChange={(e) => setPlayedOn(e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" disabled={isPending} onClick={saveScore}>
+                        {editingScoreId ? "Update score" : "Add score"}
+                      </Button>
+                      {editingScoreId ? (
                         <Button
                           type="button"
                           size="sm"
                           variant="ghost"
+                          disabled={isPending}
                           onClick={() => {
-                            setEditingScoreId(score.id);
-                            setScoreValue(String(score.score));
-                            setPlayedOn(score.played_on);
+                            setEditingScoreId(undefined);
+                            setScoreValue("");
+                            setPlayedOn(todayIsoDate());
                           }}
                         >
-                          Edit
+                          Cancel edit
                         </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setScoreToDelete(score)}
-                        >
-                          Delete
-                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-line">
+                    {scores.length === 0 ? (
+                      <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                        No scores yet.
+                      </p>
+                    ) : (
+                      <div className="max-h-[min(40dvh,16rem)] overflow-y-auto overscroll-contain">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-surface text-left text-xs text-muted-foreground">
+                            <tr className="border-b border-line">
+                              <th className="px-3 py-2 font-medium">Date</th>
+                              <th className="px-3 py-2 font-medium">Points</th>
+                              <th className="px-3 py-2 text-right font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {scores.map((score) => (
+                              <tr
+                                key={score.id}
+                                className="border-b border-line/60 last:border-0"
+                              >
+                                <td className="px-3 py-2 whitespace-nowrap text-navy">
+                                  {score.played_on}
+                                </td>
+                                <td className="px-3 py-2 font-medium text-navy">{score.score}</td>
+                                <td className="px-3 py-2">
+                                  <div className="flex justify-end gap-1">
+                                    <Button
+                                      type="button"
+                                      size="xs"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        setEditingScoreId(score.id);
+                                        setScoreValue(String(score.score));
+                                        setPlayedOn(score.played_on);
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="xs"
+                                      variant="ghost"
+                                      onClick={() => setScoreToDelete(score)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </>
           ) : null}
         </DialogContent>
       </Dialog>

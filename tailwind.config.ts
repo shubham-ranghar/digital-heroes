@@ -34,8 +34,17 @@ const config: Config = {
         "input-on-surface": "var(--input-on-surface)",
       },
       fontFamily: {
-        sans: ["var(--font-bagoss-standard)", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["var(--font-austin)", "Georgia", "serif"],
+        sans: ["var(--font-bagoss-standard)"],
+        serif: ["var(--font-austin)"],
+      },
+      fontWeight: {
+        light: "400",
+        normal: "400",
+        medium: "500",
+        semibold: "500",
+        bold: "500",
+        extrabold: "500",
+        black: "500",
       },
       borderRadius: {
         card: "20px",

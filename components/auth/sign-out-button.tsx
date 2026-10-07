@@ -23,8 +23,8 @@ export function SignOutButton({
     <Button
       type="button"
       variant="secondary"
-      size="sm"
-      className={cn(className)}
+      size="lg"
+      className={cn("shrink-0 justify-center", className)}
       disabled={isPending}
       aria-busy={isPending}
       onClick={() =>

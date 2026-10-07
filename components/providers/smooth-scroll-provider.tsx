@@ -44,6 +44,7 @@ export function SmoothScrollProvider({
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
       syncTouch: false,
+      allowNestedScroll: true,
     });
 
     lenisRef.current = instance;

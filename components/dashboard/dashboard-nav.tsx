@@ -57,7 +57,7 @@ export function DashboardNav({ isAdmin, variant }: DashboardNavProps) {
 
   return (
     <aside
-      className="hidden w-56 shrink-0 flex-col border-r border-line bg-surface md:flex"
+      className="hidden w-56 shrink-0 flex-col border-r border-line bg-surface md:sticky md:top-0 md:flex md:h-svh md:max-h-svh"
       aria-label="Dashboard"
     >
       <div className="px-5 py-8">

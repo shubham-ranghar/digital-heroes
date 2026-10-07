@@ -469,16 +469,6 @@ export function MenuOverlay({
               </ul>
             </section>
 
-            {isLoggedIn ? (
-              <section className="mt-10">
-                <MenuSectionLabel>Account</MenuSectionLabel>
-                <div className="mt-2 border-t border-navy" aria-hidden />
-                <div className="mt-4">
-                  <SignOutButton className="w-full sm:w-auto" />
-                </div>
-              </section>
-            ) : null}
-
             {socialLinks.length > 0 ? (
               <section className="mt-10">
                 <MenuSectionLabel>Follow us</MenuSectionLabel>
@@ -504,6 +494,14 @@ export function MenuOverlay({
               </section>
             ) : null}
           </div>
+
+          {isLoggedIn ? (
+            <div
+              className="shrink-0 border-t border-navy bg-cream px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+            >
+              <SignOutButton className="w-full bg-cream hover:bg-sand" />
+            </div>
+          ) : null}
 
           {/* Desktop menu body (unchanged layout) */}
           <div
@@ -545,7 +543,7 @@ export function MenuOverlay({
                     <MenuSectionLabel>Account</MenuSectionLabel>
                     <div className="mt-2 border-t border-line" aria-hidden />
                     <div className="mt-4">
-                      <SignOutButton />
+                      <SignOutButton className="bg-cream hover:bg-sand" />
                     </div>
                   </div>
                 ) : null}

@@ -23,9 +23,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${bagossStandard.variable} ${austin.variable} h-full`}
+      className={`${bagossStandard.variable} ${austin.variable} min-h-full`}
     >
-      <body className="relative flex min-h-full flex-col">
+      <body
+        className={`${bagossStandard.className} relative flex min-h-full flex-col`}
+      >
         <div className="grain-overlay" aria-hidden />
         <AppMotionShell>
           <Suspense fallback={null}>

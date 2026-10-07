@@ -19,6 +19,20 @@ type SiteNavbarProps = {
   isAdmin?: boolean;
 };
 
+/** Shared height and typography for header controls */
+const navControl =
+  "inline-flex h-9 min-h-9 max-w-full shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-medium leading-none whitespace-nowrap motion-transition-colors sm:px-3.5";
+
+const navBtnSecondary = cn(
+  navControl,
+  "border border-navy/25 bg-cream/85 text-navy shadow-[0_1px_0_rgba(20,33,61,0.04)] backdrop-blur-sm hover:border-navy/45 hover:bg-sand/90",
+);
+
+const navBtnPrimary = cn(
+  navControl,
+  "border border-transparent bg-coral px-3.5 text-navy shadow-[0_1px_0_rgba(20,33,61,0.06)] hover:bg-coral-deep sm:px-4",
+);
+
 export function SiteNavbar({
   menuCharities,
   isLoggedIn = false,
@@ -47,9 +61,6 @@ export function SiteNavbar({
   const showDashboardLink = isLoggedIn;
   const showSubscribe = pathname !== "/signup";
 
-  const navAccountBtn =
-    "inline-flex h-11 min-h-11 items-center justify-center rounded-full border border-navy bg-cream px-3.5 text-sm font-medium text-navy hover:bg-sand sm:px-4";
-
   return (
     <>
       <header
@@ -60,68 +71,68 @@ export function SiteNavbar({
         )}
         aria-hidden={menuOpen}
       >
-        <Container
-          className="pointer-events-auto flex h-[var(--header-height)] min-w-0 items-center gap-2 sm:gap-4"
-        >
-          <SiteLogo />
+          <Container
+            className="pointer-events-auto flex h-[var(--header-height)] min-w-0 items-center gap-3 sm:gap-4"
+          >
+            <SiteLogo
+              className="min-w-0 [&_span]:h-9 [&_span]:text-base sm:[&_span]:text-lg"
+            />
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
-            {showLoginLink ? (
-              <motion.div
-                className="hidden min-[400px]:block"
-                {...buttonMotionProps(false)}
-              >
-                <Link href={accountHref} className={navAccountBtn}>
-                  {accountLabel}
-                </Link>
-              </motion.div>
-            ) : null}
-            {showDashboardLink ? (
-              <>
+            <nav
+              className="ml-auto flex min-w-0 items-center gap-1 sm:gap-1.5"
+              aria-label="Site"
+            >
+              {showLoginLink ? (
                 <motion.div
-                  className="hidden min-[400px]:block"
+                  className="hidden min-w-0 min-[400px]:block"
                   {...buttonMotionProps(false)}
                 >
-                  <Link href="/dashboard" className={navAccountBtn}>
-                    Dashboard
+                  <Link href={accountHref} className={navBtnSecondary}>
+                    {accountLabel}
                   </Link>
                 </motion.div>
+              ) : null}
+              {showDashboardLink ? (
+                <>
+                  <motion.div
+                    className="hidden min-w-0 min-[400px]:block"
+                    {...buttonMotionProps(false)}
+                  >
+                    <Link href="/dashboard" className={navBtnSecondary}>
+                      Dashboard
+                    </Link>
+                  </motion.div>
+                  <motion.div
+                    className="hidden min-w-0 sm:block"
+                    {...buttonMotionProps(false)}
+                  >
+                    <SignOutButton className={navBtnSecondary} />
+                  </motion.div>
+                </>
+              ) : null}
+              <motion.button
+                id="site-menu-button"
+                type="button"
+                className={navBtnSecondary}
+                onClick={() => setMenuOpen(true)}
+                aria-expanded={menuOpen}
+                aria-controls="site-menu"
+                {...buttonMotionProps(false)}
+              >
+                Menu
+              </motion.button>
+              {showSubscribe ? (
                 <motion.div
-                  className="hidden sm:block"
+                  className="min-w-0"
                   {...buttonMotionProps(false)}
                 >
-                  <SignOutButton />
+                  <Link href="/subscribe" className={navBtnPrimary}>
+                    Subscribe
+                  </Link>
                 </motion.div>
-              </>
-            ) : null}
-            <motion.button
-              id="site-menu-button"
-              type="button"
-              className="box-border inline-flex h-11 min-h-11 shrink-0 appearance-none items-center justify-center border border-navy bg-cream px-3.5 text-sm font-medium leading-none text-navy shadow-none motion-transition-colors"
-              style={{
-                backgroundColor: "var(--cream)",
-                borderColor: "var(--navy)",
-                color: "var(--navy)",
-              }}
-              onClick={() => setMenuOpen(true)}
-              aria-expanded={menuOpen}
-              aria-controls="site-menu"
-              {...buttonMotionProps(false)}
-            >
-              Menu
-            </motion.button>
-            {showSubscribe ? (
-              <motion.div {...buttonMotionProps(false)}>
-                <Link
-                  href="/subscribe"
-                  className="inline-flex h-11 min-h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep sm:px-5"
-                >
-                  Subscribe
-                </Link>
-              </motion.div>
-            ) : null}
-          </div>
-        </Container>
+              ) : null}
+            </nav>
+          </Container>
       </header>
 
       <MenuOverlay

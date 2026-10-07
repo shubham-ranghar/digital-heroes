@@ -23,7 +23,7 @@ export function AdminChrome({
   return (
     <div className="shell-dashboard min-h-screen lg:flex">
       <aside
-        className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface lg:flex"
+        className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface lg:sticky lg:top-0 lg:flex lg:h-svh lg:max-h-svh"
         aria-label="Admin"
       >
         <div className="border-b border-line px-5 py-6">
@@ -67,7 +67,7 @@ export function AdminChrome({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 lg:hidden">
           <p className="font-sans text-sm text-navy">Admin</p>
-          <SignOutButton />
+          <SignOutButton className="min-w-[5.5rem]" />
         </header>
         <nav
           className="flex gap-1 overflow-x-auto border-b border-line bg-surface px-3 py-2 lg:hidden"

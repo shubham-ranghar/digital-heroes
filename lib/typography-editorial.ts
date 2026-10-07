@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** Large Inter display — editorial homepage headlines. */
+/** Large Bagoss display — editorial homepage headlines. */
 export const editorialDisplay = cn(
   "font-sans font-light tracking-[-0.03em] text-balance",
   "text-[clamp(2.75rem,6.5vw,6rem)] leading-[0.98]",

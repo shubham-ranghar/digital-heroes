@@ -29,7 +29,7 @@ export function DashboardChrome({
           >
             Member hub
           </Link>
-          <SignOutButton />
+          <SignOutButton className="min-w-[5.5rem]" />
         </header>
         <main className="flex-1 px-4 py-8 sm:px-6 md:px-10">{children}</main>
       </div>
