@@ -1,5 +1,5 @@
 -- Contact form messages (public insert, admin read/update)
-CREATE TABLE public.contact_messages (
+CREATE TABLE IF NOT EXISTS public.contact_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   email text NOT NULL,
@@ -12,16 +12,19 @@ COMMENT ON TABLE public.contact_messages IS 'Inbound contact form submissions fr
 
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS contact_messages_insert_public ON public.contact_messages;
 CREATE POLICY contact_messages_insert_public ON public.contact_messages
   FOR INSERT
   TO anon, authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS contact_messages_select_admin ON public.contact_messages;
 CREATE POLICY contact_messages_select_admin ON public.contact_messages
   FOR SELECT
   TO authenticated
   USING (public.is_admin());
 
+DROP POLICY IF EXISTS contact_messages_update_admin ON public.contact_messages;
 CREATE POLICY contact_messages_update_admin ON public.contact_messages
   FOR UPDATE
   TO authenticated
@@ -32,7 +35,7 @@ GRANT INSERT ON public.contact_messages TO anon, authenticated;
 GRANT SELECT, UPDATE ON public.contact_messages TO authenticated;
 
 -- Account deletion requests (user submits; no automatic deletion)
-CREATE TABLE public.account_deletion_requests (
+CREATE TABLE IF NOT EXISTS public.account_deletion_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
   status text NOT NULL DEFAULT 'pending',
@@ -45,12 +48,23 @@ CREATE TABLE public.account_deletion_requests (
 
 ALTER TABLE public.account_deletion_requests ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS account_deletion_insert_own ON public.account_deletion_requests;
 CREATE POLICY account_deletion_insert_own ON public.account_deletion_requests
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS account_deletion_select_own_or_admin ON public.account_deletion_requests;
 CREATE POLICY account_deletion_select_own_or_admin ON public.account_deletion_requests
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id OR public.is_admin());
+
+DROP POLICY IF EXISTS account_deletion_update_own ON public.account_deletion_requests;
+CREATE POLICY account_deletion_update_own ON public.account_deletion_requests
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+GRANT INSERT, SELECT, UPDATE ON public.account_deletion_requests TO authenticated;

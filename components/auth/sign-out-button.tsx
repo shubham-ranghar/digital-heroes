@@ -8,9 +8,15 @@ import { cn } from "@/lib/utils";
 
 type SignOutButtonProps = {
   className?: string;
+  label?: string;
+  pendingLabel?: string;
 };
 
-export function SignOutButton({ className }: SignOutButtonProps) {
+export function SignOutButton({
+  className,
+  label = "Sign out",
+  pendingLabel = "Signing out…",
+}: SignOutButtonProps) {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -20,9 +26,14 @@ export function SignOutButton({ className }: SignOutButtonProps) {
       size="sm"
       className={cn(className)}
       disabled={isPending}
-      onClick={() => startTransition(() => signOutAction())}
+      aria-busy={isPending}
+      onClick={() =>
+        startTransition(async () => {
+          await signOutAction();
+        })
+      }
     >
-      {isPending ? "Signing out…" : "Sign out"}
+      {isPending ? pendingLabel : label}
     </Button>
   );
 }

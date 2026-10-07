@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Container } from "@/components/layout/container";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import {
@@ -468,6 +469,16 @@ export function MenuOverlay({
               </ul>
             </section>
 
+            {isLoggedIn ? (
+              <section className="mt-10">
+                <MenuSectionLabel>Account</MenuSectionLabel>
+                <div className="mt-2 border-t border-navy" aria-hidden />
+                <div className="mt-4">
+                  <SignOutButton className="w-full sm:w-auto" />
+                </div>
+              </section>
+            ) : null}
+
             {socialLinks.length > 0 ? (
               <section className="mt-10">
                 <MenuSectionLabel>Follow us</MenuSectionLabel>
@@ -528,30 +539,41 @@ export function MenuOverlay({
                 </ul>
               </div>
 
-              {socialLinks.length > 0 ? (
-                <div className="flex min-h-0 flex-col lg:col-span-4 lg:col-start-9">
-                  <MenuSectionLabel>Follow us</MenuSectionLabel>
-                  <div className="mt-2 border-t border-line" aria-hidden />
-                  <ul className="mt-2 space-y-1">
-                    {socialLinks.map((link) => (
-                      <li key={link.href}>
-                        <a
-                          href={link.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={onNavigate}
-                          className={cn(
-                            menuFocusRing,
-                            "group text-[16px] font-medium text-navy",
-                          )}
-                        >
-                          <RollText text={link.label} />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+              <div className="flex min-h-0 flex-col gap-8 lg:col-span-4 lg:col-start-9">
+                {isLoggedIn ? (
+                  <div>
+                    <MenuSectionLabel>Account</MenuSectionLabel>
+                    <div className="mt-2 border-t border-line" aria-hidden />
+                    <div className="mt-4">
+                      <SignOutButton />
+                    </div>
+                  </div>
+                ) : null}
+                {socialLinks.length > 0 ? (
+                  <div>
+                    <MenuSectionLabel>Follow us</MenuSectionLabel>
+                    <div className="mt-2 border-t border-line" aria-hidden />
+                    <ul className="mt-2 space-y-1">
+                      {socialLinks.map((link) => (
+                        <li key={link.href}>
+                          <a
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onNavigate}
+                            className={cn(
+                              menuFocusRing,
+                              "group text-[16px] font-medium text-navy",
+                            )}
+                          >
+                            <RollText text={link.label} />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
           </motion.div>

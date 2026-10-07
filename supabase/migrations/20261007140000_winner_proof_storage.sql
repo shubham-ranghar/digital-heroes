@@ -21,6 +21,7 @@ SET
 -- Storage RLS: owner folder = auth.uid(); admins read all
 -- Path pattern: {user_id}/{winner_id}/filename.ext
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS winner_proofs_select_owner_or_admin ON storage.objects;
 CREATE POLICY winner_proofs_select_owner_or_admin ON storage.objects
   FOR SELECT
   TO authenticated
@@ -32,6 +33,7 @@ CREATE POLICY winner_proofs_select_owner_or_admin ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS winner_proofs_insert_owner ON storage.objects;
 CREATE POLICY winner_proofs_insert_owner ON storage.objects
   FOR INSERT
   TO authenticated
@@ -40,6 +42,7 @@ CREATE POLICY winner_proofs_insert_owner ON storage.objects
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS winner_proofs_update_owner ON storage.objects;
 CREATE POLICY winner_proofs_update_owner ON storage.objects
   FOR UPDATE
   TO authenticated
@@ -52,6 +55,7 @@ CREATE POLICY winner_proofs_update_owner ON storage.objects
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS winner_proofs_delete_owner_or_admin ON storage.objects;
 CREATE POLICY winner_proofs_delete_owner_or_admin ON storage.objects
   FOR DELETE
   TO authenticated

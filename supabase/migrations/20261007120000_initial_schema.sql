@@ -7,6 +7,23 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ---------------------------------------------------------------------------
+-- profiles
+-- ---------------------------------------------------------------------------
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'subscriber'
+    CONSTRAINT profiles_role_check CHECK (role IN ('subscriber', 'admin')),
+  display_name text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.profiles IS
+  'App user identity linked to auth.users; role is subscriber or admin (enforced server-side and in RLS).';
+
+COMMENT ON COLUMN public.profiles.role IS 'subscriber: paying member; admin: full data access.';
+
+-- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
 
@@ -44,30 +61,6 @@ BEGIN
 END;
 $$;
 
--- Keep only the latest five scores per user (by played_on, then created_at).
-CREATE OR REPLACE FUNCTION public.scores_enforce_latest_five()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  DELETE FROM public.scores s
-  WHERE s.user_id = NEW.user_id
-    AND s.id NOT IN (
-      SELECT id
-      FROM public.scores
-      WHERE user_id = NEW.user_id
-      ORDER BY played_on DESC, created_at DESC
-      LIMIT 5
-    );
-  RETURN NEW;
-END;
-$$;
-
-COMMENT ON FUNCTION public.scores_enforce_latest_five() IS
-  'After insert, deletes older rows so each user retains at most five scores (newest played_on first).';
-
 -- Create a profile when a new auth user signs up.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
@@ -82,23 +75,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
--- ---------------------------------------------------------------------------
--- profiles
--- ---------------------------------------------------------------------------
-CREATE TABLE public.profiles (
-  id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  role text NOT NULL DEFAULT 'subscriber'
-    CONSTRAINT profiles_role_check CHECK (role IN ('subscriber', 'admin')),
-  display_name text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-COMMENT ON TABLE public.profiles IS
-  'App user identity linked to auth.users; role is subscriber or admin (enforced server-side and in RLS).';
-
-COMMENT ON COLUMN public.profiles.role IS 'subscriber: paying member; admin: full data access.';
 
 CREATE TRIGGER profiles_guard_role_trigger
   BEFORE UPDATE ON public.profiles
@@ -232,6 +208,30 @@ CREATE INDEX scores_user_id_played_on_idx ON public.scores (user_id, played_on D
 
 COMMENT ON TABLE public.scores IS
   'Stableford points 1–45; one row per user per calendar date; trigger retains latest five only.';
+
+-- Keep only the latest five scores per user (by played_on, then created_at).
+CREATE OR REPLACE FUNCTION public.scores_enforce_latest_five()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  DELETE FROM public.scores s
+  WHERE s.user_id = NEW.user_id
+    AND s.id NOT IN (
+      SELECT id
+      FROM public.scores
+      WHERE user_id = NEW.user_id
+      ORDER BY played_on DESC, created_at DESC
+      LIMIT 5
+    );
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.scores_enforce_latest_five() IS
+  'After insert, deletes older rows so each user retains at most five scores (newest played_on first).';
 
 CREATE TRIGGER scores_enforce_latest_five_trigger
   AFTER INSERT ON public.scores

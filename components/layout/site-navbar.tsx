@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Container } from "@/components/layout/container";
 import { MenuOverlay, type MenuCharity } from "@/components/layout/menu-overlay";
 import { SiteLogo } from "@/components/layout/site-logo";
@@ -40,15 +41,10 @@ export function SiteNavbar({
     return null;
   }
 
-  const isAuthRoute =
-    pathname === "/login" ||
-    pathname === "/signup" ||
-    pathname === "/forgot-password" ||
-    pathname === "/reset-password";
-
   const accountHref = isLoggedIn ? "/dashboard" : "/login";
   const accountLabel = isLoggedIn ? "Dashboard" : "Login";
-  const showAccountLink = !isLoggedIn && pathname !== "/login";
+  const showLoginLink = !isLoggedIn && pathname !== "/login";
+  const showDashboardLink = isLoggedIn;
   const showSubscribe = pathname !== "/signup";
 
   const navAccountBtn =
@@ -70,7 +66,7 @@ export function SiteNavbar({
           <SiteLogo />
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
-            {showAccountLink ? (
+            {showLoginLink ? (
               <motion.div
                 className="hidden min-[400px]:block"
                 {...buttonMotionProps(false)}
@@ -79,6 +75,24 @@ export function SiteNavbar({
                   {accountLabel}
                 </Link>
               </motion.div>
+            ) : null}
+            {showDashboardLink ? (
+              <>
+                <motion.div
+                  className="hidden min-[400px]:block"
+                  {...buttonMotionProps(false)}
+                >
+                  <Link href="/dashboard" className={navAccountBtn}>
+                    Dashboard
+                  </Link>
+                </motion.div>
+                <motion.div
+                  className="hidden sm:block"
+                  {...buttonMotionProps(false)}
+                >
+                  <SignOutButton />
+                </motion.div>
+              </>
             ) : null}
             <motion.button
               id="site-menu-button"

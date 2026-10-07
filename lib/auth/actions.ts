@@ -145,7 +145,12 @@ export async function signUpAction(
 
 export async function signOutAction() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(error.message);
+  }
   revalidatePath("/", "layout");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/admin", "layout");
   redirect("/login");
 }
