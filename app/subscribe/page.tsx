@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfigMissingState } from "@/components/ui/page-state";
 import { hasStripeEnv } from "@/lib/config/env";
+import { getPlanPriceDisplay } from "@/lib/stripe/prices";
 import { requireUser } from "@/lib/auth/session";
 import { getSubscriptionAccess } from "@/lib/subscription/access";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { tabularImpact } from "@/lib/typography";
 
 export const metadata: Metadata = {
@@ -23,10 +25,24 @@ export default async function SubscribePage({
   searchParams: Promise<{ checkout?: string }>;
 }) {
   await connection();
+
+  if (!hasSupabaseEnv()) {
+    return (
+      <AuthShell
+        title="Choose your plan"
+        description="Support your charity every month. Yearly billing is discounted — same impact, better value."
+        className="max-w-lg"
+      >
+        <ConfigMissingState missing={["supabase"]} />
+      </AuthShell>
+    );
+  }
+
   const { supabase, user } = await requireUser({ loginNext: "/subscribe" });
   const access = await getSubscriptionAccess(supabase, user.id);
   const params = await searchParams;
   const cancelled = params.checkout === "cancelled";
+  const prices = await getPlanPriceDisplay();
 
   return (
     <AuthShell
@@ -62,8 +78,9 @@ export default async function SubscribePage({
                 <CardHeader>
                   <CardTitle className="text-base">Monthly</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Flexible billing. Full access to draws and score tracking.
+                <CardContent className="space-y-1 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">{prices.monthlyLabel}</p>
+                  <p>Flexible billing. Full access to draws and score tracking.</p>
                 </CardContent>
               </Card>
               <Card interactive={false} className="border-coral/40">
@@ -71,10 +88,16 @@ export default async function SubscribePage({
                   <CardTitle className="text-base">Yearly</CardTitle>
                   <Badge>Best value</Badge>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Discounted annual plan.{" "}
-                  <span className={tabularImpact}>Save vs 12× monthly</span>{" "}
-                  (price set in Stripe).
+                <CardContent className="space-y-1 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">{prices.yearlyLabel}</p>
+                  <p>
+                    Discounted annual plan.{" "}
+                    {prices.yearlySavingsHint ? (
+                      <span className={tabularImpact}>{prices.yearlySavingsHint}</span>
+                    ) : (
+                      <span className={tabularImpact}>Save vs 12× monthly</span>
+                    )}
+                  </p>
                 </CardContent>
               </Card>
             </div>

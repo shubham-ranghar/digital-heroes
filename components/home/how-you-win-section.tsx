@@ -61,7 +61,7 @@ export function HowYouWinSection() {
               <p className={cn("mt-2 font-sans text-3xl text-coral", tabularImpact)}>
                 {tier.share}%
               </p>
-              <p className="mt-3 text-sm text-muted-foreground">
+              <p className="mt-3 text-sm text-muted-on-dark">
                 of the draw prize pool for this tier
               </p>
               {tier.note ? (

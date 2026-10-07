@@ -4,8 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/session";
 import { winnerIdSchema } from "@/lib/validations/winner";
-import { createClient } from "@/lib/supabase/server";
-
 export type AdminWinnerActionResult =
   | { ok: true; message: string }
   | { ok: false; message: string };

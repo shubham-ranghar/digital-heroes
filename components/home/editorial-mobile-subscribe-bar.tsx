@@ -15,7 +15,7 @@ export function EditorialMobileSubscribeBar() {
       <motion.div {...buttonMotionProps(false)}>
         <Link
           href="/subscribe"
-          className="flex h-12 w-full items-center justify-center bg-coral text-base font-medium text-navy"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-coral text-base font-medium text-navy"
         >
           Subscribe now
         </Link>

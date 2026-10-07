@@ -4,17 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { Container } from "@/components/layout/container";
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import {
   buttonMotionProps,
   DURATION,
   EASE_IN_OUT,
   EASE_OUT,
-  motionEase,
 } from "@/lib/motion";
+import { getSocialFooterLinks } from "@/lib/footer-links";
+import { menuNavLinks } from "@/lib/site-nav-links";
+import { RollText } from "@/components/motion/roll-link";
 import { cn } from "@/lib/utils";
 
 export type MenuCharity = {
@@ -27,49 +30,41 @@ type MenuOverlayProps = {
   onClose: () => void;
   charities: MenuCharity[];
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
   menuControlId?: string;
 };
 
-const browseLinks = [
-  { href: "/#welcome", label: "Home", key: "home" },
-  { href: "/#how-it-works", label: "How it works", key: "how" },
-  { href: "/#how-you-win", label: "Prizes", key: "prizes" },
-  { href: "/#charities", label: "Charities", key: "charities" },
-  { href: "/#pricing", label: "Pricing", key: "pricing" },
-  { href: "mailto:hello@digitalheroes.example", label: "Contact", key: "contact" },
-] as const;
+type MenuLink = { href: string; label: string; key: string };
 
-const exploreLinks = [
-  { href: "/charities", label: "Featured charities" },
-  { href: "/#how-you-win", label: "Past draws" },
-  { href: "/dashboard/prizes", label: "Winners" },
-  { href: "/#how-it-works", label: "FAQ" },
-  { href: "#", label: "Terms and privacy" },
-] as const;
+function buildPrimaryMenuLinks(
+  isLoggedIn: boolean,
+  isAdmin: boolean,
+): MenuLink[] {
+  const browseLinks = menuNavLinks.map((link) => ({
+    href: link.href,
+    label: link.label,
+    key: link.href,
+  }));
+  const home =
+    browseLinks.find((link) => link.href === "/") ?? browseLinks[0];
+  const restBrowse = browseLinks.filter((link) => link.href !== "/");
 
-const followLinks = [
-  { href: "#", label: "LinkedIn" },
-  { href: "#", label: "Instagram" },
-  { href: "#", label: "YouTube" },
-  { href: "#", label: "Facebook" },
-] as const;
+  const links: MenuLink[] = [
+    home,
+    ...(isLoggedIn
+      ? [{ href: "/dashboard", label: "Dashboard", key: "dashboard" }]
+      : []),
+    { href: "/subscribe", label: "Subscribe", key: "subscribe" },
+    ...restBrowse,
+  ];
+  if (isAdmin) {
+    links.push({ href: "/admin", label: "Admin", key: "admin" });
+  }
+  return links;
+}
 
 const menuFocusRing =
   "outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy focus-visible:outline-offset-2";
-
-function useMdUp() {
-  const [mdUp, setMdUp] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
-    const update = () => setMdUp(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  return mdUp;
-}
 
 function MenuSectionLabel({ children }: { children: string }) {
   return (
@@ -79,21 +74,21 @@ function MenuSectionLabel({ children }: { children: string }) {
   );
 }
 
-function isBrowseLinkActive(
-  href: string,
-  pathname: string,
-  key: string,
-): boolean {
-  if (key === "home") {
-    return pathname === "/";
+function isBrowseLinkActive(href: string, pathname: string): boolean {
+  const path = href.split("#")[0] || href;
+  if (path === "/dashboard") {
+    return pathname.startsWith("/dashboard");
   }
-  if (href.startsWith("/#")) {
-    return pathname === "/";
+  if (path === "/admin") {
+    return pathname.startsWith("/admin");
   }
-  if (href.startsWith("/charities")) {
+  if (path === "/charities") {
     return pathname.startsWith("/charities");
   }
-  return pathname === href;
+  if (path === "/") {
+    return pathname === "/";
+  }
+  return pathname === path;
 }
 
 type BrowseRowProps = {
@@ -146,12 +141,9 @@ function BrowseRow({
         className={cn(
           menuFocusRing,
           "group flex w-full min-h-11 items-center gap-2 py-1.5 md:min-h-0 md:py-2",
-          "font-light text-navy active:text-coral-deep",
+          "font-light text-navy",
           "text-[clamp(26px,7.4vw,32px)] leading-[1.1] tracking-[-0.02em]",
           "md:text-[clamp(32px,3.4vw,64px)] md:leading-[1.05] md:tracking-[-0.03em]",
-          "motion-transition-colors motion-transition-transform",
-          !reduceMotion && "md:hover:translate-x-3 md:hover:text-coral-deep",
-          reduceMotion && "md:hover:text-coral-deep",
         )}
       >
         {active ? (
@@ -159,14 +151,11 @@ function BrowseRow({
         ) : (
           <span className="size-2 shrink-0" aria-hidden />
         )}
-        <span className="min-w-0 flex-1 overflow-hidden">
-          <span className="block">{label}</span>
+        <span className="min-w-0 flex-1">
+          <RollText text={label} />
         </span>
         <ArrowRight
-          className={cn(
-            "hidden size-5 shrink-0 text-navy opacity-0 transition-opacity md:block",
-            "group-hover:text-coral-deep group-hover:opacity-100",
-          )}
+          className="hidden size-5 shrink-0 text-navy opacity-0 transition-opacity md:block group-hover:opacity-100"
           aria-hidden
         />
       </Link>
@@ -279,22 +268,21 @@ function MenuOverlayTopBarDesktop({
 export function MenuOverlay({
   open,
   onClose,
-  charities: _charities,
+  charities,
   isLoggedIn = false,
+  isAdmin = false,
   menuControlId = "site-menu-close-button",
 }: MenuOverlayProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
-  const mdUp = useMdUp();
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const mounted = useClientMounted();
+  const portalRoot = mounted ? document.body : null;
+  const primaryLinks = buildPrimaryMenuLinks(isLoggedIn, isAdmin);
+  const socialLinks = getSocialFooterLinks();
 
   const onNavigate = useCallback(() => {
     onClose();
   }, [onClose]);
-
-  useEffect(() => {
-    setPortalRoot(document.body);
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -355,12 +343,6 @@ export function MenuOverlay({
     return () => document.removeEventListener("keydown", onTab);
   }, [open, menuControlId, portalRoot]);
 
-  const accountLinks = [
-    { href: "/login", label: "Login" },
-    ...(isLoggedIn ? [{ href: "/dashboard", label: "Dashboard" }] : []),
-    { href: "/subscribe", label: "Subscribe" },
-  ];
-
   if (!portalRoot) {
     return null;
   }
@@ -381,31 +363,70 @@ export function MenuOverlay({
           id="site-menu"
           role="dialog"
           aria-modal="true"
-          aria-label="Site menu"
-          className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-cream text-navy"
-          initial={
-            reduceMotion
-              ? { opacity: 0 }
-              : { clipPath: "inset(0 0 100% 0)" }
+          aria-label={
+            charities.length > 0
+              ? `Site menu — ${charities.length} featured charities`
+              : "Site menu"
           }
-          animate={
-            reduceMotion
-              ? { opacity: 1 }
-              : { clipPath: "inset(0 0 0% 0)" }
-          }
+          className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-transparent text-navy"
+          initial={reduceMotion ? { opacity: 0 } : false}
+          animate={reduceMotion ? { opacity: 1 } : undefined}
           exit={
             reduceMotion
               ? { opacity: 0, transition: { duration: DURATION.fast } }
-              : {
-                  clipPath: "inset(0 0 100% 0)",
-                  transition: { duration: 0.5, ease: EASE_IN_OUT },
-                }
+              : undefined
           }
-          transition={{
-            duration: reduceMotion ? DURATION.fast : 0.7,
-            ease: EASE_IN_OUT,
-          }}
         >
+          {!reduceMotion ? (
+            <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
+              {[2, 1, 3, 0, 4].map((col, orderIdx) => (
+                <motion.div
+                  key={col}
+                  className="h-full flex-1 bg-cream"
+                  initial={{ y: "-100%" }}
+                  animate={{ y: 0 }}
+                  exit={{
+                    y: "-100%",
+                    transition: {
+                      duration: 0.5,
+                      delay: (4 - orderIdx) * 0.06,
+                      ease: EASE_IN_OUT,
+                    },
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    delay: orderIdx * 0.06,
+                    ease: EASE_IN_OUT,
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-cream" aria-hidden />
+          )}
+          <motion.div
+            className="relative z-10 flex min-h-0 flex-1 flex-col bg-cream/0"
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={
+              reduceMotion
+                ? { opacity: 1, y: 0 }
+                : { opacity: 1, y: 0 }
+            }
+            exit={
+              reduceMotion
+                ? { opacity: 0, transition: { duration: DURATION.fast } }
+                : {
+                    opacity: 0,
+                    y: 12,
+                    transition: { duration: DURATION.fast, ease: EASE_OUT },
+                  }
+            }
+            transition={{
+              delay: reduceMotion ? 0 : 0.48,
+              duration: DURATION.base,
+              ease: EASE_OUT,
+            }}
+          >
           <MenuOverlayTopBarMobile
             onClose={onClose}
             closeButtonId={menuControlId}
@@ -431,12 +452,12 @@ export function MenuOverlay({
                 aria-hidden
               />
               <ul>
-                {browseLinks.map((link, index) => (
+                {primaryLinks.map((link, index) => (
                   <BrowseRow
                     key={link.key}
                     href={link.href}
                     label={link.label}
-                    active={isBrowseLinkActive(link.href, pathname, link.key)}
+                    active={isBrowseLinkActive(link.href, pathname)}
                     index={index}
                     reduceMotion={reduceMotion}
                     mdUp={false}
@@ -447,84 +468,30 @@ export function MenuOverlay({
               </ul>
             </section>
 
-            <section className="mt-10">
-              <MenuSectionLabel>Explore</MenuSectionLabel>
-              <div className="mt-2 border-t border-navy" aria-hidden />
-              <ul>
-                {exploreLinks.map((link, index) => (
-                  <motion.li
-                    key={link.label}
-                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-                    animate={
-                      reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
-                    }
-                    transition={{
-                      delay: 0.04 + index * 0.04,
-                      duration: 0.35,
-                      ease: motionEase,
-                    }}
-                  >
-                    <Link
-                      href={link.href}
-                      onClick={onNavigate}
-                      className={cn(
-                        menuFocusRing,
-                        "flex min-h-11 items-center py-1.5 font-light leading-[1.2] text-navy active:text-coral-deep",
-                        "text-[clamp(20px,5.6vw,24px)]",
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  </motion.li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="mt-10">
-              <div className="border-t border-navy" aria-hidden />
-              <div className="grid grid-cols-2 border-b border-navy">
-                <div className="py-2 pr-2">
-                  <MenuSectionLabel>Follow Us</MenuSectionLabel>
-                </div>
-                <div className="py-2 pl-2">
-                  <MenuSectionLabel>Account</MenuSectionLabel>
-                </div>
-              </div>
-              <div className="grid grid-cols-2">
-                <ul className="pr-2 pt-2">
-                  {followLinks.map((link) => (
-                    <li key={link.label}>
-                      <Link
-                        href={link.href}
-                        onClick={onNavigate}
-                        className={cn(
-                          menuFocusRing,
-                          "inline-flex min-h-11 items-center py-1 text-[15px] font-medium leading-[1.5] text-navy active:text-coral-deep",
-                        )}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <ul className="pl-2 pt-2">
-                  {accountLinks.map((link) => (
+            {socialLinks.length > 0 ? (
+              <section className="mt-10">
+                <MenuSectionLabel>Follow us</MenuSectionLabel>
+                <div className="mt-2 border-t border-navy" aria-hidden />
+                <ul className="mt-2">
+                  {socialLinks.map((link) => (
                     <li key={link.href}>
-                      <Link
+                      <a
                         href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={onNavigate}
                         className={cn(
                           menuFocusRing,
-                          "inline-flex min-h-11 items-center py-1 text-[15px] font-medium leading-[1.5] text-navy active:text-coral-deep",
+                          "group inline-flex min-h-11 items-center py-1 text-[15px] font-medium text-navy",
                         )}
                       >
-                        {link.label}
-                      </Link>
+                        <RollText text={link.label} />
+                      </a>
                     </li>
                   ))}
                 </ul>
-              </div>
-            </section>
+              </section>
+            ) : null}
           </div>
 
           {/* Desktop menu body (unchanged layout) */}
@@ -545,12 +512,12 @@ export function MenuOverlay({
                   aria-hidden
                 />
                 <ul>
-                  {browseLinks.map((link, index) => (
+                  {primaryLinks.map((link, index) => (
                     <BrowseRow
                       key={link.key}
                       href={link.href}
                       label={link.label}
-                      active={isBrowseLinkActive(link.href, pathname, link.key)}
+                      active={isBrowseLinkActive(link.href, pathname)}
                       index={index}
                       reduceMotion={reduceMotion}
                       mdUp={true}
@@ -561,91 +528,33 @@ export function MenuOverlay({
                 </ul>
               </div>
 
-              <div className="flex min-h-0 flex-col lg:col-span-4 lg:col-start-9">
-                <div className="min-h-0">
-                  <MenuSectionLabel>Explore</MenuSectionLabel>
+              {socialLinks.length > 0 ? (
+                <div className="flex min-h-0 flex-col lg:col-span-4 lg:col-start-9">
+                  <MenuSectionLabel>Follow us</MenuSectionLabel>
                   <div className="mt-2 border-t border-line" aria-hidden />
-                  <ul className="mt-2 space-y-2">
-                    {exploreLinks.map((link, index) => (
-                      <motion.li
-                        key={link.label}
-                        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-                        animate={
-                          reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
-                        }
-                        transition={{
-                          delay: 0.1 + index * 0.05,
-                          duration: 0.4,
-                          ease: motionEase,
-                        }}
-                        className="border-b border-line pb-3 last:border-b-0"
-                      >
-                        <Link
+                  <ul className="mt-2 space-y-1">
+                    {socialLinks.map((link) => (
+                      <li key={link.href}>
+                        <a
                           href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           onClick={onNavigate}
                           className={cn(
                             menuFocusRing,
-                            "font-light leading-[1.1] tracking-[-0.02em] text-navy",
-                            "text-[clamp(22px,2.2vw,40px)]",
-                            "hover:underline hover:decoration-coral-deep hover:underline-offset-[4px]",
+                            "group text-[16px] font-medium text-navy",
                           )}
                         >
-                          {link.label}
-                        </Link>
-                      </motion.li>
+                          <RollText text={link.label} />
+                        </a>
+                      </li>
                     ))}
                   </ul>
                 </div>
-
-                <div className="mt-auto shrink-0 pt-6">
-                  <div className="border-t border-line pt-5">
-                    <div className="grid gap-8 sm:grid-cols-2">
-                      <div>
-                        <MenuSectionLabel>Follow Us</MenuSectionLabel>
-                        <div className="mt-2 border-t border-line" aria-hidden />
-                        <ul className="mt-2 space-y-1">
-                          {followLinks.map((link) => (
-                            <li key={link.label}>
-                              <Link
-                                href={link.href}
-                                onClick={onNavigate}
-                                className={cn(
-                                  menuFocusRing,
-                                  "text-[16px] font-medium text-navy hover:text-coral-deep",
-                                )}
-                              >
-                                {link.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <MenuSectionLabel>Account</MenuSectionLabel>
-                        <div className="mt-2 border-t border-line" aria-hidden />
-                        <ul className="mt-2 space-y-1">
-                          {accountLinks.map((link) => (
-                            <li key={link.href}>
-                              <Link
-                                href={link.href}
-                                onClick={onNavigate}
-                                className={cn(
-                                  menuFocusRing,
-                                  "text-[16px] font-medium text-navy hover:text-coral-deep",
-                                )}
-                              >
-                                {link.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
+          </motion.div>
         </motion.div>
         </>
       ) : null}

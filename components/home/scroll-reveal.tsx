@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { Reveal } from "@/components/motion/reveal";
+import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 type ScrollRevealProps = {
@@ -11,8 +11,15 @@ type ScrollRevealProps = {
   stagger?: boolean;
 };
 
-/** @deprecated Use Reveal / RevealStagger from @/components/motion/reveal */
-export function ScrollReveal({ children, className }: ScrollRevealProps) {
+/** @deprecated Prefer Reveal / RevealStagger from @/components/motion/reveal */
+export function ScrollReveal({
+  children,
+  className,
+  stagger = false,
+}: ScrollRevealProps) {
+  if (stagger) {
+    return <RevealStagger className={className}>{children}</RevealStagger>;
+  }
   return <Reveal className={className}>{children}</Reveal>;
 }
 
@@ -21,6 +28,7 @@ type RevealItemProps = {
   className?: string;
 };
 
+/** @deprecated Prefer RevealStaggerItem */
 export function RevealItem({ children, className }: RevealItemProps) {
-  return <div className={cn(className)}>{children}</div>;
+  return <RevealStaggerItem className={cn(className)}>{children}</RevealStaggerItem>;
 }

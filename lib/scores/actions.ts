@@ -89,15 +89,11 @@ export async function saveScoreAction(
     return { ok: true, scores };
   }
 
-  const { data, error } = await supabase
-    .from("scores")
-    .insert({
-      user_id: user.id,
-      score,
-      played_on: playedOn,
-    })
-    .select("id, user_id, score, played_on, created_at")
-    .maybeSingle();
+  const { error } = await supabase.from("scores").insert({
+    user_id: user.id,
+    score,
+    played_on: playedOn,
+  });
 
   if (error) {
     if (error.code === "23505") {

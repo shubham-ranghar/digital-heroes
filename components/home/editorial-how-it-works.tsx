@@ -1,8 +1,7 @@
 "use client";
 
-import { SteppedEdge } from "@/components/editorial/stepped-edge";
-import { ParenLabel } from "@/components/editorial/paren-label";
-import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
+import { SectionHeadline } from "@/components/motion/section-headline";
+import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
 import {
   editorialBodyOnDark,
@@ -37,14 +36,18 @@ export function EditorialHowItWorks() {
       data-nav-theme="dark"
       className="bg-navy text-cream"
     >
-      <SteppedEdge position="top" color="var(--navy)" />
-      <Container className="py-16 sm:py-24">
-        <Reveal>
-          <ParenLabel className={editorialParenLabelOnDark}>How it works</ParenLabel>
-          <h2 className={cn(editorialDisplayMd, "mt-4 max-w-2xl text-cream")}>
-            Three steps to <em className="font-serif italic text-coral">play &amp; give</em>
-          </h2>
-        </Reveal>
+      <Container className="py-16 pb-36 sm:py-24 sm:pb-44">
+        <SectionHeadline
+          align="left"
+          label="How it works"
+          labelClassName={editorialParenLabelOnDark}
+          headlineClassName={cn(editorialDisplayMd, "text-cream")}
+          lines={[
+            <>
+              Three steps to <em className="text-coral">play &amp; give</em>
+            </>,
+          ]}
+        />
 
         <RevealStagger
           as="ol"
@@ -74,7 +77,6 @@ export function EditorialHowItWorks() {
           ))}
         </RevealStagger>
       </Container>
-      <SteppedEdge position="bottom" color="var(--cream)" />
     </section>
   );
 }

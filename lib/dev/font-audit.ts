@@ -1,4 +1,4 @@
-const ALLOWED_SUBSTRINGS = ["inter tight", "instrument serif"];
+const ALLOWED_SUBSTRINGS = ["bagoss standard", "austin"];
 
 export function isAllowedFontFamily(fontFamily: string): boolean {
   const normalized = fontFamily.toLowerCase();

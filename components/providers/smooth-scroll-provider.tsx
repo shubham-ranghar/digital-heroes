@@ -3,8 +3,13 @@
 import Lenis from "lenis";
 import { usePathname } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
 
+import {
+  getLenisSnapshot,
+  setLenisSnapshot,
+  subscribeLenis,
+} from "@/lib/lenis-store";
 import { SmoothScrollContext } from "@/lib/smooth-scroll-context";
 import { scrollToHash } from "@/lib/scroll-to-hash";
 
@@ -20,13 +25,17 @@ export function SmoothScrollProvider({
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
   const lenisRef = useRef<Lenis | null>(null);
-  const [lenis, setLenis] = useState<Lenis | null>(null);
+  const lenis = useSyncExternalStore(
+    subscribeLenis,
+    getLenisSnapshot,
+    () => null,
+  );
 
   useEffect(() => {
     if (reduceMotion) {
       lenisRef.current?.destroy();
       lenisRef.current = null;
-      setLenis(null);
+      setLenisSnapshot(null);
       return;
     }
 
@@ -38,7 +47,7 @@ export function SmoothScrollProvider({
     });
 
     lenisRef.current = instance;
-    setLenis(instance);
+    setLenisSnapshot(instance);
 
     let frame = 0;
     const raf = (time: number) => {
@@ -51,7 +60,7 @@ export function SmoothScrollProvider({
       cancelAnimationFrame(frame);
       instance.destroy();
       lenisRef.current = null;
-      setLenis(null);
+      setLenisSnapshot(null);
     };
   }, [reduceMotion]);
 
@@ -108,7 +117,9 @@ export function SmoothScrollProvider({
 
   return (
     <SmoothScrollContext.Provider value={value}>
-      {children}
+      <div className="flex min-h-full min-w-0 flex-1 flex-col overflow-x-clip">
+        {children}
+      </div>
     </SmoothScrollContext.Provider>
   );
 }

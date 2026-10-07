@@ -1,9 +1,8 @@
 "use client";
 
-import { SteppedEdge } from "@/components/editorial/stepped-edge";
-import { ParenLabel } from "@/components/editorial/paren-label";
-import { Reveal } from "@/components/motion/reveal";
+import { SectionHeadline } from "@/components/motion/section-headline";
 import { Container } from "@/components/layout/container";
+import { EditorialCard } from "@/components/ui/editorial-card";
 import { editorialDisplayMd } from "@/lib/typography-editorial";
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
@@ -22,45 +21,71 @@ export function EditorialHowYouWin() {
       data-nav-theme="light"
       className="bg-cream text-navy"
     >
-      <SteppedEdge position="top" color="var(--cream)" />
       <Container className="py-16 sm:py-24">
-        <Reveal>
-          <ParenLabel className="text-navy/70">Prizes</ParenLabel>
-          <h2 className={cn(editorialDisplayMd, "mt-4 text-navy")}>
-            How you <em className="font-serif italic text-navy">win</em>
-          </h2>
-        </Reveal>
-        <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-navy/80">
+        <SectionHeadline
+          label="Prizes"
+          labelClassName="text-navy/70"
+          headlineClassName={cn(editorialDisplayMd, "text-navy text-balance")}
+          lines={[
+            <>
+              How you <em>win</em>
+            </>,
+          ]}
+        />
+        <p className="mx-auto mt-4 max-w-[60ch] text-balance text-center text-[17px] leading-relaxed text-navy/80">
           Match numbers from your five-score entry. Prizes split equally among
           winners at the same tier.
         </p>
 
         <ul className="mt-12 grid gap-6 md:grid-cols-3">
           {tiers.map((tier) => (
-            <li
-              key={tier.matches}
-              className={cn(
-                "motion-card-hover border border-navy/10 bg-[color-mix(in_srgb,var(--cream)_92%,var(--navy)_8%)] p-6",
-                tier.jackpot && "border-coral/50 md:scale-[1.03]",
-              )}
-            >
-              <p className={cn("font-sans text-4xl font-light text-navy", tabularImpact)}>
-                {tier.matches}-match
-              </p>
-              <p className={cn("mt-2 text-3xl text-coral", tabularImpact)}>
-                {tier.pct}%
-              </p>
-              <p className="mt-2 text-[17px] text-navy/80">of tier pool</p>
-              {tier.jackpot ? (
-                <p className="mt-4 text-xs uppercase tracking-widest text-coral">
-                  Rolls over if unclaimed
+            <li key={tier.matches}>
+              <EditorialCard
+                notch="top"
+                borderClassName={tier.jackpot ? "bg-cream/30" : "bg-navy"}
+                className={cn(
+                  "motion-card-hover p-6",
+                  tier.jackpot
+                    ? "bg-navy text-cream"
+                    : "bg-cream text-navy",
+                )}
+              >
+                <p
+                  className={cn(
+                    "font-sans text-4xl font-light",
+                    tier.jackpot ? "text-cream" : "text-navy",
+                    tabularImpact,
+                  )}
+                >
+                  {tier.matches}-match
                 </p>
-              ) : null}
+                <p
+                  className={cn(
+                    "mt-2 font-serif italic text-coral",
+                    tier.jackpot ? "text-[3rem] leading-none" : "text-3xl",
+                    tabularImpact,
+                  )}
+                >
+                  {tier.pct}%
+                </p>
+                <p
+                  className={cn(
+                    "mt-2 text-[17px]",
+                    tier.jackpot ? "text-cream/80" : "text-navy/80",
+                  )}
+                >
+                  of tier pool
+                </p>
+                {tier.jackpot ? (
+                  <p className="mt-4 text-[13px] uppercase tracking-widest text-cream/80">
+                    Rolls over if unclaimed
+                  </p>
+                ) : null}
+              </EditorialCard>
             </li>
           ))}
         </ul>
       </Container>
-      <SteppedEdge position="bottom" color="var(--navy)" />
     </section>
   );
 }

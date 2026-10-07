@@ -26,9 +26,11 @@ export function HeroSection({ stats }: HeroSectionProps) {
   const photoY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : 48]);
   const glowY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : 24]);
 
-  const { formatted } = useCountUp(stats.totalRaisedDisplay, {
+  const raisedTotal = stats.totalRaisedDisplay ?? 0;
+  const showRaisedStat = stats.totalRaisedDisplay != null;
+  const { formatted } = useCountUp(raisedTotal, {
     decimals: 0,
-    enabled: !reduceMotion,
+    enabled: !reduceMotion && showRaisedStat,
   });
 
   const drawLabel = new Intl.DateTimeFormat("en-GB", {
@@ -80,14 +82,16 @@ export function HeroSection({ stats }: HeroSectionProps) {
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-baseline gap-2 border-t border-line pt-6">
-            <p className="text-sm text-slate">Raised for partner causes</p>
-            <p className={cn("font-sans text-3xl text-coral sm:text-4xl", tabularImpact)}>
-              {stats.currencySymbol}
-              {formatted}
-            </p>
-            <p className="text-xs text-muted-foreground">and growing with every member</p>
-          </div>
+          {showRaisedStat ? (
+            <div className="flex flex-wrap items-baseline gap-2 border-t border-line pt-6">
+              <p className="text-sm text-slate">Raised for partner causes</p>
+              <p className={cn("font-sans text-3xl text-coral sm:text-4xl", tabularImpact)}>
+                {stats.currencySymbol}
+                {formatted}
+              </p>
+              <p className="text-xs text-muted-on-dark">and growing with every member</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="relative z-10 min-h-[420px]">
@@ -150,7 +154,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
                   <p className={cn("font-sans text-sm text-cream", tabularImpact)}>
                     {stats.daysUntilDraw} days
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{drawLabel}</p>
+                  <p className="text-[11px] text-muted-on-dark">{drawLabel}</p>
                 </div>
               </div>
             </GlassCard>
@@ -169,7 +173,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
                   <p className={cn("font-sans text-sm text-coral", tabularImpact)}>
                     £{stats.jackpotRollover.toFixed(0)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-on-dark">
                     Unclaimed 5-match tier
                   </p>
                 </div>

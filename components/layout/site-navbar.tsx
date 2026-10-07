@@ -2,28 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 
 import { Container } from "@/components/layout/container";
 import { MenuOverlay, type MenuCharity } from "@/components/layout/menu-overlay";
 import { SiteLogo } from "@/components/layout/site-logo";
 import { useMenuOpen } from "@/components/providers/menu-open-context";
-import { useNavTheme } from "@/hooks/use-nav-theme";
 import { buttonMotionProps } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type SiteNavbarProps = {
   menuCharities: MenuCharity[];
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
 };
 
-export function SiteNavbar({ menuCharities, isLoggedIn = false }: SiteNavbarProps) {
+export function SiteNavbar({
+  menuCharities,
+  isLoggedIn = false,
+  isAdmin = false,
+}: SiteNavbarProps) {
   const pathname = usePathname();
   const { menuOpen, setMenuOpen } = useMenuOpen();
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const menuTheme = useNavTheme(menuButtonRef);
-
   const closeMenu = useCallback(() => setMenuOpen(false), [setMenuOpen]);
 
   useEffect(() => {
@@ -39,6 +40,20 @@ export function SiteNavbar({ menuCharities, isLoggedIn = false }: SiteNavbarProp
     return null;
   }
 
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
+
+  const accountHref = isLoggedIn ? "/dashboard" : "/login";
+  const accountLabel = isLoggedIn ? "Dashboard" : "Login";
+  const showAccountLink = !isLoggedIn && pathname !== "/login";
+  const showSubscribe = pathname !== "/signup";
+
+  const navAccountBtn =
+    "inline-flex h-11 min-h-11 items-center justify-center rounded-full border border-navy bg-cream px-3.5 text-sm font-medium text-navy hover:bg-sand sm:px-4";
+
   return (
     <>
       <header
@@ -50,21 +65,30 @@ export function SiteNavbar({ menuCharities, isLoggedIn = false }: SiteNavbarProp
         aria-hidden={menuOpen}
       >
         <Container
-          className="pointer-events-auto flex h-[72px] min-w-0 items-center gap-2 sm:gap-4"
+          className="pointer-events-auto flex h-[var(--header-height)] min-w-0 items-center gap-2 sm:gap-4"
         >
           <SiteLogo />
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
+            {showAccountLink ? (
+              <motion.div
+                className="hidden min-[400px]:block"
+                {...buttonMotionProps(false)}
+              >
+                <Link href={accountHref} className={navAccountBtn}>
+                  {accountLabel}
+                </Link>
+              </motion.div>
+            ) : null}
             <motion.button
-              ref={menuButtonRef}
               id="site-menu-button"
               type="button"
-              className={cn(
-                "inline-flex h-10 min-w-10 items-center justify-center rounded-none px-2.5 text-sm font-medium motion-transition-colors sm:px-3",
-                menuTheme === "dark"
-                  ? "bg-cream text-navy"
-                  : "bg-navy text-cream",
-              )}
+              className="box-border inline-flex h-11 min-h-11 shrink-0 appearance-none items-center justify-center border border-navy bg-cream px-3.5 text-sm font-medium leading-none text-navy shadow-none motion-transition-colors"
+              style={{
+                backgroundColor: "var(--cream)",
+                borderColor: "var(--navy)",
+                color: "var(--navy)",
+              }}
               onClick={() => setMenuOpen(true)}
               aria-expanded={menuOpen}
               aria-controls="site-menu"
@@ -72,14 +96,16 @@ export function SiteNavbar({ menuCharities, isLoggedIn = false }: SiteNavbarProp
             >
               Menu
             </motion.button>
-            <motion.div {...buttonMotionProps(false)}>
-              <Link
-                href="/subscribe"
-                className="inline-flex h-10 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep sm:px-5"
-              >
-                Subscribe
-              </Link>
-            </motion.div>
+            {showSubscribe ? (
+              <motion.div {...buttonMotionProps(false)}>
+                <Link
+                  href="/subscribe"
+                  className="inline-flex h-11 min-h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep sm:px-5"
+                >
+                  Subscribe
+                </Link>
+              </motion.div>
+            ) : null}
           </div>
         </Container>
       </header>
@@ -89,6 +115,7 @@ export function SiteNavbar({ menuCharities, isLoggedIn = false }: SiteNavbarProp
         onClose={closeMenu}
         charities={menuCharities}
         isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
         menuControlId="site-menu-close-button"
       />
     </>

@@ -15,7 +15,7 @@ export function FormError({
     <p
       role="alert"
       className={cn(
-        "rounded-xl border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-navy",
+        "rounded-xl border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger",
         className,
       )}
     >

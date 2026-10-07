@@ -26,10 +26,16 @@ const config: Config = {
         "status-active": "#1F7A8C",
         "status-pending": "#C98A00",
         "status-danger": "#C0392B",
+        "on-surface": "var(--on-surface)",
+        "muted-on-surface": "var(--muted-on-surface)",
+        "placeholder-on-surface": "var(--placeholder-on-surface)",
+        "on-dark": "var(--on-dark)",
+        "muted-on-dark": "var(--muted-on-dark)",
+        "input-on-surface": "var(--input-on-surface)",
       },
       fontFamily: {
-        sans: ["var(--font-inter-tight)", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["var(--font-instrument-serif)", "Georgia", "serif"],
+        sans: ["var(--font-bagoss-standard)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-austin)", "Georgia", "serif"],
       },
       borderRadius: {
         card: "20px",

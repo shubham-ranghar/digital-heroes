@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
+import { ScoresLoadError } from "@/components/scores/scores-load-error";
 import { ScoresPanel } from "@/components/scores/scores-panel";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { requireActiveSubscription } from "@/lib/subscription/access";
@@ -23,10 +24,6 @@ export default async function ScoresPage() {
     .order("played_on", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
   const scores = (data ?? []) as ScoreRow[];
 
   return (
@@ -37,7 +34,11 @@ export default async function ScoresPage() {
         description="One Stableford score per calendar date. We keep your latest five rounds — newest first."
         className="mb-10"
       />
-      <ScoresPanel initialScores={scores} />
+      {error ? (
+        <ScoresLoadError message={error.message} />
+      ) : (
+        <ScoresPanel initialScores={scores} />
+      )}
     </div>
   );
 }

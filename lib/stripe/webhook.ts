@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
 
 import { getStripe } from "@/lib/stripe/server";
+import { runWithWebhookIdempotency } from "@/lib/stripe/webhook-idempotency";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { invoiceSubscriptionId } from "@/lib/stripe/stripe-objects";
 import {
   markSubscriptionLapsedByStripeId,
@@ -28,7 +30,7 @@ async function resolveUserIdFromSession(
   return null;
 }
 
-export async function handleStripeEvent(event: Stripe.Event) {
+async function processStripeEvent(event: Stripe.Event) {
   const stripe = getStripe();
 
   switch (event.type) {
@@ -134,4 +136,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
     default:
       return;
   }
+}
+
+export async function handleStripeEvent(event: Stripe.Event) {
+  const admin = createAdminClient();
+  return runWithWebhookIdempotency(admin, event, () =>
+    processStripeEvent(event),
+  );
 }

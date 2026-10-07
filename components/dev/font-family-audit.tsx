@@ -40,7 +40,7 @@ export function FontFamilyAudit() {
       const label = `[font-audit] ${pathname}`;
 
       if (allUnexpected.length === 0) {
-        console.info(label, "OK — Inter Tight / Instrument Serif only", {
+        console.info(label, "OK — Bagoss Standard / Austin only", {
           stacks: [...new Set([...allowed, ...menuAudit.allowed])],
         });
       } else {

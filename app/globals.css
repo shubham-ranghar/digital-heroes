@@ -7,6 +7,13 @@
 
 /* —— Digital Heroes design tokens —— */
 :root {
+  --header-height: 72px;
+  --on-surface: var(--navy);
+  --muted-on-surface: var(--slate);
+  --placeholder-on-surface: color-mix(in srgb, var(--navy) 42%, var(--slate));
+  --on-dark: var(--cream);
+  --muted-on-dark: color-mix(in srgb, var(--cream) 65%, var(--slate));
+  --input-on-surface: color-mix(in srgb, var(--navy) 30%, var(--line));
   --gutter: clamp(20px, 6.2vw, 120px);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -92,11 +99,17 @@
   --color-status-active: var(--status-active);
   --color-status-pending: var(--status-pending);
   --color-status-danger: var(--status-danger);
+  --color-on-surface: var(--on-surface);
+  --color-muted-on-surface: var(--muted-on-surface);
+  --color-placeholder-on-surface: var(--placeholder-on-surface);
+  --color-on-dark: var(--on-dark);
+  --color-muted-on-dark: var(--muted-on-dark);
+  --color-input-on-surface: var(--input-on-surface);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-instrument-serif), Georgia, serif;
+  --font-sans: var(--font-bagoss-standard), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-austin), Georgia, serif;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -165,11 +178,19 @@
 
   html {
     @apply antialiased;
-    scroll-padding-top: 80px;
+    scroll-padding-top: var(--header-height);
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
     @apply bg-cream text-navy min-h-full flex flex-col;
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  main {
+    min-width: 0;
   }
 
   button,
@@ -223,6 +244,40 @@ body.site-menu-open [data-mobile-subscribe-bar] {
     transition-timing-function: var(--ease-out);
   }
 
+  .footer-stepped-surface {
+    --footer-step-x1: 28%;
+    --footer-step-x2: 72%;
+    --footer-step-x3: 100%;
+    --footer-step-x4: 0%;
+    --footer-step-y1: 45%;
+    --footer-step-y2: 45%;
+    clip-path: polygon(
+      var(--footer-step-x1) 0,
+      var(--footer-step-x2) 0,
+      var(--footer-step-x2) var(--footer-step-y1),
+      var(--footer-step-x3) var(--footer-step-y1),
+      var(--footer-step-x3) var(--footer-step-y2),
+      100% var(--footer-step-y2),
+      100% 100%,
+      0 100%,
+      0 var(--footer-step-y2),
+      var(--footer-step-x4) var(--footer-step-y2),
+      var(--footer-step-x4) var(--footer-step-y1),
+      var(--footer-step-x1) var(--footer-step-y1)
+    );
+  }
+
+  @media (min-width: 1024px) {
+    .footer-stepped-surface {
+      --footer-step-x1: 20%;
+      --footer-step-x2: 79%;
+      --footer-step-x3: 87%;
+      --footer-step-x4: 13%;
+      --footer-step-y1: 33%;
+      --footer-step-y2: 66%;
+    }
+  }
+
   .motion-transition-opacity {
     transition-property: opacity;
     transition-duration: var(--dur-fast);
@@ -259,6 +314,18 @@ body.site-menu-open [data-mobile-subscribe-bar] {
       opacity: 1;
     }
   }
+
+  .roll-text__track {
+    transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  .roll-text__track[style*="--roll-i"] {
+    transition-delay: calc(var(--roll-i, 0) * 20ms);
+  }
+
+  :is(.group, .roll-link):hover .roll-text__track {
+    transform: translateY(-50%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -268,6 +335,15 @@ body.site-menu-open [data-mobile-subscribe-bar] {
 
   .motion-crossfade {
     animation: none;
+  }
+
+  .roll-text__track {
+    transition: none;
+    transform: none;
+  }
+
+  :is(.group, .roll-link):hover .roll-text__track {
+    transform: none;
   }
 }
 
@@ -288,13 +364,64 @@ body.site-menu-open [data-mobile-subscribe-bar] {
 .section-navy {
   --background: var(--navy);
   --foreground: var(--cream);
-  --muted-foreground: color-mix(in srgb, var(--cream) 65%, var(--slate));
+  --muted-foreground: var(--muted-on-dark);
   --card: color-mix(in srgb, var(--navy) 92%, var(--cream) 8%);
   --card-foreground: var(--cream);
   --border: color-mix(in srgb, var(--cream) 18%, transparent);
   --input: color-mix(in srgb, var(--cream) 22%, transparent);
   background-color: var(--navy);
   color: var(--cream);
+}
+
+.section-navy h1,
+.section-navy h2,
+.section-navy h3,
+.section-navy h4,
+.section-navy h5,
+.section-navy h6 {
+  color: var(--foreground);
+}
+
+/* Light card / form surfaces (e.g. auth) — reset semantic tokens inside dark sections */
+.tone-surface {
+  --background: var(--cream);
+  --foreground: var(--navy);
+  --muted-foreground: var(--muted-on-surface);
+  --card: var(--cream);
+  --card-foreground: var(--navy);
+  --border: var(--line);
+  --input: var(--input-on-surface);
+  color: var(--navy);
+}
+
+.tone-surface label {
+  color: var(--navy);
+}
+
+.tone-surface [data-slot="input"] {
+  border-color: var(--input-on-surface);
+  background-color: var(--surface);
+  color: var(--navy);
+}
+
+.tone-surface [data-slot="input"]::placeholder {
+  color: var(--placeholder-on-surface);
+  opacity: 1;
+}
+
+.tone-surface [data-slot="input"]:disabled {
+  opacity: 0.55;
+}
+
+.auth-inline-link {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+
+.auth-inline-link:hover {
+  color: var(--coral-deep);
 }
 
 .shell-dashboard {

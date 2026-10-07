@@ -1,15 +1,12 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
 
-import { FeaturedCharitySkeleton } from "@/components/charity/featured-charity-skeleton";
 import { EditorialCharitySpotlight } from "@/components/home/editorial-charity-spotlight";
-import { EditorialFinalCta } from "@/components/home/editorial-final-cta";
 import { EditorialHero } from "@/components/home/editorial-hero";
-import { EditorialHowItWorks } from "@/components/home/editorial-how-it-works";
-import { EditorialHowYouWin } from "@/components/home/editorial-how-you-win";
+import {
+  HomepageCharitySlot,
+  HomepageCurtain,
+} from "@/components/home/homepage-curtain";
 import { EditorialMobileSubscribeBar } from "@/components/home/editorial-mobile-subscribe-bar";
-import { EditorialPricing } from "@/components/home/editorial-pricing";
-import { StatementSection } from "@/components/home/statement-section";
 import { getHomepageCharities } from "@/lib/home/charities";
 import { getHomeStats } from "@/lib/home/stats";
 import { createClient } from "@/lib/supabase/server";
@@ -28,11 +25,7 @@ async function CharitySpotlightLoader() {
 
   const supabase = await createClient();
   const data = await getHomepageCharities(supabase);
-  return (
-    <div className="motion-crossfade">
-      <EditorialCharitySpotlight data={data} />
-    </div>
-  );
+  return <EditorialCharitySpotlight data={data} />;
 }
 
 export default async function Home() {
@@ -42,14 +35,13 @@ export default async function Home() {
   return (
     <>
       <EditorialHero stats={stats} />
-      <StatementSection />
-      <EditorialHowItWorks />
-      <EditorialHowYouWin />
-      <Suspense fallback={<FeaturedCharitySkeleton />}>
-        <CharitySpotlightLoader />
-      </Suspense>
-      <EditorialPricing />
-      <EditorialFinalCta />
+      <HomepageCurtain
+        charitySlot={
+          <HomepageCharitySlot>
+            <CharitySpotlightLoader />
+          </HomepageCharitySlot>
+        }
+      />
       <EditorialMobileSubscribeBar />
       <div className="h-20 md:hidden" aria-hidden />
     </>

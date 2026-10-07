@@ -1,32 +1,27 @@
 "use client";
 
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
+import { useClientMounted } from "@/hooks/use-client-mounted";
 import { DURATION, EASE_OUT, revealTransition } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type RevealProps = {
   children: ReactNode;
   className?: string;
-  as?: "div" | "section" | "article" | "li";
 };
 
-export function Reveal({ children, className, as = "div" }: RevealProps) {
+export function Reveal({ children, className }: RevealProps) {
   const reduceMotion = useReducedMotion();
-  const ref = useRef<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
-  const [hydrated, setHydrated] = useState(false);
+  const hydrated = useClientMounted();
 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  const Component = motion[as];
   const shouldAnimate = hydrated && !reduceMotion && inView;
 
   return (
-    <Component
+    <motion.div
       ref={ref}
       className={cn(className)}
       initial={false}
@@ -39,14 +34,10 @@ export function Reveal({ children, className, as = "div" }: RevealProps) {
               ? { opacity: 0, y: 24 }
               : { opacity: 1, y: 0 }
       }
-      transition={
-        reduceMotion
-          ? { duration: 0.15 }
-          : revealTransition
-      }
+      transition={reduceMotion ? { duration: DURATION.fast } : revealTransition}
     >
       {children}
-    </Component>
+    </motion.div>
   );
 }
 
@@ -64,37 +55,34 @@ export function RevealStagger({
   as = "div",
 }: RevealStaggerProps) {
   const reduceMotion = useReducedMotion();
-  const ref = useRef<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const hydrated = useClientMounted();
 
   const Component = motion[as];
 
   return (
-    <Component
-      ref={ref}
-      className={cn(className)}
-      initial={false}
-      animate={
-        reduceMotion || !hydrated
-          ? "visible"
-          : inView
+    <div ref={ref}>
+      <Component
+        className={cn(className)}
+        initial={false}
+        animate={
+          reduceMotion || !hydrated
             ? "visible"
-            : "hidden"
-      }
-      variants={{
-        hidden: {},
-        visible: {
-          transition: { staggerChildren: stagger, delayChildren: 0 },
-        },
-      }}
-    >
-      {children}
-    </Component>
+            : inView
+              ? "visible"
+              : "hidden"
+        }
+        variants={{
+          hidden: {},
+          visible: {
+            transition: { staggerChildren: stagger, delayChildren: 0 },
+          },
+        }}
+      >
+        {children}
+      </Component>
+    </div>
   );
 }
 
@@ -102,33 +90,36 @@ type RevealStaggerItemProps = {
   children: ReactNode;
   className?: string;
   as?: "div" | "li";
+  offsetY?: number;
 };
 
 export function RevealStaggerItem({
   children,
   className,
   as = "div",
+  offsetY = 24,
 }: RevealStaggerItemProps) {
   const reduceMotion = useReducedMotion();
-
-  if (reduceMotion) {
-    const Tag = as;
-    return <Tag className={className}>{children}</Tag>;
-  }
-
   const MotionTag = motion[as];
 
   return (
     <MotionTag
       className={cn(className)}
-      variants={{
-        hidden: { opacity: 0, y: 24 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: DURATION.slow, ease: EASE_OUT },
-        },
-      }}
+      variants={
+        reduceMotion
+          ? {
+              hidden: { opacity: 1, y: 0 },
+              visible: { opacity: 1, y: 0 },
+            }
+          : {
+              hidden: { opacity: 0, y: offsetY },
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: DURATION.slow, ease: EASE_OUT },
+              },
+            }
+      }
     >
       {children}
     </MotionTag>

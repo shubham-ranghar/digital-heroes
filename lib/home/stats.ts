@@ -3,7 +3,7 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getMonthlySubscriptionFeeInr } from "@/lib/subscription/fees";
 
 export type HomeStats = {
-  totalRaisedDisplay: number;
+  totalRaisedDisplay: number | null;
   currencySymbol: string;
   nextDrawDate: string;
   daysUntilDraw: number;
@@ -22,20 +22,11 @@ function daysBetween(from: Date, to: Date): number {
   return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
 }
 
-function marketingFallbackTotal(): number {
-  const raw = process.env.NEXT_PUBLIC_MARKETING_TOTAL_RAISED;
-  const parsed = raw ? Number(raw) : NaN;
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return 48_500;
-}
-
 export async function getHomeStats(): Promise<HomeStats> {
   const now = new Date();
   let nextDraw = firstDayOfNextMonth(now);
   let jackpotRollover = 0;
-  let totalRaised = marketingFallbackTotal();
+  let totalRaised: number | null = null;
 
   if (hasSupabaseEnv() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
@@ -93,7 +84,7 @@ export async function getHomeStats(): Promise<HomeStats> {
         }
       }
     } catch {
-      totalRaised = marketingFallbackTotal();
+      totalRaised = null;
     }
   }
 

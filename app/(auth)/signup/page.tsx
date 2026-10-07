@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { AuthShell, AuthSwitchLink } from "@/components/auth/auth-shell";
 import { SignupForm } from "@/components/auth/signup-form";
 import { ConfigMissingState } from "@/components/ui/page-state";
+import { redirectIfAuthenticated } from "@/lib/auth/redirect-if-authenticated";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 
@@ -15,6 +16,7 @@ export const instant = false;
 
 export default async function SignupPage() {
   await connection();
+  await redirectIfAuthenticated();
 
   if (!hasSupabaseEnv()) {
     return (

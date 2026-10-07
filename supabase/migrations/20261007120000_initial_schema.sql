@@ -176,7 +176,7 @@ CREATE INDEX charity_events_charity_id_idx ON public.charity_events (charity_id)
 CREATE INDEX charity_events_event_date_idx ON public.charity_events (event_date);
 
 COMMENT ON TABLE public.charity_events IS
-  'Charity golf days and related events; publicly readable.';
+  'Charity events and related activities; publicly readable.';
 
 -- ---------------------------------------------------------------------------
 -- user_charity

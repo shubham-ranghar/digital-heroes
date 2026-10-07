@@ -9,7 +9,7 @@ import {
   getDashboardScores,
   getDashboardWinnings,
 } from "@/lib/dashboard/queries";
-import { requireUser, getSubscriptionAccess } from "@/lib/auth/session";
+import { getSubscriptionAccess, requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -33,14 +33,12 @@ export default async function DashboardPage({
     .eq("id", user.id)
     .maybeSingle();
 
-  const [charity, participation, winnings] = await Promise.all([
+  const [charity, participation, winnings, scores] = await Promise.all([
     getDashboardCharity(supabase, user.id),
     getDashboardParticipation(supabase, user.id),
     getDashboardWinnings(supabase, user.id),
+    getDashboardScores(supabase, user.id),
   ]);
-
-  const scores =
-    access.hasAccess ? await getDashboardScores(supabase, user.id) : [];
 
   const statusLabel = access.subscription?.status ?? "none";
 

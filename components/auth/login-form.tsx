@@ -1,18 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { FieldError, FormError } from "@/components/auth/form-message";
 import { signInAction } from "@/lib/auth/actions";
 import type { AuthActionResult } from "@/lib/auth/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FieldError, FormError } from "@/components/auth/form-message";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  const redirectTo =
+    searchParams.get("redirect") ??
+    searchParams.get("next") ??
+    "/dashboard";
   const callbackError = searchParams.get("error") === "auth_callback";
 
   const [result, setResult] = useState<AuthActionResult | null>(
@@ -28,7 +34,7 @@ export function LoginForm() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    formData.set("next", next);
+    formData.set("redirect", redirectTo);
 
     startTransition(async () => {
       const response = await signInAction(formData);
@@ -41,12 +47,10 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <FormError message={result?.message} />
+      <FormError message={result?.ok === false ? result.message : undefined} />
 
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium text-navy">
-          Email
-        </label>
+        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           name="email"
@@ -61,13 +65,18 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-navy">
-          Password
-        </label>
-        <Input
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Link
+            href="/forgot-password"
+            className="auth-inline-link text-xs font-medium"
+          >
+            Forgot password?
+          </Link>
+        </div>
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           aria-invalid={Boolean(result?.fieldErrors?.password)}
           disabled={isPending}
@@ -76,7 +85,7 @@ export function LoginForm() {
         <FieldError message={result?.fieldErrors?.password} />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" disabled={isPending}>
         {isPending ? "Signing in…" : "Sign in"}
       </Button>
     </form>

@@ -48,19 +48,24 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  render,
+  nativeButton,
   ...props
 }: ButtonProps) {
   const reduceMotion = useReducedMotion();
 
+  const defaultRender = (
+    <motion.button
+      whileHover={reduceMotion ? undefined : buttonInteraction.hover}
+      whileTap={reduceMotion ? undefined : buttonInteraction.tap}
+    />
+  );
+
   return (
     <ButtonPrimitive
       data-slot="button"
-      render={
-        <motion.button
-          whileHover={reduceMotion ? undefined : buttonInteraction.hover}
-          whileTap={reduceMotion ? undefined : buttonInteraction.tap}
-        />
-      }
+      nativeButton={nativeButton ?? (render != null ? false : undefined)}
+      render={render ?? defaultRender}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

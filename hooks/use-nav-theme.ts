@@ -13,6 +13,9 @@ function resolveThemeFromPoint(x: number, y: number): NavTheme {
     if (!(node instanceof HTMLElement)) {
       continue;
     }
+    if (window.getComputedStyle(node).pointerEvents === "none") {
+      continue;
+    }
     if (node.closest(NAV_BAR_SELECTOR)) {
       continue;
     }

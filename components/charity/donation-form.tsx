@@ -34,7 +34,7 @@ export function DonationForm({
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-xl border border-line bg-navy/30 px-4 py-5 text-sm text-slate">
+      <div className="rounded-xl border border-line bg-sand px-4 py-5 text-sm text-muted-on-surface">
         <p className="mb-3">
           Sign in to make a one-off donation to {charityName}. Gifts are
           separate from membership and prize draws.

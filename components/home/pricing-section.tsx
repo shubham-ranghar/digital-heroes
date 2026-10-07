@@ -70,7 +70,7 @@ export function PricingSection() {
                 {plan.price}
               </p>
               <p className="text-sm text-slate">{plan.cadence}</p>
-              <p className="mt-4 text-sm text-muted-foreground">
+              <p className="mt-4 text-sm text-muted-on-dark">
                 Charity share (min. {MIN_CHARITY_PERCENTAGE}%):{" "}
                 <span className="text-status-active">{plan.charity}</span>
               </p>

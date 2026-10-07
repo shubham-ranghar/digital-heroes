@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { SteppedEdge } from "@/components/editorial/stepped-edge";
-import { ParenLabel } from "@/components/editorial/paren-label";
-import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
+import { SectionHeadline } from "@/components/motion/section-headline";
+import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
 import { Button } from "@/components/ui/button";
+import { EditorialCard } from "@/components/ui/editorial-card";
 import type { HomepageCharities } from "@/lib/home/charities";
 import {
   editorialBodyOnDark,
@@ -15,6 +15,7 @@ import {
   editorialLinkOnDark,
   editorialParenLabelOnDark,
 } from "@/lib/typography-editorial";
+import { HERO_IMAGE_SRC } from "@/lib/home/hero-image";
 import { formatPlayedOnLabel } from "@/lib/scores/dates";
 import { cn } from "@/lib/utils";
 
@@ -36,40 +37,48 @@ function CharityCard({
   featured?: boolean;
 }) {
   return (
-    <article
+    <EditorialCard
+      notch="top"
+      borderClassName="bg-cream/25"
       className={cn(
-        "motion-card-hover flex h-full flex-col border border-cream/15 bg-surface/40",
+        "motion-card-hover flex h-full flex-col text-cream",
         featured ? "min-h-[320px]" : "",
       )}
     >
-      <div className="relative aspect-[16/10] w-full bg-navy/50 sm:aspect-auto sm:min-h-[180px] sm:flex-1">
-        {imageSrc ? (
-          <Image
-            src={imageSrc}
-            alt=""
-            fill
-            className="object-cover"
-            sizes={featured ? "(max-width: 1024px) 100vw, 50vw" : "240px"}
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full min-h-[140px] items-end p-4">
-            <p className="text-xs text-cream/70">Community photo placeholder</p>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="font-sans text-xl font-light tracking-tight text-cream">
-          {name}
-        </h3>
-        <p className={cn("mt-2 flex-1", editorialBodyOnDark)}>
-          {description ?? "Programmes funded by member subscriptions."}
-        </p>
-        <Link href={`/charities/${slug}`} className={cn("mt-4 text-[14px]", editorialLinkOnDark)}>
-          ( Visit )
-        </Link>
-      </div>
-    </article>
+      <article className="flex h-full flex-col bg-surface/40">
+        <div className="relative aspect-[16/10] w-full bg-navy/50 sm:aspect-auto sm:min-h-[180px] sm:flex-1">
+          {imageSrc ? (
+            <Image
+              src={imageSrc}
+              alt=""
+              fill
+              className="object-cover"
+              sizes={featured ? "(max-width: 1024px) 100vw, 50vw" : "240px"}
+              unoptimized
+            />
+          ) : (
+            <Image
+              src={HERO_IMAGE_SRC}
+              alt=""
+              fill
+              className="object-cover opacity-90"
+              sizes={featured ? "(max-width: 1024px) 100vw, 50vw" : "240px"}
+            />
+          )}
+        </div>
+        <div className="flex flex-1 flex-col p-6">
+          <h3 className="font-sans text-xl font-light tracking-tight text-cream">
+            {name}
+          </h3>
+          <p className={cn("mt-2 flex-1", editorialBodyOnDark)}>
+            {description ?? "Programmes funded by member subscriptions."}
+          </p>
+          <Link href={`/charities/${slug}`} className={cn("mt-4 text-[14px]", editorialLinkOnDark)}>
+            ( Visit )
+          </Link>
+        </div>
+      </article>
+    </EditorialCard>
   );
 }
 
@@ -105,14 +114,17 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
       data-nav-theme="dark"
       className="bg-navy text-cream"
     >
-      <SteppedEdge position="top" color="var(--navy)" />
       <Container className="py-16 sm:py-24">
-        <Reveal>
-          <ParenLabel className={editorialParenLabelOnDark}>Charities</ParenLabel>
-          <h2 className={cn(editorialDisplayMd, "mt-4 text-cream")}>
-            Causes members <em className="font-serif italic text-coral">fund</em>
-          </h2>
-        </Reveal>
+        <SectionHeadline
+          label="Charities"
+          labelClassName={editorialParenLabelOnDark}
+          headlineClassName={cn(editorialDisplayMd, "text-cream")}
+          lines={[
+            <>
+              Causes members <em className="text-coral">fund</em>
+            </>,
+          ]}
+        />
 
         {!hasCharities ? (
           <CharitiesEmptyState />
@@ -159,7 +171,7 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
                 ))}
               </div>
             </RevealStagger>
-            <p className="mt-10">
+            <p className="mt-10 text-center">
               <Link href="/charities" className={editorialLinkOnDark}>
                 Browse causes
               </Link>
@@ -167,7 +179,6 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
           </>
         )}
       </Container>
-      <SteppedEdge position="bottom" color="var(--cream)" />
     </section>
   );
 }

@@ -12,7 +12,6 @@ import {
 import { DashboardCharityCard } from "@/components/dashboard/dashboard-charity-card";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
-import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import { CheckoutButtons } from "@/components/subscription/checkout-buttons";
 import { ScoresPanel } from "@/components/scores/scores-panel";
 import { StatusPill } from "@/components/admin/status-pill";
@@ -49,13 +48,10 @@ function subscriptionStatusValue(
   if (hasAccess) {
     return "active";
   }
-  if (status === "cancelled") {
-    return "cancelled";
-  }
   if (status === "lapsed") {
     return "lapsed";
   }
-  return "pending";
+  return "inactive";
 }
 
 export function DashboardHome(props: DashboardHomeProps) {
@@ -89,15 +85,9 @@ export function DashboardHome(props: DashboardHomeProps) {
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           {props.hasAccess
             ? "Log scores, track draws, and grow your charity impact — all in one place."
-            : "Subscribe to unlock score tracking, monthly draws, and prize claims."}
+            : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."}
         </p>
       </motion.header>
-
-      {!props.hasAccess && !props.isAdmin ? (
-        <div className="mb-8">
-          <UpgradePrompt />
-        </div>
-      ) : null}
 
       <motion.div
         className="grid auto-rows-min gap-4 md:grid-cols-12"
@@ -119,7 +109,9 @@ export function DashboardHome(props: DashboardHomeProps) {
               <p className="text-sm text-muted-foreground">{props.email}</p>
               {props.renewalDate ? (
                 <p className={tabularImpact}>
-                  <span className="text-slate">Renews </span>
+                  <span className="text-slate">
+                    {props.hasAccess ? "Renews " : "Access until "}
+                  </span>
                   <span className="text-navy">
                     {new Intl.DateTimeFormat("en-IN", {
                       dateStyle: "medium",
@@ -134,8 +126,12 @@ export function DashboardHome(props: DashboardHomeProps) {
               {props.hasAccess ? (
                 <CheckoutButtons showPortal />
               ) : (
-                <Button size="sm" render={<Link href="/subscribe" />}>
-                  Choose a plan
+                <Button
+                  size="lg"
+                  className="w-full"
+                  render={<Link href="/subscribe" />}
+                >
+                  Subscribe now
                 </Button>
               )}
             </div>

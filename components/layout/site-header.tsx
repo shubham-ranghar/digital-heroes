@@ -23,6 +23,7 @@ export async function SiteHeader() {
   }
 
   let isLoggedIn = false;
+  let isAdmin = false;
   if (hasSupabaseEnv()) {
     try {
       const supabase = await createClient();
@@ -30,12 +31,25 @@ export async function SiteHeader() {
         data: { user },
       } = await supabase.auth.getUser();
       isLoggedIn = Boolean(user);
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        isAdmin = profile?.role === "admin";
+      }
     } catch {
       isLoggedIn = false;
+      isAdmin = false;
     }
   }
 
   return (
-    <SiteNavbar menuCharities={menuCharities} isLoggedIn={isLoggedIn} />
+    <SiteNavbar
+      menuCharities={menuCharities}
+      isLoggedIn={isLoggedIn}
+      isAdmin={isAdmin}
+    />
   );
 }

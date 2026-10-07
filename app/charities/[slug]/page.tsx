@@ -71,7 +71,7 @@ export default async function CharityDetailPage({
         </div>
 
         {query.donation === "success" ? (
-          <p className="mb-6 rounded-xl border border-status-active/40 bg-status-active/15 px-3 py-2 text-sm text-cream">
+          <p className="mb-6 rounded-xl border border-status-active/40 bg-status-active/15 px-3 py-2 text-sm text-navy">
             Thank you — your one-off donation is processing. You&apos;ll receive
             a receipt from Stripe.
           </p>
@@ -117,7 +117,7 @@ export default async function CharityDetailPage({
 
             <section>
               <h2 className="font-sans text-xl font-semibold text-navy">
-                Upcoming golf days
+                Upcoming events
               </h2>
               {events.length === 0 ? (
                 <p className="mt-3 text-sm text-slate">

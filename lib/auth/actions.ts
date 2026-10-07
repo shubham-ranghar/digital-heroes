@@ -51,7 +51,7 @@ export async function signInAction(
     };
   }
 
-  const nextPath = formData.get("next");
+  const nextPath = formData.get("redirect") ?? formData.get("next");
   const destination =
     typeof nextPath === "string" && nextPath.startsWith("/")
       ? nextPath

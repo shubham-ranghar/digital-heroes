@@ -43,6 +43,10 @@ function resolveStatus(raw: string): { label: string; tone: StatusTone } {
     return { label: "Rejected", tone: "danger" };
   }
 
+  if (key === "inactive") {
+    return { label: "Inactive", tone: "neutral" };
+  }
+
   const label = key.charAt(0).toUpperCase() + key.slice(1);
   return { label, tone: "neutral" };
 }

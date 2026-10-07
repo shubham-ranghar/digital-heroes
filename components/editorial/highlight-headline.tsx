@@ -11,7 +11,7 @@ type HighlightHeadlineProps = {
   children: ReactNode;
 };
 
-/** Wrap apricot + Instrument Serif italic segments in children with <em>. */
+/** Wrap apricot + Austin italic segments in children with <em>. */
 export function HighlightHeadline({
   className,
   tone = "dark",

@@ -83,10 +83,10 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
     <section
       ref={sectionRef}
       id="welcome"
-      className="relative isolate min-h-0 overflow-x-hidden bg-navy md:min-h-[100svh]"
+      className="relative isolate min-h-0 overflow-hidden bg-navy md:min-h-[100svh]"
     >
       <motion.div
-        className="relative z-0 aspect-[4/3] w-full shrink-0 md:absolute md:inset-y-0 md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
+        className="relative z-0 aspect-[4/3] w-full shrink-0 md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
         data-nav-theme="dark"
         initial={reduceMotion ? false : { opacity: 0, scale: 1.06 }}
         animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
@@ -172,8 +172,8 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
       <SteppedEdge
         position="bottom"
         color="var(--navy)"
-        className="relative z-[2]"
-        playOnMount
+        className="relative z-[3]"
+        static
       />
     </section>
   );
@@ -234,6 +234,25 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
 }
 
 function HeroStats({
+  currencySymbol,
+  totalRaisedDisplay,
+}: {
+  currencySymbol: string;
+  totalRaisedDisplay: number | null;
+}) {
+  if (totalRaisedDisplay == null) {
+    return null;
+  }
+
+  return (
+    <HeroStatsCountUp
+      currencySymbol={currencySymbol}
+      totalRaisedDisplay={totalRaisedDisplay}
+    />
+  );
+}
+
+function HeroStatsCountUp({
   currencySymbol,
   totalRaisedDisplay,
 }: {

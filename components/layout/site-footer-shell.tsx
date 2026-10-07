@@ -1,13 +1,27 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
-import { SiteFooter } from "@/components/layout/site-footer";
+type SiteFooterShellProps = {
+  children: ReactNode;
+};
 
-export function SiteFooterShell() {
+const AUTH_PATHS = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+]);
+
+export function SiteFooterShell({ children }: SiteFooterShellProps) {
   const pathname = usePathname();
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    AUTH_PATHS.has(pathname)
+  ) {
     return null;
   }
-  return <SiteFooter />;
+  return children;
 }

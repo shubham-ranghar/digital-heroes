@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useRef, type ReactNode } from "react";
 
 import { DURATION, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,6 @@ type LineRevealProps = {
   lines: ReactNode[];
   className?: string;
   lineClassName?: string;
-  /** When true, plays on mount (hero) instead of in-view. */
   playOnMount?: boolean;
   delay?: number;
 };
@@ -23,10 +22,13 @@ export function LineReveal({
   delay = 0,
 }: LineRevealProps) {
   const reduceMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const shouldPlay = playOnMount || inView;
 
   if (reduceMotion) {
     return (
-      <div className={cn(className, "contents")}>
+      <div ref={ref} className={cn(className)}>
         {lines.map((line, index) => (
           <div key={index} className={lineClassName}>{line}</div>
         ))}
@@ -35,15 +37,15 @@ export function LineReveal({
   }
 
   return (
-    <div className={cn(className, "contents")}>
+    <div ref={ref} className={cn(className)}>
       {lines.map((line, index) => (
         <span key={index} className="block overflow-hidden">
           <motion.span
             className={cn("block", lineClassName)}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
+            initial={{ y: "110%" }}
+            animate={shouldPlay ? { y: 0 } : { y: "110%" }}
             transition={{
-              duration: DURATION.base,
+              duration: DURATION.slow,
               ease: EASE_OUT,
               delay: delay + index * 0.08,
             }}

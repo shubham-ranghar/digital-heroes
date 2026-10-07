@@ -1,13 +1,17 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
+import {
+  STEPPED_EDGE_COLUMNS_FIVE,
+  STEPPED_EDGE_COLUMNS_THREE,
+  STEPPED_EDGE_ORDER_FIVE,
+  STEPPED_EDGE_ORDER_THREE,
+  columnRevealProgress,
+} from "@/lib/stepped-edge-config";
 import { DURATION, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-
-const COLUMN_STEPS = [1, 2, 3, 2, 1] as const;
-const COLS = COLUMN_STEPS.length;
-const MAX_STEPS = 3;
 
 export type SteppedEdgePosition = "top" | "bottom";
 
@@ -15,95 +19,158 @@ type SteppedEdgeProps = {
   position: SteppedEdgePosition;
   color?: string;
   className?: string;
-  /** Play step stagger on mount (hero) instead of in-view. */
+  scrollTargetRef?: RefObject<HTMLElement | null>;
   playOnMount?: boolean;
+  static?: boolean;
+  variant?: "five" | "three";
 };
 
-function buildZigguratPath(position: SteppedEdgePosition): string {
-  const colW = 100 / COLS;
-  const points: string[] = [];
-
-  if (position === "top") {
-    points.push(`0,${MAX_STEPS}`);
-    let x = 0;
-    for (let i = 0; i < COLS; i++) {
-      const yTop = MAX_STEPS - COLUMN_STEPS[i];
-      points.push(`${x},${yTop}`, `${x + colW},${yTop}`);
-      x += colW;
-    }
-    points.push(`100,${MAX_STEPS}`);
-  } else {
-    points.push("0,0", "100,0", `100,${MAX_STEPS}`);
-    let x = 100;
-    for (let i = COLS - 1; i >= 0; i--) {
-      const yBottom = COLUMN_STEPS[i];
-      points.push(`${x},${yBottom}`, `${x - colW},${yBottom}`);
-      x -= colW;
-    }
-    points.push("0,0");
-  }
-
-  return `M ${points.join(" L ")} Z`;
+function useMdUp() {
+  const [mdUp, setMdUp] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setMdUp(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mdUp;
 }
 
 export function SteppedEdge({
   position,
   color = "var(--navy)",
   className,
+  scrollTargetRef,
   playOnMount = false,
+  static: staticVisible = false,
+  variant = "five",
 }: SteppedEdgeProps) {
   const reduceMotion = useReducedMotion();
-  const path = buildZigguratPath(position);
-  const colW = 100 / COLS;
+  const mdUp = useMdUp();
+  const fallbackRef = useRef<HTMLDivElement>(null);
+  const targetRef = scrollTargetRef ?? fallbackRef;
+
+  const { scrollYProgress } = useScroll({
+    target: targetRef,
+    offset: ["start end", "start 55%"],
+  });
+
+  const columns =
+    variant === "three" ? STEPPED_EDGE_COLUMNS_THREE : STEPPED_EDGE_COLUMNS_FIVE;
+  const order =
+    variant === "three" ? STEPPED_EDGE_ORDER_THREE : STEPPED_EDGE_ORDER_FIVE;
+
+  const stepPx = mdUp ? 32 : 16;
+  const maxUnits = Math.max(...columns);
+  const bandHeight = maxUnits * stepPx;
+  const showStatic = staticVisible || reduceMotion;
+  const alignEnd = position === "top";
+  const navTheme =
+    color.includes("cream") || color === "var(--cream)" ? "light" : "dark";
 
   return (
     <div
+      ref={fallbackRef}
+      data-nav-theme={navTheme}
       className={cn(
-        "relative w-full overflow-hidden",
-        "h-[48px] md:h-[96px]",
+        "pointer-events-none relative w-full overflow-hidden",
+        position === "top" ? "-mb-px" : "-mt-px",
         className,
       )}
+      style={{ height: bandHeight, backgroundColor: color }}
       aria-hidden
     >
-      <svg
-        viewBox={`0 0 100 ${MAX_STEPS}`}
-        preserveAspectRatio="none"
-        className="h-full w-full"
-        shapeRendering="crispEdges"
-      >
-        {reduceMotion ? (
-          <path d={path} fill={color} />
-        ) : (
-          COLUMN_STEPS.map((steps, index) => {
-            const x = index * colW;
-            const height = steps;
-            const finalY =
-              position === "top" ? MAX_STEPS - height : 0;
-            const initialY = position === "top" ? MAX_STEPS : -height;
-
-            const stepTransition = {
-              duration: DURATION.base,
-              delay: index * 0.06,
-              ease: EASE_OUT,
-            };
-
-            return (
-              <motion.rect
-                key={index}
-                x={x}
-                width={colW}
-                height={height}
-                fill={color}
-                initial={{ y: initialY }}
-                animate={playOnMount ? { y: finalY } : undefined}
-                whileInView={playOnMount ? undefined : { y: finalY }}
-                viewport={playOnMount ? undefined : { once: true, margin: "-40px" }}
-                transition={stepTransition}
-              />
-            );
-          })
+      <div
+        className={cn(
+          "absolute inset-0 flex",
+          alignEnd ? "items-end" : "items-start",
         )}
-      </svg>
+      >
+        {columns.map((units, colIndex) => {
+          const colHeight = units * stepPx;
+          const orderIndex = Math.max(
+            0,
+            (order as readonly number[]).indexOf(colIndex),
+          );
+
+          return (
+            <div
+              key={colIndex}
+              className="flex min-w-0 flex-1 flex-col justify-end"
+            >
+              <SteppedEdgeColumn
+                color={color}
+                heightPx={colHeight}
+                orderIndex={orderIndex}
+                scrollYProgress={scrollYProgress}
+                playOnMount={playOnMount}
+                staticVisible={Boolean(showStatic)}
+                columnCount={columns.length}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+function SteppedEdgeColumn({
+  color,
+  heightPx,
+  orderIndex,
+  scrollYProgress,
+  playOnMount,
+  staticVisible,
+  columnCount,
+}: {
+  color: string;
+  heightPx: number;
+  orderIndex: number;
+  scrollYProgress: ReturnType<typeof useScroll>["scrollYProgress"];
+  playOnMount: boolean;
+  staticVisible: boolean;
+  columnCount: number;
+}) {
+  const scrubY = useTransform(scrollYProgress, (p) => {
+    const progress = columnRevealProgress(p, orderIndex, 0.12, columnCount);
+    return `${(1 - progress) * 100}%`;
+  });
+
+  if (staticVisible) {
+    return (
+      <div
+        className="w-full shrink-0"
+        style={{ height: heightPx, backgroundColor: color }}
+      />
+    );
+  }
+
+  if (playOnMount) {
+    return (
+      <motion.div
+        className="w-full shrink-0 will-change-transform"
+        style={{ height: heightPx, backgroundColor: color }}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{
+          duration: DURATION.base,
+          delay: orderIndex * 0.06,
+          ease: EASE_OUT,
+        }}
+      />
+    );
+  }
+
+  return (
+    <motion.div
+      className="w-full shrink-0 will-change-transform"
+      style={{
+        height: heightPx,
+        backgroundColor: color,
+        y: scrubY,
+      }}
+    />
   );
 }

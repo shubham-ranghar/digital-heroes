@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, Target, Trophy } from "lucide-react";
+import { LayoutDashboard, Settings, Target, Trophy } from "lucide-react";
 
 export type DashboardNavItem = {
   href: string;
@@ -26,5 +26,11 @@ export const dashboardNavItems: DashboardNavItem[] = [
     label: "Prize claims",
     shortLabel: "Prizes",
     icon: Trophy,
+  },
+  {
+    href: "/dashboard/settings",
+    label: "Settings",
+    shortLabel: "Settings",
+    icon: Settings,
   },
 ];

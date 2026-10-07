@@ -45,7 +45,12 @@ cp .env.example .env.local
 | `DRAW_PRIZE_POOL_PERCENTAGE` | Draws | % of fees into pool (default `100`) |
 | `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` | UI | Display-only monthly fee for charity ₹ slider (default `499`) |
 | `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR_YEARLY` | UI | Optional yearly display fee |
-| `NEXT_PUBLIC_MARKETING_TOTAL_RAISED` | Homepage | Fallback hero total if service role unavailable |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Footer | Public contact email (optional; also used for Support → Contact mailto) |
+| `NEXT_PUBLIC_CONTACT_ADDRESS` | Footer | Pipe-separated address lines for stepped footer block (optional) |
+| `NEXT_PUBLIC_SOCIAL_LINKEDIN_URL` | Footer | LinkedIn profile URL (optional; hidden if unset) |
+| `NEXT_PUBLIC_SOCIAL_FACEBOOK_URL` | Footer | Facebook page URL (optional) |
+| `NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL` | Footer | Instagram profile URL (optional) |
+| `NEXT_PUBLIC_SOCIAL_YOUTUBE_URL` | Footer | YouTube channel URL (optional) |
 
 ### 3. Database
 
@@ -132,9 +137,44 @@ There are **no built-in default users**. Create accounts through the app:
 | Draw entries | `lib/draw/sync-entry.ts` | Synced on score save + before admin simulate/publish |
 | Charity contribution | `lib/charity/contribution.ts` | Min 10%; dashboard slider + signup |
 | Winner verification / payout | `lib/winners/*`, `/dashboard/prizes`, `/admin/winners` | Private storage bucket; approve/reject/paid |
-| Member dashboard | `app/dashboard/*` | Bento layout, scores, charity, draws, winnings |
+| Member dashboard | `app/dashboard/*` | Overview (login-only), settings, scores (sub-gated), prizes |
 | Admin panel | `app/admin/*` | Users, draws, charities, winners, reports |
 | Responsive UI | Tailwind breakpoints, mobile subscribe bar | Dashboard bottom nav; admin horizontal tabs |
+
+---
+
+## Access control
+
+Server-side subscription checks use `requireActiveSubscription()` from `lib/subscription/access.ts` (admins bypass). Lapsed or never-subscribed members can still open `/dashboard` and `/dashboard/settings`; they are redirected to `/subscribe` only when hitting subscription-gated routes.
+
+| Route / action | Auth | Active subscription |
+|----------------|------|---------------------|
+| `/dashboard` (overview) | Required | **Not** required — shows inactive state + subscribe CTA |
+| `/dashboard/settings` | Required | **Not** required — profile, charity %, billing portal |
+| `/dashboard/scores` | Required | Required (`app/dashboard/(member)/layout.tsx`) |
+| `/dashboard/prizes` | Required | **Not** required — winners may upload proof after lapse |
+| `/subscribe`, Stripe checkout / portal (`lib/stripe/actions.ts`) | Required | Not required (subscribe flow) |
+| One-off donations (`lib/stripe/donation-actions.ts`) | Required | Not required |
+| Score mutations + draw entry sync (`lib/scores/actions.ts`) | Required | Required |
+| Charity % updates (`lib/charity/actions.ts`, `lib/profile/actions.ts`) | Required | **Not** required (settings / overview display) |
+| `/admin/*` | Admin role | N/A (admins bypass subscription) |
+| Marketing, `/charities`, login, signup | Public / auth as listed | N/A |
+
+Middleware (`lib/supabase/middleware.ts`) enforces login for `/dashboard`, `/subscribe`, and `/admin`, and blocks non-admins from `/admin`.
+
+---
+
+## Prize pool calculation
+
+Monthly draw prize pools are **not** read from Stripe prices in code. They are computed as:
+
+`totalPool = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER × (DRAW_PRIZE_POOL_PERCENTAGE / 100)`
+
+Defaults in `.env.example`: **`DRAW_FEE_PER_SUBSCRIBER=10`**, **`DRAW_PRIZE_POOL_PERCENTAGE=100`** (see `lib/draw/db.ts` → `getDrawFeeConfig()` and `lib/draw/pools.ts`).
+
+That total is split across tiers **40% / 35% / 25%** for 5-, 4-, and 3-match winners (`lib/draw/constants.ts`). Each tier pool is divided equally among winners in that tier. If there are **no 5-match winners**, the entire 5-match tier pool rolls into **`jackpot_carryover`** on the next month’s draw (`splitPrizes()` in `lib/draw/pools.ts`).
+
+Align **Stripe charge currency** with how you display fees and prizes (README assumption: draws often use **GBP (£)**; marketing charity sliders may use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR`).
 
 ---
 
@@ -144,7 +184,7 @@ There are **no built-in default users**. Create accounts through the app:
 2. **Draw entries** require a **draft/simulated draw row** for the current month; admins create it under **Admin → Draws**. Members sync entries when they save scores (if a draw exists).
 3. **Active subscription** is determined server-side from `subscriptions` (+ cancelled-until-renewal-date). Stripe webhook must run for checkout to grant access.
 4. **Admin user list / reports** need `SUPABASE_SERVICE_ROLE_KEY`. Winner verification works with admin session + RLS alone.
-5. **Homepage “total raised”** uses donations + estimated subscription commitments when service role is set; otherwise `NEXT_PUBLIC_MARKETING_TOTAL_RAISED`.
+5. **Homepage “total raised”** uses donations + estimated subscription commitments when `SUPABASE_SERVICE_ROLE_KEY` is set; otherwise the hero stat is hidden (no fabricated number).
 6. **No automated emails** for draw results or winner status (in-app only).
 7. **Charity images** are URL strings in JSON (`charities.images`), not Supabase Storage uploads in admin.
 8. **Draw participation counts** depend on `draw_entries` rows; empty until members log scores and a draw exists.

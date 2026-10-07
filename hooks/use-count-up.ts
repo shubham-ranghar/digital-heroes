@@ -29,18 +29,12 @@ export function useCountUp(
   }: UseCountUpOptions = {},
 ) {
   const reduceMotion = useReducedMotion();
-  const [value, setValue] = useState(reduceMotion ? end : 0);
+  const [animated, setAnimated] = useState(0);
   const frameRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!enabled) {
-      setValue(0);
-      return;
-    }
-
-    if (reduceMotion) {
-      setValue(end);
+    if (!enabled || reduceMotion) {
       return;
     }
 
@@ -53,7 +47,7 @@ export function useCountUp(
       const elapsed = timestamp - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
       const eased = easeOutCubic(progress);
-      setValue(end * eased);
+      setAnimated(end * eased);
 
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(step);
@@ -69,6 +63,7 @@ export function useCountUp(
     };
   }, [end, duration, enabled, reduceMotion]);
 
+  const value = !enabled ? 0 : reduceMotion ? end : animated;
   const formatted = value.toFixed(decimals);
   return { value, formatted };
 }

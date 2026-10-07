@@ -7,6 +7,8 @@ import { signUpAction } from "@/lib/auth/actions";
 import type { AuthActionResult } from "@/lib/auth/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Select,
   SelectContent,
@@ -62,9 +64,7 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
       />
 
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium text-navy">
-          Email
-        </label>
+        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           name="email"
@@ -79,13 +79,10 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-navy">
-          Password
-        </label>
-        <Input
+        <Label htmlFor="password">Password</Label>
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           placeholder="At least 8 characters"
           aria-invalid={Boolean(result?.fieldErrors?.password)}
@@ -96,9 +93,7 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="charityId" className="text-sm font-medium text-navy">
-          Your charity
-        </label>
+        <Label htmlFor="charityId">Your charity</Label>
         <Select
           value={charityId}
           onValueChange={(value) => {
@@ -108,7 +103,7 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
           }}
           disabled={isPending}
         >
-          <SelectTrigger id="charityId" className="w-full">
+          <SelectTrigger id="charityId" className="h-12 w-full">
             <SelectValue placeholder="Choose a cause" />
           </SelectTrigger>
           <SelectContent>
@@ -125,10 +120,8 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <label htmlFor="percentage" className="text-sm font-medium text-navy">
-            Subscription share to charity
-          </label>
-          <span className="font-sans text-lg tabular-impact text-coral">
+          <Label htmlFor="percentage">Subscription share to charity</Label>
+          <span className="font-sans text-lg tabular-impact text-coral-deep">
             {percentage}%
           </span>
         </div>
@@ -145,14 +138,14 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
           disabled={isPending}
           aria-label="Charity contribution percentage"
         />
-        <p className="text-xs text-slate">
+        <p className="text-xs text-muted-on-surface">
           Minimum 10% of your subscription fee. You can increase anytime in your
           dashboard.
         </p>
         <FieldError message={result?.fieldErrors?.percentage} />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" disabled={isPending}>
         {isPending ? "Creating account…" : "Create account"}
       </Button>
     </form>

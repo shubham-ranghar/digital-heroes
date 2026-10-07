@@ -51,6 +51,7 @@ export async function updateCharityPercentageAction(
   }
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/settings");
   return {
     ok: true,
     message: "Charity share updated.",

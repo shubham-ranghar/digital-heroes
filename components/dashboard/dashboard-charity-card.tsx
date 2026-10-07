@@ -91,7 +91,11 @@ export function DashboardCharityCard({
 
         {!hasAccess ? (
           <p className="text-sm text-muted-foreground">
-            Subscribe to see your live contribution from each billing cycle.
+            Update your cause and share in{" "}
+            <Link href="/dashboard/settings" className="text-coral underline">
+              settings
+            </Link>
+            . Live billing amounts appear when your membership is active.
           </p>
         ) : null}
 
@@ -111,7 +115,7 @@ export function DashboardCharityCard({
               const next = Array.isArray(value) ? value[0] : value;
               setPercentage(next ?? 10);
             }}
-            disabled={isPending}
+            disabled={isPending || !hasAccess}
             aria-label="Charity contribution percentage"
           />
           <p className={tabularImpact}>
@@ -126,14 +130,25 @@ export function DashboardCharityCard({
           </p>
         </div>
 
-        <Button
-          type="button"
-          size="sm"
-          disabled={isPending || percentage === savedPercentage}
-          onClick={handleSave}
-        >
-          {isPending ? "Saving…" : "Save share"}
-        </Button>
+        {hasAccess ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={isPending || percentage === savedPercentage}
+            onClick={handleSave}
+          >
+            {isPending ? "Saving…" : "Save share"}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            render={<Link href="/dashboard/settings" />}
+          >
+            Edit in settings
+          </Button>
+        )}
       </div>
     </BentoCard>
   );
