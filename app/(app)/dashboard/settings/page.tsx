@@ -61,7 +61,7 @@ export default async function DashboardSettingsPage() {
         charityId={charity?.charityId ?? null}
         charityPercentage={charity?.percentage ?? 10}
         charities={charities ?? []}
-        hasBillingSubscription={Boolean(subscription?.stripe_subscription_id)}
+        hasBillingSubscription={Boolean(subscription?.external_subscription_id)}
         cancelAtPeriodEnd={subscription?.cancel_at_period_end ?? false}
         subscriptionStatus={subscription?.status ?? null}
         renewalDate={subscription?.renewal_date ?? null}

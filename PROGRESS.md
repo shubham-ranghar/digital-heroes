@@ -13,19 +13,19 @@
 | **A.** Subscription & payment | **70%** | Partial | Subscription not enforced in DB (RLS); not checked on every authenticated request |
 | **B.** Score management | **100%** | Done | Trigger not covered by automated tests (Vitest covers app-side retention only) |
 | **C.** Draw & reward | **90%** | Partial | No auto-create next month’s draft; E2E simulate → publish not run on live Supabase |
-| **D.** Prize pool | **75%** | Partial | Pool uses `DRAW_FEE_PER_SUBSCRIBER` (default 10), not Stripe revenue; charity % not reserved |
-| **E.** Charity | **75%** | Partial | Charity % stored/displayed only — no payout ledger or Stripe transfer; no admin event CRUD |
+| **D.** Prize pool | **75%** | Partial | Pool uses `DRAW_FEE_PER_SUBSCRIBER` (default 10), not Razorpay revenue; charity % not reserved |
+| **E.** Charity | **75%** | Partial | Charity % stored/displayed only — no payout ledger or payment provider transfer; no admin event CRUD |
 | **F.** Winner verification | **100%** | Done | Needs manual test on real Storage + RLS (code paths present) |
 | **G.** User dashboard | **100%** | Done | Intentional: non-subscribers see overview/settings/prizes; scores gated under `(member)` |
 | **H.** Admin dashboard | **80%** | Partial | Charity events/media limited; reports use estimates and mixed currency |
 | **I.** Roles & access | **75%** | Partial | Paid features bypassable via Supabase client; middleware no-ops without env |
 | **J.** UI/UX | **92%** | Partial | Responsive/motion in code; lint still red; viewport pass not repeated this audit |
-| **K.** Technical & deliverables | **58%** | Partial | No seeded test users/admins; deploy-ready but manual Stripe/Supabase setup |
+| **K.** Technical & deliverables | **58%** | Partial | No seeded test users/admins; deploy-ready but manual Razorpay/Supabase setup |
 
 **Overall completion (52 checklist items, weighted):** **83%**  
 **Item counts:** Done **35** · Partial **16** · Missing **1** (seed credentials)
 
-**Live integration:** Stripe checkout, webhooks, and a fresh Supabase project were **not** executed in this audit.
+**Live integration:** Razorpay checkout, webhooks, and a fresh Supabase project were **not** executed in this audit.
 
 ---
 
@@ -42,7 +42,7 @@
 
 | Covered (Vitest) | Not covered |
 |------------------|-------------|
-| `lib/draw/match`, `random`, `pools`, `simulate`, `sync-entry` | Stripe checkout, webhook, portal, donations |
+| `lib/draw/match`, `random`, `pools`, `simulate`, `sync-entry` | Razorpay checkout, webhook, portal, donations |
 | `lib/charity/contribution` | Auth signup trigger, RLS subscription enforcement |
 | `lib/scores/rolling`, `lib/validations/score` | DB trigger, admin/winner actions, middleware |
 | | UI/E2E, dashboard queries |
@@ -57,13 +57,13 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 
 | Item | Status | Evidence |
 |------|--------|----------|
-| Monthly + yearly (yearly discounted) | Partial | `lib/stripe/plans.ts`, `lib/stripe/prices.ts`, `components/subscription/checkout-buttons.tsx` |
-| Stripe integration | Done | `lib/stripe/actions.ts`, `app/api/stripe/webhook/route.ts`, `lib/stripe/webhook.ts` |
+| Monthly + yearly (yearly discounted) | Partial | `lib/payments/prices.ts`, `components/subscription/checkout-buttons.tsx` |
+| Razorpay integration | Done | `lib/payments/actions.ts`, `app/api/payments/webhook/route.ts`, `lib/payments/webhook-handler.ts` |
 | Non-subscribers restricted | Partial | `(member)/layout.tsx`, `lib/scores/actions.ts`; **RLS allows score/draw_entry insert for any auth user** |
-| Renewal / cancel / lapsed (webhooks) | Done | `lib/stripe/webhook.ts`, `lib/stripe/sync.ts` |
+| Renewal / cancel / lapsed (webhooks) | Done | `lib/payments/webhook-handler.ts`, `lib/payments/subscription-store.ts` |
 | Subscription on every authenticated request | Partial | Middleware: login only (`lib/supabase/middleware.ts`); sub check on member routes + score actions |
 
-**Note:** Webhook **idempotency is implemented** — `lib/stripe/webhook-idempotency.ts`, migration `supabase/migrations/20261007150000_stripe_webhook_events.sql`.
+**Note:** Webhook **idempotency is implemented** — `lib/payments/webhook-idempotency.ts`, migration `supabase/migrations/20261008140000_rename_stripe_webhook_events.sql`.
 
 ### B. Score management — **all Done**
 
@@ -94,7 +94,7 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 |------|--------|----------|
 | Charity at signup | Done | `lib/auth/actions.ts`, `20261007130000_signup_charity_metadata.sql` |
 | Min 10%, user can increase | Partial | DB + `lib/charity/contribution.ts` — **no payment out** |
-| Independent donation | Done | `lib/stripe/donation-actions.ts`, `components/charity/donation-form.tsx` |
+| Independent donation | Done | `lib/payments/donation-actions.ts`, `components/charity/donation-form.tsx` |
 | Directory search + filter | Partial | `components/charity/charities-directory.tsx` (search + featured) |
 | Profile (description, images, events) | Partial | `app/charities/[slug]/page.tsx` — events read-only; admin cannot create events |
 | Homepage featured spotlight | Done | `components/home/editorial-charity-spotlight.tsx` |
@@ -150,14 +150,14 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 ### Critical
 
 1. **Paid gate bypassable in database** — RLS on `scores` and `draw_entries` allows insert/update for any authenticated user without checking subscription. App uses `requireActiveSubscription()` only on server actions. **Fix:** SQL helper mirroring `subscriptionGrantsAccess`; tighten INSERT/UPDATE policies.
-2. **Prize pool ignores real money and charity share** — `DRAW_FEE_PER_SUBSCRIBER` + `DRAW_PRIZE_POOL_PERCENTAGE` (default 100%) can award full fictional pool while UI promises ≥10% to charity. **Fix:** Derive pool from collected amount minus charity reservation; single currency aligned with Stripe.
-3. **Charity percentage is not paid** — Stored in `user_charity` and shown on dashboard; no ledger, Connect, or invoice split. **Fix:** Record payables on `invoice.paid`; payout process before marketing “impact” as settled.
+2. **Prize pool ignores real money and charity share** — `DRAW_FEE_PER_SUBSCRIBER` + `DRAW_PRIZE_POOL_PERCENTAGE` (default 100%) can award full fictional pool while UI promises ≥10% to charity. **Fix:** Derive pool from collected amount minus charity reservation; single currency aligned with Razorpay.
+3. **Charity percentage is not paid** — Stored in `user_charity` and shown on dashboard; no ledger or payment provider transfer. **Fix:** Record payables on payment success; payout process before marketing "impact" as settled.
 
 ### High
 
 4. **Stale subscription rows inflate active count** — `loadActiveSubscriberScores` iterates all rows; access logic uses latest per user in app only. **Fix:** Latest row per `user_id` for pool sizing.
-5. **`invoice.payment_failed` → immediate `lapsed`** — `lib/stripe/webhook.ts` — may cut access before Stripe retries. **Fix:** Map `past_due` separately; lapse on terminal states.
-6. **Admin subscription edits skip Stripe** — `updateAdminSubscriptionAction` — DB and Stripe can diverge.
+5. **`invoice.payment_failed` → immediate `lapsed`** — `lib/payments/webhook-handler.ts` — may cut access before Razorpay retries. **Fix:** Map `past_due` separately; lapse on terminal states.
+6. **Admin subscription edits skip Razorpay** — `updateAdminSubscriptionAction` — DB and Razorpay can diverge.
 7. **Middleware skips auth when Supabase env missing** — `hasSupabaseEnv()` early return in `lib/supabase/middleware.ts`.
 
 ### Medium
@@ -219,28 +219,28 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 
 ## 7. What you must do manually
 
-- [ ] New Supabase project → `supabase db push` (all migrations in order, including `20261007150000_stripe_webhook_events.sql`).
+- [ ] New Supabase project → `supabase db push` (all migrations in order, including `20261008140000_rename_stripe_webhook_events.sql`).
 - [ ] Run `supabase/seed.sql` or insert charities; **create draft draw** for current month (README SQL or Admin → Draws).
-- [ ] Stripe test products/prices (monthly + yearly); env: `STRIPE_*`, webhook to `/api/stripe/webhook`.
-- [ ] Local: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+- [ ] Razorpay test products/prices (monthly + yearly); env: `RAZORPAY_*`, webhook to `/api/payments/webhook`.
+- [ ] Local: use tunnel (ngrok) to forward Razorpay webhooks to localhost:3000.
 - [ ] `.env.example` → `.env.local` (do **not** commit `.env` — keep secrets out of `components/`).
 - [ ] Signup → `UPDATE profiles SET role = 'admin'` for admin UUID.
 - [ ] Set `SUPABASE_SERVICE_ROLE_KEY` for admin lists, draw sync, homepage stats.
-- [ ] Align `DRAW_FEE_*` / Stripe currency with production business rules (or replace with code change per P0).
+- [ ] Align `DRAW_FEE_*` / Razorpay currency with production business rules (or replace with code change per P0).
 - [ ] Deploy Vercel; run manual test script below on live URL.
 
 ---
 
 ## 8. Manual test script
 
-Prerequisites: env configured, migrations applied, seed charities, Stripe webhook, draft draw for current month.
+Prerequisites: env configured, migrations applied, seed charities, Razorpay webhook, draft draw for current month.
 
 | Step | Action | Expected result |
 |------|--------|-----------------|
 | 1 | `/` logged out | Hero + curtain sections (how it works, how you win, charity, pricing, CTA) |
 | 2 | `/signup` — charity, ≥10% | `user_charity` row; trigger on email confirm if enabled |
-| 3 | `/subscribe` — monthly 4242… | `subscriptions.status=active`; dashboard shows plan + renewal |
-| 4 | Portal + yearly checkout (optional second user) | `plan=yearly` after webhook |
+| 3 | `/subscribe` — monthly test card | `subscriptions.status=active`; dashboard shows plan + renewal |
+| 4 | Yearly checkout (optional second user) | `plan=yearly` after webhook |
 | 5 | `/dashboard/scores` — 6 dates | Only 5 scores remain |
 | 6 | Duplicate date | 23505 / “One score per calendar date” |
 | 7 | Admin simulate → publish | Winners; 5-match rollover on next month if none |

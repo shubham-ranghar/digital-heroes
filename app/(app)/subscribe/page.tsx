@@ -78,7 +78,7 @@ export default async function SubscribePage({
                 : null}
             </p>
             <CheckoutButtons
-              showManage={Boolean(access.subscription?.stripe_subscription_id)}
+              showManage={Boolean(access.subscription?.external_subscription_id)}
               cancelAtPeriodEnd={access.subscription?.cancel_at_period_end ?? false}
             />
           </div>

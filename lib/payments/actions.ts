@@ -58,7 +58,7 @@ export async function cancelSubscriptionAction(): Promise<CancelSubscriptionResu
   const { supabase, user } = await requireUser();
   const subscription = await getLatestSubscription(supabase, user.id);
 
-  if (!subscription?.stripe_subscription_id) {
+  if (!subscription?.external_subscription_id) {
     return {
       ok: false,
       message: "No subscription found. Subscribe to a plan first.",
@@ -73,7 +73,7 @@ export async function cancelSubscriptionAction(): Promise<CancelSubscriptionResu
   }
 
   const provider = getPaymentProvider();
-  await provider.cancelSubscription(subscription.stripe_subscription_id);
+  await provider.cancelSubscription(subscription.external_subscription_id);
 
   return {
     ok: true,
@@ -87,7 +87,7 @@ export async function resumeSubscriptionAction(): Promise<ResumeSubscriptionResu
   const { supabase, user } = await requireUser();
   const subscription = await getLatestSubscription(supabase, user.id);
 
-  if (!subscription?.stripe_subscription_id) {
+  if (!subscription?.external_subscription_id) {
     return {
       ok: false,
       message: "No subscription found.",
@@ -102,7 +102,7 @@ export async function resumeSubscriptionAction(): Promise<ResumeSubscriptionResu
   }
 
   const provider = getPaymentProvider();
-  await provider.resumeSubscription(subscription.stripe_subscription_id);
+  await provider.resumeSubscription(subscription.external_subscription_id);
 
   return {
     ok: true,

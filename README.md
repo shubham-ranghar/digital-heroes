@@ -63,6 +63,8 @@ supabase db push
 
 Or run SQL from `supabase/migrations/` in order in the Supabase SQL editor.
 
+**Note:** The `payment_webhook_events` table was originally created as `stripe_webhook_events` in migration 4, renamed to `payment_webhook_events` in migration 10 after switching to Razorpay.
+
 **Sample charities** (optional, local/demo):
 
 ```bash
@@ -110,7 +112,7 @@ ON CONFLICT (month) DO NOTHING;
 3. Add a webhook endpoint pointing to `https://your-domain/api/payments/webhook` (local: use a tunnel such as ngrok). Subscribe to subscription and payment events.
 4. Copy the webhook signing secret into `RAZORPAY_WEBHOOK_SECRET`.
 
-Checkout opens Razorpay Checkout on the client; success redirects to `/dashboard?checkout=success`. Webhooks update `subscriptions` (same table/columns as before; external IDs stored in `stripe_subscription_id` / `stripe_customer_id`).
+Checkout opens Razorpay Checkout on the client; success redirects to `/dashboard?checkout=success`. Webhooks update `subscriptions` (same table/columns as before; external IDs stored in `external_subscription_id` / `external_customer_id`).
 
 ### 5. Run the app
 

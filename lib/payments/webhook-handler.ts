@@ -102,7 +102,7 @@ async function processRazorpayEvent(body: RazorpayWebhookBody) {
       .from("donations")
       .update({
         status: "succeeded",
-        stripe_payment_intent_id: payment.id,
+        payment_intent_id: payment.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", donationId);

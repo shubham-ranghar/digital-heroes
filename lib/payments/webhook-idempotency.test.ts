@@ -7,7 +7,7 @@ function mockAdmin() {
   return {
     inserted,
     from(table: string) {
-      if (table !== "stripe_webhook_events") {
+      if (table !== "payment_webhook_events") {
         throw new Error(`unexpected table ${table}`);
       }
       return {

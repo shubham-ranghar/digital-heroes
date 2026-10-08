@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type WebhookIdempotencyResult = "processed" | "duplicate";
 
-const TABLE = "stripe_webhook_events";
+const TABLE = "payment_webhook_events";
 
 /**
  * Inserts the payment webhook event id before handling. On duplicate (23505), skips processing.

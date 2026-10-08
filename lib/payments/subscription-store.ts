@@ -24,15 +24,15 @@ export async function upsertSubscriptionRow(input: UpsertSubscriptionInput) {
   const { data: existing } = await admin
     .from("subscriptions")
     .select("id")
-    .eq("stripe_subscription_id", input.externalSubscriptionId)
+    .eq("external_subscription_id", input.externalSubscriptionId)
     .maybeSingle();
 
   const row = {
     user_id: input.userId,
     plan: input.plan,
     status: input.status,
-    stripe_customer_id: input.externalCustomerId,
-    stripe_subscription_id: input.externalSubscriptionId,
+    external_customer_id: input.externalCustomerId,
+    external_subscription_id: input.externalSubscriptionId,
     renewal_date: input.renewalDate,
     cancel_at_period_end: input.cancelAtPeriodEnd ?? false,
     updated_at: new Date().toISOString(),
@@ -75,7 +75,7 @@ export async function updateSubscriptionStatusByExternalId(
   const { error } = await admin
     .from("subscriptions")
     .update(patch)
-    .eq("stripe_subscription_id", externalSubscriptionId);
+    .eq("external_subscription_id", externalSubscriptionId);
   if (error) {
     throw new Error(error.message);
   }
@@ -93,7 +93,7 @@ export async function markSubscriptionCancelAtPeriodEnd(
       status: "active",
       updated_at: new Date().toISOString(),
     })
-    .eq("stripe_subscription_id", externalSubscriptionId);
+    .eq("external_subscription_id", externalSubscriptionId);
   if (error) {
     throw new Error(error.message);
   }
@@ -110,7 +110,7 @@ export async function clearSubscriptionCancelAtPeriodEnd(
       status: "active",
       updated_at: new Date().toISOString(),
     })
-    .eq("stripe_subscription_id", externalSubscriptionId);
+    .eq("external_subscription_id", externalSubscriptionId);
   if (error) {
     throw new Error(error.message);
   }

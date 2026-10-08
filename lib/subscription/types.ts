@@ -11,8 +11,8 @@ export type SubscriptionRow = {
   user_id: string;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
+  external_customer_id: string | null;
+  external_subscription_id: string | null;
   renewal_date: string | null;
   cancel_at_period_end: boolean;
   created_at: string;
