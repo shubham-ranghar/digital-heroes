@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { FontFamilyAudit } from "@/components/dev/font-family-audit";
 import { austin, bagossStandard } from "@/lib/fonts";
 import { AppMotionShell } from "@/components/providers/app-motion-shell";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteFooterShell } from "@/components/layout/site-footer-shell";
-import { SiteHeader } from "@/components/layout/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -30,17 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       >
         <div className="grain-overlay" aria-hidden />
         <AppMotionShell>
-          <Suspense fallback={null}>
-            <SiteHeader />
-          </Suspense>
           <main className="flex min-w-0 flex-1 flex-col overflow-x-clip">
             {children}
           </main>
-          <Suspense fallback={null}>
-            <SiteFooterShell>
-              <SiteFooter />
-            </SiteFooterShell>
-          </Suspense>
         </AppMotionShell>
         <Toaster position="top-center" richColors closeButton />
         {process.env.NODE_ENV === "development" ? <FontFamilyAudit /> : null}

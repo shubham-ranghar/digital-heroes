@@ -145,7 +145,7 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
             sortable: true,
             sortValue: (row) => (row.isFeatured ? 1 : 0),
             cell: (row) => (
-              <StatusPill value={row.isFeatured ? "active" : "draft"} />
+              <StatusPill value={row.isFeatured ? "featured" : "not featured"} />
             ),
           },
           {

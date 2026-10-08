@@ -7,6 +7,7 @@ import { ConfigMissingState } from "@/components/ui/page-state";
 import { redirectIfAuthenticated } from "@/lib/auth/redirect-if-authenticated";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -22,9 +23,11 @@ export default async function SignupPage() {
     return (
       <AuthShell
         title="Join digital.HEROES"
-        description="Create your account and choose a charity."
+        description="Start giving back through your game."
       >
-        <ConfigMissingState missing={["supabase"]} />
+        <Reveal>
+          <ConfigMissingState missing={["supabase"]} />
+        </Reveal>
       </AuthShell>
     );
   }
@@ -48,7 +51,7 @@ export default async function SignupPage() {
   return (
     <AuthShell
       title="Join digital.HEROES"
-      description="Create your account, choose a charity, and set how much of your subscription supports their work."
+      description="Choose a cause, set your support, and start playing for good."
       footer={
         <AuthSwitchLink
           prompt="Already have an account?"
@@ -57,7 +60,9 @@ export default async function SignupPage() {
         />
       }
     >
-      <SignupForm charities={charities} />
+      <Reveal>
+        <SignupForm charities={charities} />
+      </Reveal>
     </AuthShell>
   );
 }

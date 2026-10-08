@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { SiteHeader } from "@/components/layout/site-header";
 
-/** Auth routes: header only; no footer. */
-export default function AuthLayout({
+/** App routes: header only; no footer. */
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;

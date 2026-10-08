@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CHARITY_CATEGORIES } from "@/lib/charity/categories";
 import type { Charity } from "@/lib/charity/types";
+import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 type CharitiesDirectoryProps = {
@@ -154,13 +155,13 @@ export function CharitiesDirectory({ charities }: CharitiesDirectoryProps) {
           No charities match your search. Try a different term or clear filters.
         </p>
       ) : (
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <RevealStagger as="ul" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((charity) => (
-            <li key={charity.id}>
+            <RevealStaggerItem key={charity.id} as="li">
               <CharityCard charity={charity} />
-            </li>
+            </RevealStaggerItem>
           ))}
-        </ul>
+        </RevealStagger>
       )}
     </div>
   );

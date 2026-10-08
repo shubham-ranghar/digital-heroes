@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useRef } from "react";
 import {
   CalendarDays,
   Sparkles,
@@ -25,10 +26,11 @@ import type {
   DashboardParticipation,
   DashboardWinnings,
 } from "@/lib/dashboard/queries";
-import { fadeUp, staggerContainer } from "@/lib/motion";
+import { fadeUp, staggerContainer, useCountUp } from "@/lib/motion";
 import type { ScoreRow } from "@/lib/scores/types";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
 import { tabularImpact } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 export type DashboardHomeProps = {
   displayName: string | null;
@@ -86,7 +88,7 @@ export function DashboardHome(props: DashboardHomeProps) {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           {props.hasAccess
-            ? "Log scores, track draws, and grow your charity impact — all in one place."
+            ? "Your scores, draws, and charity impact — all in one place."
             : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."}
         </p>
       </motion.header>
@@ -250,27 +252,42 @@ export function DashboardHome(props: DashboardHomeProps) {
                 className="py-8"
               />
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className={tabularImpact}>
-                    <span className="font-sans text-3xl text-navy">
-                      {formatCurrency(props.winnings.totalWon)}
-                    </span>
-                  </p>
-                  <p className="text-sm text-slate">
-                    Total won · {props.winnings.winCount}{" "}
-                    {props.winnings.winCount === 1 ? "prize" : "prizes"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Wallet className="size-4 text-slate" aria-hidden />
-                  <StatusPill value={props.winnings.paymentPill} />
-                </div>
-              </div>
+              <AnimatedWinnings totalWon={props.winnings.totalWon} winCount={props.winnings.winCount} paymentPill={props.winnings.paymentPill} />
             )}
           </BentoCard>
         </motion.div>
       </motion.div>
+    </div>
+  );
+}
+
+function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: number; winCount: number; paymentPill: string }) {
+  const reduceMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+
+  const { value } = useCountUp(totalWon, {
+    decimals: 0,
+    enabled: inView,
+    duration: 1200,
+  });
+
+  return (
+    <div ref={ref} className="space-y-4">
+      <div>
+        <p className={tabularImpact}>
+          <span className="font-sans text-3xl text-navy">
+            {formatCurrency(value)}
+          </span>
+        </p>
+        <p className="text-sm text-slate">
+          Total won · {winCount} {winCount === 1 ? "prize" : "prizes"}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Wallet className="size-4 text-slate" aria-hidden />
+        <StatusPill value={paymentPill} />
+      </div>
     </div>
   );
 }

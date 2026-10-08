@@ -14,8 +14,8 @@ const DOT_CLASS: Record<StatusTone, string> = {
   neutral: "bg-slate",
 };
 
-const ACTIVE = new Set(["active", "approved", "paid", "published", "succeeded"]);
-const PENDING = new Set(["pending", "draft", "simulated", "cancelled"]);
+const ACTIVE = new Set(["active", "approved", "paid", "published", "succeeded", "featured"]);
+const PENDING = new Set(["pending", "draft", "simulated", "cancelled", "not featured"]);
 const DANGER = new Set(["rejected", "lapsed", "failed"]);
 
 function normalizeKey(value: string) {

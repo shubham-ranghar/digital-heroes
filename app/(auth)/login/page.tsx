@@ -6,6 +6,7 @@ import { AuthShell, AuthSwitchLink } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { redirectIfAuthenticated } from "@/lib/auth/redirect-if-authenticated";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -28,7 +29,7 @@ export default async function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
-      description="Sign in to track scores, view draws, and see your charity impact."
+      description="Your scores, draws, and charity impact are waiting."
       footer={
         <AuthSwitchLink
           prompt="New here?"
@@ -37,9 +38,11 @@ export default async function LoginPage() {
         />
       }
     >
-      <Suspense fallback={<LoginFormFallback />}>
-        <LoginForm />
-      </Suspense>
+      <Reveal>
+        <Suspense fallback={<LoginFormFallback />}>
+          <LoginForm />
+        </Suspense>
+      </Reveal>
     </AuthShell>
   );
 }

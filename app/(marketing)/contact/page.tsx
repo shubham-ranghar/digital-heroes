@@ -6,6 +6,7 @@ import { MarketingPageShell } from "@/components/layout/marketing-page-shell";
 import { MarketingSection } from "@/components/layout/marketing-section";
 import { ConfigMissingState } from "@/components/ui/page-state";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { Reveal } from "@/components/motion/reveal";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 export const metadata: Metadata = {
@@ -21,18 +22,22 @@ export default async function ContactPage() {
   return (
     <MarketingPageShell>
       <MarketingSection variant="cream" className="py-12 sm:py-16">
-        <SectionHeading
-          eyebrow="Support"
-          title="Contact us"
-          description="Questions about your account, a draw, or your charity allocation? Send a message and we will get back to you."
-        />
-        <div className="mt-10 max-w-lg">
-          {hasSupabaseEnv() ? (
-            <ContactForm />
-          ) : (
-            <ConfigMissingState missing={["supabase"]} />
-          )}
-        </div>
+        <Reveal>
+          <SectionHeading
+            eyebrow="Support"
+            title="Get in touch"
+            description="Questions about your account, a draw, or your charity? We're here to help."
+          />
+        </Reveal>
+        <Reveal>
+          <div className="mt-10 max-w-lg">
+            {hasSupabaseEnv() ? (
+              <ContactForm />
+            ) : (
+              <ConfigMissingState missing={["supabase"]} />
+            )}
+          </div>
+        </Reveal>
       </MarketingSection>
     </MarketingPageShell>
   );
