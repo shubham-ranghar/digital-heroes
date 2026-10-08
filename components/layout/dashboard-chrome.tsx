@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { LayoutMotionFeatures } from "@/components/providers/motion-features";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type DashboardChromeProps = {
@@ -31,9 +32,20 @@ export function DashboardChrome({
             >
               Member hub
             </Link>
-            <SignOutButton className="min-w-[5.5rem]" />
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  render={<Link href="/admin" />}
+                >
+                  Admin
+                </Button>
+              ) : null}
+              <SignOutButton className="min-w-[5.5rem]" />
+            </div>
           </header>
-          <div id="dashboard-content" className="flex-1 px-4 py-8 sm:px-6 md:px-10">{children}</div>
+          <div id="dashboard-content" data-route-content className="flex-1 px-4 py-8 sm:px-6 md:px-10">{children}</div>
         </div>
         <DashboardNav variant="mobile" isAdmin={isAdmin} />
       </div>

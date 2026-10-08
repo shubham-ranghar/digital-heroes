@@ -14,6 +14,13 @@ import {
   getSubscriptionAccessLabel,
 } from "@/lib/subscription/access";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { editorialAppTitleVoice } from "@/lib/typography-editorial";
+
+const TITLE = (
+  <>
+    Choose your <em>plan</em>
+  </>
+);
 
 export const metadata: Metadata = {
   title: "Subscribe",
@@ -31,7 +38,9 @@ export default async function SubscribePage({
   if (!hasSupabaseEnv()) {
     return (
       <AuthShell
-        title="Choose your plan"
+        eyebrow="Membership"
+        title={TITLE}
+        titleClassName={editorialAppTitleVoice}
         description="Support your charity every month. Yearly billing is discounted — same impact, better value."
         className="max-w-lg"
       >
@@ -52,7 +61,9 @@ export default async function SubscribePage({
 
   return (
     <AuthShell
-      title="Choose your plan"
+      eyebrow="Membership"
+      title={TITLE}
+      titleClassName={editorialAppTitleVoice}
       description="Support your charity every month. Yearly billing is discounted — same impact, better value."
       className="max-w-lg"
     >

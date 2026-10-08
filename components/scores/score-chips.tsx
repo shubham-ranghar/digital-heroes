@@ -7,6 +7,7 @@ import type { ScoreRow } from "@/lib/scores/types";
 import { SCORE_SLOT_COUNT } from "@/lib/scores/rolling";
 import { layoutSpring } from "@/lib/motion";
 import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 
@@ -16,12 +17,15 @@ type ScoreChipsProps = {
   highlightId?: string | null;
   /** Stagger the chips in on mount (full scores page only). */
   staggerIn?: boolean;
+  /** Set the latest chip on navy — the scores page's emphasis surface. */
+  emphasizeLatest?: boolean;
 };
 
 export function ScoreChips({
   scores,
   highlightId,
   staggerIn = false,
+  emphasizeLatest = false,
 }: ScoreChipsProps) {
   const reduceMotion = useReducedMotion();
   const slots = Array.from({ length: SCORE_SLOT_COUNT }, (_, index) => {
@@ -47,21 +51,34 @@ export function ScoreChips({
               <div
                 className={cn(
                   "flex h-full flex-col items-center justify-center rounded-[20px] border border-line bg-surface px-3 py-4 text-center shadow-[var(--shadow-resting)] motion-interactive",
-                  index === 0 && "border-coral/30",
+                  index === 0 &&
+                    (emphasizeLatest
+                      ? "section-navy border-navy bg-navy"
+                      : "border-coral/30"),
                   score.id === highlightId &&
                     "motion-pop-in border-coral ring-4 ring-coral/15",
                   tabularImpact,
                 )}
               >
                 {index === 0 ? (
-                  <span className="mb-1 text-[0.625rem] font-medium uppercase tracking-[0.12em] text-slate">
+                  <span
+                    className={cn(
+                      "mb-1 text-[0.625rem] font-medium uppercase tracking-[0.12em]",
+                      emphasizeLatest ? "text-cream/75" : "text-slate",
+                    )}
+                  >
                     Latest
                   </span>
                 ) : null}
-                <span className="font-sans text-2xl font-semibold text-coral">
+                <span className={cn("text-3xl", editorialKeyNumber)}>
                   {score.score}
                 </span>
-                <span className="mt-1 text-xs text-slate">
+                <span
+                  className={cn(
+                    "mt-1 text-xs",
+                    index === 0 && emphasizeLatest ? "text-cream/75" : "text-slate",
+                  )}
+                >
                   {formatPlayedOnLabel(score.played_on)}
                 </span>
               </div>

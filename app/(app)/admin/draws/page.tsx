@@ -31,7 +31,7 @@ export default async function AdminDrawsPage({
     <div className="mx-auto max-w-6xl">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Draws"
+          title={<em>Draws</em>}
           description="Choose random or algorithmic mode, simulate results, review the preview, then publish."
         />
       </Reveal>

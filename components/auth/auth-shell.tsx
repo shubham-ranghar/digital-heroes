@@ -8,10 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ParenLabel } from "@/components/editorial/paren-label";
 import { cn } from "@/lib/utils";
 
 type AuthShellProps = {
-  title: string;
+  title: ReactNode;
+  /** Paren eyebrow above the title, e.g. "Membership". */
+  eyebrow?: string;
+  titleClassName?: string;
   description: string;
   children: ReactNode;
   footer?: ReactNode;
@@ -21,6 +25,8 @@ type AuthShellProps = {
 /** Centered auth card below the fixed site header. */
 export function AuthShell({
   title,
+  eyebrow,
+  titleClassName,
   description,
   children,
   footer,
@@ -40,7 +46,15 @@ export function AuthShell({
         )}
       >
         <CardHeader className="space-y-2 pb-2">
-          <CardTitle className="font-serif text-[clamp(1.75rem,1.2vw+1.5rem,2.25rem)] leading-tight font-normal text-navy">
+          {eyebrow ? (
+            <ParenLabel className="text-navy/70">{eyebrow}</ParenLabel>
+          ) : null}
+          <CardTitle
+            className={cn(
+              "font-serif text-[clamp(1.75rem,1.2vw+1.5rem,2.25rem)] leading-tight font-normal text-navy",
+              titleClassName,
+            )}
+          >
             {title}
           </CardTitle>
           <p className="text-sm text-slate">{description}</p>

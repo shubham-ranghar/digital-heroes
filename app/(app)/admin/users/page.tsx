@@ -20,7 +20,7 @@ export default async function AdminUsersPage() {
     <div className="mx-auto max-w-6xl">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Users"
+          title={<em>Users</em>}
           description="View and edit profiles, adjust subscriptions, and manage member scores."
         />
       </Reveal>

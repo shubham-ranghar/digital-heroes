@@ -19,6 +19,7 @@ import { DashboardCharityCard } from "@/components/dashboard/dashboard-charity-c
 import { CountUpCurrency } from "@/components/draw/count-up-currency";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
+import { ParenLabel } from "@/components/editorial/paren-label";
 import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
 import { BillingManageButtons } from "@/components/subscription/billing-manage-buttons";
 import { getSubscriptionAccessLabel } from "@/lib/subscription/grants";
@@ -41,6 +42,10 @@ import type { ScoreRow } from "@/lib/scores/types";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
 import type { PlanPriceDisplay } from "@/lib/payments/prices";
 import { tabularImpact } from "@/lib/typography";
+import {
+  editorialAppTitleVoice,
+  editorialKeyNumber,
+} from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 
 export type DashboardHomeProps = {
@@ -72,9 +77,15 @@ export function DashboardHome(props: DashboardHomeProps) {
     props.hasAccess,
   );
 
-  const title = props.displayName
-    ? `Hello, ${props.displayName}`
-    : "Your dashboard";
+  const title = props.displayName ? (
+    <>
+      Hello, <em>{props.displayName}</em>
+    </>
+  ) : (
+    <>
+      Your <em>dashboard</em>
+    </>
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -83,12 +94,10 @@ export function DashboardHome(props: DashboardHomeProps) {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm font-medium uppercase tracking-widest text-slate">
-                Member
-              </p>
+              <ParenLabel className="text-navy/70">Member</ParenLabel>
               <SubscriptionAccessPill label={accessLabel} />
             </div>
-            <h1 className="mt-2 font-sans text-3xl text-navy sm:text-4xl">
+            <h1 className={cn("mt-2 text-3xl sm:text-4xl", editorialAppTitleVoice)}>
               {title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -221,12 +230,13 @@ export function DashboardHome(props: DashboardHomeProps) {
           <BentoCard
             title="Winnings"
             icon={Trophy}
+            tone="navy"
             headerAction={
               props.winnings.winCount > 0 ? (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-slate"
+                  className="h-8 text-cream/80 hover:bg-cream/10 hover:text-cream"
                   render={<Link href="/dashboard/prizes" />}
                 >
                   Claims
@@ -240,6 +250,7 @@ export function DashboardHome(props: DashboardHomeProps) {
                 title="No wins yet"
                 description="When you match enough numbers in a draw, your prizes and payment status show up here."
                 className="py-8"
+                tone="navy"
               />
             ) : (
               <AnimatedWinnings totalWon={props.winnings.totalWon} winCount={props.winnings.winCount} paymentPill={props.winnings.paymentPill} />
@@ -264,11 +275,11 @@ function AnimatedCount({ value, label }: { value: number; label: string }) {
   return (
     <div ref={ref}>
       <p className={tabularImpact}>
-        <span ref={countRef} className="font-sans text-3xl text-coral">
+        <span ref={countRef} className={cn("text-4xl", editorialKeyNumber)}>
           {text}
         </span>
       </p>
-      <p className="text-sm text-slate">{label}</p>
+      <p className="mt-2 text-sm text-slate">{label}</p>
     </div>
   );
 }
@@ -281,16 +292,16 @@ function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: numbe
           <CountUpCurrency
             value={totalWon}
             duration={1000}
-            className="font-sans text-3xl text-navy"
+            className={cn("text-4xl", editorialKeyNumber)}
           />
         </p>
-        <p className="text-sm text-slate">
+        <p className="mt-2 text-sm text-cream/75">
           Total won · {winCount} {winCount === 1 ? "prize" : "prizes"}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Wallet className="size-4 text-slate" aria-hidden />
-        <StatusPill value={paymentPill} />
+        <Wallet className="size-4 text-cream/70" aria-hidden />
+        <StatusPill value={paymentPill} className="text-cream" />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { markContactMessageResolvedAction } from "@/lib/contact/admin-actions";
 import type { AdminContactMessage } from "@/lib/contact/admin-queries";
 import { Reveal } from "@/components/motion/reveal";
+import { cn } from "@/lib/utils";
 
 type AdminMessagesPanelProps = {
   messages: AdminContactMessage[];
@@ -15,6 +16,8 @@ type AdminMessagesPanelProps = {
 
 export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
   const [isPending, startTransition] = useTransition();
+  // The newest message still waiting on a reply is the page's navy surface.
+  const focusId = messages.find((message) => !message.resolved)?.id;
 
   function handleResolve(id: string) {
     startTransition(async () => {
@@ -33,7 +36,7 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
     <div className="space-y-6">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Contact messages"
+          title={<>Contact <em>messages</em></>}
           description="Inbound messages from the public contact form."
         />
       </Reveal>
@@ -42,14 +45,22 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
         <p className="text-sm text-muted-foreground">No messages yet.</p>
       ) : (
         <ul className="space-y-4">
-          {messages.map((message) => (
+          {messages.map((message) => {
+            const navy = message.id === focusId;
+            return (
             <li
               key={message.id}
-              className="rounded-[20px] border border-line bg-surface p-5"
+              data-nav-theme={navy ? "dark" : undefined}
+              className={cn(
+                "rounded-[20px] border p-5",
+                navy ? "section-navy border-navy bg-navy" : "border-line bg-surface",
+              )}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium text-navy">{message.name}</p>
+                  <p className={cn("font-medium", navy ? "text-cream" : "text-navy")}>
+                    {message.name}
+                  </p>
                   <p className="text-sm text-muted-foreground">{message.email}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {new Date(message.createdAt).toLocaleString("en-GB")}
@@ -71,11 +82,17 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
                   </Button>
                 )}
               </div>
-              <p className="mt-4 whitespace-pre-wrap text-sm text-navy">
+              <p
+                className={cn(
+                  "mt-4 whitespace-pre-wrap text-sm",
+                  navy ? "text-cream" : "text-navy",
+                )}
+              >
                 {message.message}
               </p>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
       </Reveal>

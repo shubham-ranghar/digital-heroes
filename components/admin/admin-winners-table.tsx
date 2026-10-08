@@ -52,6 +52,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
         rows={winners}
         getRowId={(row) => row.id}
         emptyMessage="No winners yet. Publish a draw to create prize records."
+        headerTone="navy"
         columns={[
           {
             id: "draw",
@@ -66,6 +67,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
             sortable: true,
             sortValue: (row) => row.tier,
             cell: (row) => row.tier,
+            numeric: true,
           },
           {
             id: "amount",
@@ -73,6 +75,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
             sortable: true,
             sortValue: (row) => row.prize_amount,
             cell: (row) => formatCurrency(row.prize_amount),
+            numeric: true,
           },
           {
             id: "member",

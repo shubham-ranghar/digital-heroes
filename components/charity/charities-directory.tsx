@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CHARITY_CATEGORIES } from "@/lib/charity/categories";
 import type { Charity } from "@/lib/charity/types";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,9 @@ export function CharitiesDirectory({ charities }: CharitiesDirectoryProps) {
         set.add(charity.category);
       }
     }
-    return CHARITY_CATEGORIES.filter((item) => set.has(item));
+    return [...set].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
   }, [charities]);
 
   const filtered = useMemo(() => {

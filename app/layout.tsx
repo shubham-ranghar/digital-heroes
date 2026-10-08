@@ -3,6 +3,7 @@ import { FontFamilyAudit } from "@/components/dev/font-family-audit";
 import { austin, bagossStandard } from "@/lib/fonts";
 import { AppMotionShell } from "@/components/providers/app-motion-shell";
 import { Toaster } from "@/components/ui/sonner";
+import { INTRO_SCRIPT } from "@/lib/intro";
 
 import "./globals.css";
 
@@ -20,7 +21,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${bagossStandard.variable} ${austin.variable} min-h-full`}
+      // `INTRO_SCRIPT` sets `data-intro` before hydration.
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+      </head>
       <body
         className={`${bagossStandard.className} relative flex min-h-full flex-col`}
       >

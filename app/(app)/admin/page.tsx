@@ -7,6 +7,8 @@ import { formatCurrency } from "@/lib/money";
 import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { EmptyPageState } from "@/components/ui/page-state";
 import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
+import { cn } from "@/lib/utils";
 
 export const instant = false;
 
@@ -21,19 +23,30 @@ export default async function AdminIndexPage() {
     stats = null;
   }
 
-  const cards = stats
+  type OverviewCard = {
+    label: string;
+    value: string | number;
+    /** Text status rather than a figure — stays in sans. */
+    text?: boolean;
+    /** The page's single navy emphasis surface. */
+    navy?: boolean;
+  };
+
+  const cards: OverviewCard[] = stats
     ? [
         { label: "Total users", value: stats.totalUsers },
         { label: "Active subscribers", value: stats.activeSubscribers },
         {
           label: "Estimated prize pool (active subscribers × fee)",
           value: formatCurrency(stats.currentPrizePool),
+          navy: true,
         },
         {
           label: "Current draw status",
           value:
             stats.nextDrawStatus.charAt(0).toUpperCase() +
             stats.nextDrawStatus.slice(1),
+          text: true,
         },
         {
           label: "Pending verifications",
@@ -50,7 +63,7 @@ export default async function AdminIndexPage() {
     <div className="space-y-10">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Overview"
+          title={<em>Overview</em>}
           description="Platform metrics at a glance."
         />
       </Reveal>
@@ -63,11 +76,31 @@ export default async function AdminIndexPage() {
         >
           {cards.map((card) => (
             <RevealStaggerItem key={card.label} as="div" fast>
-              <div className="rounded-[20px] border border-line bg-surface p-5">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div
+                data-nav-theme={card.navy ? "dark" : undefined}
+                className={cn(
+                  "rounded-[20px] border p-5",
+                  card.navy
+                    ? "section-navy border-navy bg-navy shadow-raised"
+                    : "border-line bg-surface",
+                )}
+              >
+                <p
+                  className={cn(
+                    "text-xs font-medium uppercase tracking-wide",
+                    card.navy ? "text-cream/75" : "text-muted-foreground",
+                  )}
+                >
                   {card.label}
                 </p>
-                <p className={tabularImpact + " mt-2 text-2xl font-semibold text-navy"}>
+                <p
+                  className={cn(
+                    "mt-2",
+                    card.text
+                      ? cn("text-2xl font-semibold text-navy", tabularImpact)
+                      : cn("text-[2rem]", editorialKeyNumber),
+                  )}
+                >
                   {card.value}
                 </p>
               </div>

@@ -117,6 +117,7 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
         rows={charities}
         getRowId={(row) => row.id}
         emptyMessage="No charities yet."
+        headerTone="navy"
         columns={[
           {
             id: "name",
@@ -163,6 +164,7 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
             sortable: true,
             sortValue: (row) => row.supporterCount,
             cell: (row) => row.supporterCount,
+            numeric: true,
           },
           {
             id: "media",

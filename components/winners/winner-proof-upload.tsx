@@ -9,16 +9,23 @@ import { uploadWinnerProofAction } from "@/lib/winners/actions";
 import { Button } from "@/components/ui/button";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { formatCurrency } from "@/lib/money";
-import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
+import { cn } from "@/lib/utils";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Badge } from "@/components/ui/badge";
 import { WinnerProofPreview } from "@/components/winners/winner-proof-preview";
 
 type WinnerProofUploadProps = {
   winner: WinnerWithDraw;
+  /** `navy` for the page's emphasis claim (the most recent). */
+  tone?: "light" | "navy";
 };
 
-export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
+export function WinnerProofUpload({
+  winner,
+  tone = "light",
+}: WinnerProofUploadProps) {
+  const navy = tone === "navy";
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -60,27 +67,45 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
   }
 
   return (
-    <div className="space-y-4 rounded-[20px] border border-line bg-surface p-5">
+    <div
+      data-nav-theme={navy ? "dark" : undefined}
+      className={cn(
+        "space-y-4 rounded-[20px] border p-5",
+        navy ? "section-navy border-navy bg-navy" : "border-line bg-surface",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="font-sans text-lg text-navy">
+          <p className={cn("font-sans text-lg", navy ? "text-cream" : "text-navy")}>
             {winner.tier}-match tier
           </p>
-          <p className={tabularImpact}>
-            <span className="text-coral">{formatCurrency(winner.prize_amount)}</span>
-            <span className="text-slate"> · Draw {winner.draw_month}</span>
+          <p className="mt-1">
+            <span className={cn("text-3xl", editorialKeyNumber)}>
+              {formatCurrency(winner.prize_amount)}
+            </span>
+            <span className={navy ? "text-cream/75" : "text-slate"}>
+              {" "}
+              · Draw {winner.draw_month}
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{winner.verification}</Badge>
-          <StatusPill value={winner.payment} />
+          <StatusPill value={winner.payment} className={navy ? "text-cream" : undefined} />
         </div>
       </div>
 
-      <WinnerProofPreview winnerId={winner.id} hasProof={Boolean(winner.proof_url)} />
+      <WinnerProofPreview
+        winnerId={winner.id}
+        hasProof={Boolean(winner.proof_url)}
+        messageClassName={navy ? "text-cream/75" : undefined}
+      />
 
-      <FormSuccess message={message} />
-      <FormError message={error} />
+      <FormSuccess message={message} className={navy ? "text-cream" : undefined} />
+      <FormError
+        message={error}
+        className={navy ? "bg-status-danger/25 text-cream" : undefined}
+      />
 
       {canUpload ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -88,7 +113,10 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
             ref={inputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            className="text-sm text-slate file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy file:transition-colors file:duration-200 hover:file:bg-coral-deep"
+            className={cn(
+              "text-sm file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy file:transition-colors file:duration-200 hover:file:bg-coral-deep",
+              navy ? "text-cream/80" : "text-slate",
+            )}
             disabled={isPending}
           />
           <Button
@@ -101,7 +129,7 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-slate">
+        <p className={cn("text-sm", navy ? "text-cream/75" : "text-slate")}>
           {winner.verification === "approved"
             ? "Proof approved. Payment will be processed by the team."
             : "This claim is closed."}

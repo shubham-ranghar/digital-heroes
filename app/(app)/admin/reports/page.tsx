@@ -20,7 +20,7 @@ export default async function AdminReportsPage() {
     <div className="mx-auto max-w-6xl">
       <Reveal effect="clip" fast>
         <AdminSection
-          title="Reports"
+          title={<em>Reports</em>}
           description="Platform totals for users, prize pools, charity impact, and draw participation."
         />
       </Reveal>

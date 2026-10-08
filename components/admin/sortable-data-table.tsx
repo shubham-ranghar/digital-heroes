@@ -11,6 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  editorialTableHead,
+  editorialTableNumber,
+} from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 
 export type SortableColumn<T> = {
@@ -20,6 +24,8 @@ export type SortableColumn<T> = {
   sortValue?: (row: T) => string | number;
   cell: (row: T) => React.ReactNode;
   className?: string;
+  /** Figures (counts, amounts) — set in the serif number voice. */
+  numeric?: boolean;
 };
 
 type SortableDataTableProps<T> = {
@@ -28,6 +34,8 @@ type SortableDataTableProps<T> = {
   getRowId: (row: T) => string;
   dense?: boolean;
   emptyMessage?: string;
+  /** `navy`: header band as the page's emphasis surface. */
+  headerTone?: "light" | "navy";
 };
 
 export function SortableDataTable<T>({
@@ -36,7 +44,9 @@ export function SortableDataTable<T>({
   getRowId,
   dense = true,
   emptyMessage = "No rows to show.",
+  headerTone = "light",
 }: SortableDataTableProps<T>) {
+  const navyHeader = headerTone === "navy";
   const [sortId, setSortId] = useState<string | null>(columns[0]?.id ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -74,10 +84,20 @@ export function SortableDataTable<T>({
   }
 
   return (
-    <div className="min-w-0 overflow-x-auto rounded-[16px] border border-line bg-surface">
+    <div
+      className={cn(
+        "min-w-0 overflow-x-auto rounded-[20px] border bg-surface",
+        navyHeader ? "border-navy" : "border-line",
+      )}
+    >
       <Table className="min-w-[36rem]">
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
+          <TableRow
+            className={cn(
+              "hover:bg-transparent",
+              navyHeader && "border-navy bg-navy hover:bg-navy",
+            )}
+          >
             {columns.map((column) => {
               const active = sortId === column.id;
               const Icon = active
@@ -89,14 +109,18 @@ export function SortableDataTable<T>({
                 <TableHead
                   key={column.id}
                   className={cn(
-                    dense ? "h-9 px-3 text-xs uppercase tracking-wide text-slate" : undefined,
+                    dense && cn("h-9 px-3", editorialTableHead),
+                    navyHeader ? "text-cream/80" : "text-navy/70",
                     column.className,
                   )}
                 >
                   {column.sortable ? (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 hover:text-navy"
+                      className={cn(
+                        "inline-flex items-center gap-1",
+                        navyHeader ? "hover:text-cream" : "hover:text-navy",
+                      )}
                       onClick={() => toggleSort(column.id, column.sortable)}
                     >
                       {column.header}
@@ -126,7 +150,11 @@ export function SortableDataTable<T>({
                 {columns.map((column) => (
                   <TableCell
                     key={column.id}
-                    className={cn(dense ? "px-3 py-2" : undefined, column.className)}
+                    className={cn(
+                      dense ? "px-3 py-2" : undefined,
+                      column.numeric && editorialTableNumber,
+                      column.className,
+                    )}
                   >
                     {column.cell(row)}
                   </TableCell>

@@ -1,12 +1,11 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Same shell and copy as the page, so only the form streams in. */
-export default function LoginLoading() {
+export default function ResetPasswordLoading() {
   return (
     <AuthShell
-      title="Welcome back"
-      description="Your scores, draws, and charity impact are waiting."
+      title="Choose a new password"
+      description="Use at least eight characters. You will stay signed in after updating."
     >
       <div className="space-y-4">
         <Skeleton className="h-12 w-full rounded-xl" />

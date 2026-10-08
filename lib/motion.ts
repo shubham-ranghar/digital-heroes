@@ -12,9 +12,6 @@ export const DURATION = {
   hero: 1.0,
 } as const;
 
-/** Vertical rise (px) for page-to-page route enters. */
-export const ROUTE_ENTER_OFFSET = 12;
-
 /** @deprecated Use EASE_OUT */
 export const motionEase = EASE_OUT;
 

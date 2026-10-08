@@ -22,7 +22,7 @@ export default async function AdminWinnersPage() {
     <div className="mx-auto max-w-6xl">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Winners"
+          title={<em>Winners</em>}
           description="Verify proof uploads, approve or reject claims, and mark payouts as paid."
         />
       </Reveal>

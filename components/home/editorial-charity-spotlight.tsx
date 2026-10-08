@@ -9,6 +9,7 @@ import { useClipReveal } from "@/components/motion/clip-reveal";
 import { SectionHeadline } from "@/components/motion/section-headline";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
+import { Marquee } from "@/components/motion/marquee";
 import { Button } from "@/components/ui/button";
 import { EditorialCard } from "@/components/ui/editorial-card";
 import type { HomepageCharities } from "@/lib/home/charities";
@@ -44,6 +45,11 @@ type CharityCardProps = {
   description: string | null;
   imageSrc: string | null;
   featured?: boolean;
+  /**
+   * `marquee` drops the per-card clip wipe (the track is already moving) and
+   * the badge's backdrop blur, which would re-blur every frame as it drifts.
+   */
+  variant?: "grid" | "marquee";
 };
 
 function CharityCard({
@@ -52,7 +58,27 @@ function CharityCard({
   description,
   imageSrc,
   featured,
+  variant = "grid",
 }: CharityCardProps) {
+  const image = imageSrc ? (
+    <Image
+      src={imageSrc}
+      alt=""
+      fill
+      className="object-cover"
+      sizes={IMAGE_SIZES[variant]}
+      unoptimized
+    />
+  ) : (
+    <Image
+      src={HERO_IMAGE_SRC}
+      alt=""
+      fill
+      className="object-cover opacity-90"
+      sizes={IMAGE_SIZES[variant]}
+    />
+  );
+
   return (
     <EditorialCard
       notch="top"
@@ -63,31 +89,15 @@ function CharityCard({
         <div className="relative aspect-[16/10] w-full shrink-0 bg-navy/50">
           {featured ? (
             <span
-              className="absolute left-4 top-4 z-10 rounded-full border border-cream/25 bg-navy/80 px-3 py-1 font-sans text-xs font-medium tracking-wide text-cream backdrop-blur-sm"
+              className={cn(
+                "absolute left-4 top-4 z-10 rounded-full border border-cream/25 bg-navy/80 px-3 py-1 font-sans text-xs font-medium tracking-wide text-cream",
+                variant === "grid" && "backdrop-blur-sm",
+              )}
             >
               Featured
             </span>
           ) : null}
-          <ImageWipe>
-          {imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              unoptimized
-            />
-          ) : (
-            <Image
-              src={HERO_IMAGE_SRC}
-              alt=""
-              fill
-              className="object-cover opacity-90"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-          )}
-          </ImageWipe>
+          {variant === "grid" ? <ImageWipe>{image}</ImageWipe> : image}
         </div>
         <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
           <h3 className="font-sans text-lg font-medium leading-snug tracking-tight text-cream sm:text-xl">
@@ -111,6 +121,31 @@ function CharityCard({
       </article>
     </EditorialCard>
   );
+}
+
+const IMAGE_SIZES = {
+  grid: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
+  marquee: "280px",
+} as const;
+
+/** Marquee card pitch: 280px card + 16px gap (`w-[17.5rem]`, `gap-4 pr-4`). */
+const MARQUEE_PITCH_PX = 296;
+/** Widest viewport that shows the marquee (it's `md:hidden`). */
+const MARQUEE_MAX_VIEWPORT_PX = 767;
+/** Drift speed; a set of four takes ~47s, fewer sets clamp to 40s. */
+const MARQUEE_SPEED_PX_PER_SEC = 25;
+
+/**
+ * Sets needed so that, with the first set scrolled fully away, the rest still
+ * cover the widest marquee viewport (one charity needs four sets, four need two).
+ */
+function marqueeCopies(count: number) {
+  return 1 + Math.ceil(MARQUEE_MAX_VIEWPORT_PX / (MARQUEE_PITCH_PX * count));
+}
+
+function marqueeDuration(count: number) {
+  const seconds = (MARQUEE_PITCH_PX * count) / MARQUEE_SPEED_PX_PER_SEC;
+  return Math.min(60, Math.max(40, Math.round(seconds)));
 }
 
 function CharitiesEmptyState() {
@@ -213,8 +248,31 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
           <CharitiesEmptyState />
         ) : (
           <>
+            {/* Below md: ambient loop instead of a long single-column stack.
+                md+ keeps the grid (all four fit at once); reduced motion gets
+                the grid at every width. The swap is CSS-only, so SSR and
+                hydration agree and nothing shifts on mount. */}
+            <Marquee
+              copies={marqueeCopies(charities.length)}
+              durationSec={marqueeDuration(charities.length)}
+              className="-mx-[var(--gutter)] mt-12 h-[25.5rem] md:hidden motion-reduce:hidden"
+            >
+              {charities.map((charity) => (
+                <li key={charity.id} className="h-full w-[17.5rem] shrink-0">
+                  <CharityCard
+                    variant="marquee"
+                    featured={charity.id === featured!.id}
+                    name={charity.name}
+                    slug={charity.slug}
+                    description={charity.description}
+                    imageSrc={charity.images[0] ?? null}
+                  />
+                </li>
+              ))}
+            </Marquee>
+
             <RevealStagger
-              className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 xl:grid-cols-4 xl:gap-8"
+              className="mt-12 hidden grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 md:grid xl:grid-cols-4 xl:gap-8 motion-reduce:grid"
               stagger={0.06}
             >
               {charities.map((charity) => (

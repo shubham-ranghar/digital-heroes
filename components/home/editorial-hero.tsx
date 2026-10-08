@@ -29,19 +29,23 @@ import {
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
+/**
+ * Entrance timeline, from hydration. On a first visit that is also when the
+ * `IntroWipe` columns start lifting (right to left, clear by 0.74s, the two
+ * over the copy last), so every beat here lands by then too.
+ */
+const HERO_ENTER = 0.65;
+
 const heroPanelSlide = {
   initial: { x: "-100%" },
   animate: { x: 0 },
-  transition: { duration: DURATION.hero, ease: EASE_IN_OUT },
+  transition: { duration: HERO_ENTER, ease: EASE_IN_OUT },
 } as const;
-
-/** Stepped columns finish, short hold, then dismiss (aligned with page-open-edge). */
-const HERO_OPEN_EDGE_EXIT_DELAY = DURATION.base + 0.24 + 0.2;
 
 const heroPhotoEnter = {
   initial: { opacity: 0, scale: 1.06, y: 20 },
   animate: { opacity: 1, scale: 1, y: 0 },
-  transition: { duration: DURATION.hero, ease: EASE_OUT },
+  transition: { duration: HERO_ENTER, ease: EASE_OUT },
 } as const;
 
 const HERO_PANEL_CLIP_DESKTOP_WIDE =
@@ -67,7 +71,7 @@ const contentStagger: Variants = {
     transition: {
       duration: DURATION.base,
       ease: EASE_OUT,
-      delay: 0.4 + index * 0.1,
+      delay: 0.2 + index * 0.06,
     },
   }),
 };
@@ -75,36 +79,6 @@ const contentStagger: Variants = {
 type EditorialHeroProps = {
   stats: HomeStats;
 };
-
-function HeroOpenEdge({ reduceMotion }: { reduceMotion: boolean | null }) {
-  const [done, setDone] = useState(false);
-
-  if (reduceMotion || done) {
-    return null;
-  }
-
-  return (
-    <m.div
-      className="pointer-events-none absolute inset-x-0 top-0 z-[4] overflow-hidden bg-navy md:[clip-path:polygon(0_0,60%_0,60%_100%,0_100%)] xl:[clip-path:polygon(0_0,54%_0,54%_100%,0_100%)]"
-      aria-hidden
-      initial={{ opacity: 1 }}
-      animate={{ opacity: 0 }}
-      transition={{
-        delay: HERO_OPEN_EDGE_EXIT_DELAY,
-        duration: DURATION.base,
-        ease: EASE_OUT,
-      }}
-      onAnimationComplete={() => setDone(true)}
-    >
-      <SteppedEdge
-        position="top"
-        color="var(--navy)"
-        trigger="mount"
-        fillBand={false}
-      />
-    </m.div>
-  );
-}
 
 export function EditorialHero({ stats }: EditorialHeroProps) {
   const reduceMotion = useReducedMotion();
@@ -131,8 +105,6 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
       data-tone="navy"
       className="relative isolate min-h-0 overflow-hidden bg-navy md:min-h-[100svh]"
     >
-      <HeroOpenEdge reduceMotion={reduceMotion} />
-
       <m.div
         className="relative z-0 aspect-[4/3] w-full shrink-0 overflow-hidden md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
         data-nav-theme="dark"
@@ -262,7 +234,8 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
       >
         <LineReveal
           playOnMount
-          delay={0.4}
+          delay={0.16}
+          duration={0.5}
           lineClassName="text-[length:inherit] leading-[inherit]"
           lines={[
             "Your game.",

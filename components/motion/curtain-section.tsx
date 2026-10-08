@@ -135,6 +135,9 @@ function CurtainSectionInner({
     <div
       ref={sectionRef}
       data-tone={tone}
+      // Lets a section fill and compose to the pinned viewport frame
+      // (`group-data-pinned/curtain:`) instead of leaving it blank below.
+      data-pinned={pinActive ? "" : undefined}
       className={cn("group/curtain relative", surfaceClassName, className)}
       style={{ zIndex }}
     >

@@ -3,7 +3,7 @@ import { connection } from "next/server";
 
 import { ScoresLoadError } from "@/components/scores/scores-load-error";
 import { ScoresPanel } from "@/components/scores/scores-panel";
-import { SectionHeading } from "@/components/ui/section-heading";
+import { AppPageHeading } from "@/components/layout/app-page-heading";
 import { requireActiveSubscription } from "@/lib/subscription/access";
 import type { ScoreRow } from "@/lib/scores/types";
 import { Reveal } from "@/components/motion/reveal";
@@ -30,9 +30,9 @@ export default async function ScoresPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <Reveal effect="clip" fast>
-        <SectionHeading
-          eyebrow="Gameplay"
-          title="Your scores"
+        <AppPageHeading
+          label="Gameplay"
+          title={<>Your <em>scores</em></>}
           description="One Stableford score per calendar date. We keep your latest five rounds — newest first."
           className="mb-10"
         />

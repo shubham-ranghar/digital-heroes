@@ -17,6 +17,8 @@ import type { SubscriptionPlan } from "@/lib/subscription/types";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
+import { cn } from "@/lib/utils";
 
 type DashboardCharityCardProps = {
   charity: {
@@ -102,8 +104,8 @@ export function DashboardCharityCard({
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-slate">Share of subscription</span>
-            <span className={tabularImpact}>
-              <span className="font-sans text-2xl text-coral">{percentage}%</span>
+            <span className={cn("text-4xl", editorialKeyNumber)}>
+              {percentage}%
             </span>
           </div>
           <Slider

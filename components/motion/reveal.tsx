@@ -11,14 +11,13 @@ import { cn } from "@/lib/utils";
  * `inView` (default): scroll reveal, gated by `useRevealGate` (enters on
  * client navigation, never re-hides content already painted on first load).
  * `mount`: plays once on mount, for app surfaces where content is already on
- * screen (their route template keeps it hidden until hydration).
+ * screen.
  */
 export type RevealTrigger = "inView" | "mount";
 
 /**
- * App-surface timing: DURATION.base, opacity only. The route template
- * (`AppRouteFade` / `RouteTransition`) already supplies the 12px rise, so
- * inner reveals adding their own would double the travel.
+ * App-surface timing: DURATION.base, opacity only, so it reads as content
+ * settling under the route wipe (`RouteWipe`) rather than a second transition.
  */
 const FAST_TRANSITION = { duration: DURATION.base, ease: EASE_OUT };
 const MARKETING_OFFSET_Y = 24;

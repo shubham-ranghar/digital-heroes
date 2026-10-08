@@ -1,10 +1,12 @@
+/**
+ * Single source of truth for charity categories (admin form + validation).
+ * Must match the live `charities.category` values and supabase/seed.sql.
+ */
 export const CHARITY_CATEGORIES = [
-  "Youth & sports",
-  "Food & shelter",
-  "Health & wellbeing",
   "Education",
-  "Environment",
-  "Community",
+  "Health",
+  "Hunger & Food",
+  "Youth & Sports",
 ] as const;
 
 export type CharityCategory = (typeof CHARITY_CATEGORIES)[number];

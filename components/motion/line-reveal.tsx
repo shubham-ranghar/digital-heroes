@@ -12,6 +12,7 @@ type LineRevealProps = {
   lineClassName?: string;
   playOnMount?: boolean;
   delay?: number;
+  duration?: number;
 };
 
 export function LineReveal({
@@ -20,6 +21,7 @@ export function LineReveal({
   lineClassName,
   playOnMount = false,
   delay = 0,
+  duration = DURATION.slow,
 }: LineRevealProps) {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
@@ -45,7 +47,7 @@ export function LineReveal({
             initial={{ y: "110%" }}
             animate={shouldPlay ? { y: 0 } : { y: "110%" }}
             transition={{
-              duration: DURATION.slow,
+              duration,
               ease: EASE_OUT,
               delay: delay + index * 0.08,
             }}

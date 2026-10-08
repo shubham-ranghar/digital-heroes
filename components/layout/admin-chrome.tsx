@@ -96,7 +96,15 @@ export function AdminChrome({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 lg:hidden">
           <p className="font-sans text-sm text-navy">Admin</p>
-          <SignOutButton className="min-w-[5.5rem]" />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="motion-link-arrow text-xs text-slate motion-interactive hover:text-navy"
+            >
+              ← Dashboard
+            </Link>
+            <SignOutButton className="min-w-[5.5rem]" />
+          </div>
         </header>
         <nav
           className="flex gap-1 overflow-x-auto border-b border-line bg-surface px-3 py-2 lg:hidden"
@@ -127,7 +135,7 @@ export function AdminChrome({
             );
           })}
         </nav>
-        <div id="admin-content" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <div id="admin-content" data-route-content className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           {showServiceRoleWarning ? (
             <p className="motion-fade-down mb-6 rounded-xl border border-line bg-sand px-4 py-3 text-sm text-navy">
               Set <code className="font-medium">SUPABASE_SERVICE_ROLE_KEY</code> for

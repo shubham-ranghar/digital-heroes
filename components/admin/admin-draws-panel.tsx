@@ -28,6 +28,7 @@ import {
 import type { DrawMode } from "@/lib/draw/simulate";
 import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 
 type PendingAction = "create" | "simulate" | "publish" | null;
@@ -163,6 +164,7 @@ export function AdminDrawsPanel({
             sortable: true,
             sortValue: (row) => row.entryCount,
             cell: (row) => row.entryCount,
+            numeric: true,
           },
           {
             id: "carry",
@@ -170,6 +172,7 @@ export function AdminDrawsPanel({
             sortable: true,
             sortValue: (row) => row.jackpotCarryover,
             cell: (row) => formatCurrency(row.jackpotCarryover),
+            numeric: true,
           },
           {
             id: "pick",
@@ -251,13 +254,16 @@ export function AdminDrawsPanel({
                 <WinningNumbers numbers={preview.winningNumbers} />
               </div>
               <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-xl border border-coral/30 bg-coral/8 px-4 py-3 sm:col-span-2 lg:col-span-1 lg:row-span-1">
-                  <p className="text-xs uppercase tracking-wide text-coral-deep">
+                <div
+                  data-nav-theme="dark"
+                  className="section-navy rounded-xl border border-navy bg-navy px-4 py-3 sm:col-span-2 lg:col-span-1 lg:row-span-1"
+                >
+                  <p className="text-xs uppercase tracking-wide text-cream/75">
                     5-match jackpot
                   </p>
                   <CountUpCurrency
                     value={preview.tier5Pool}
-                    className="mt-1 block font-sans text-2xl text-navy"
+                    className={cn("mt-1 block text-[2rem]", editorialKeyNumber)}
                   />
                 </div>
                 <PoolTile label="Total pool" value={preview.totalPool} />
@@ -329,7 +335,10 @@ function PoolTile({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl bg-sand/40 px-4 py-3">
       <p className="text-xs uppercase tracking-wide text-slate">{label}</p>
-      <CountUpCurrency value={value} className="mt-1 block font-sans text-lg text-navy" />
+      <CountUpCurrency
+        value={value}
+        className="mt-1 block font-serif text-xl italic text-navy"
+      />
     </div>
   );
 }

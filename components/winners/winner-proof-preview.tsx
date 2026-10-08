@@ -10,12 +10,15 @@ type WinnerProofPreviewProps = {
   winnerId: string;
   hasProof: boolean;
   className?: string;
+  /** Overrides the empty / error message colour (e.g. on navy). */
+  messageClassName?: string;
 };
 
 export function WinnerProofPreview({
   winnerId,
   hasProof,
   className,
+  messageClassName,
 }: WinnerProofPreviewProps) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +47,16 @@ export function WinnerProofPreview({
 
   if (!hasProof) {
     return (
-      <p className="text-xs text-slate">No screenshot uploaded yet.</p>
+      <p className={cn("text-xs text-slate", messageClassName)}>
+        No screenshot uploaded yet.
+      </p>
     );
   }
 
   if (error) {
-    return <p className="text-xs text-status-danger">{error}</p>;
+    return (
+      <p className={cn("text-xs text-status-danger", messageClassName)}>{error}</p>
+    );
   }
 
   if (!url) {

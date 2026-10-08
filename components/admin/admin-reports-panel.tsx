@@ -4,6 +4,8 @@ import { CountUpCurrency } from "@/components/draw/count-up-currency";
 import { StatCard } from "@/components/ui/stat-card";
 import type { AdminReports } from "@/lib/admin/queries";
 import { formatCurrency } from "@/lib/money";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
+import { cn } from "@/lib/utils";
 import { Users, Trophy, Heart, BarChart3 } from "lucide-react";
 
 type AdminReportsPanelProps = {
@@ -31,7 +33,7 @@ function SimpleBarChart({
             key={String(item[labelKey])}
             className="flex flex-1 flex-col items-center gap-2"
           >
-            <span className="text-xs tabular-impact text-coral">{value}</span>
+            <span className="font-serif text-sm italic tabular-impact text-navy">{value}</span>
             <div
               className="w-full rounded-t-lg bg-coral/80"
               style={{ height: `${height}%` }}
@@ -83,6 +85,7 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
           }
           animate={false}
           icon={Heart}
+          tone="navy"
           trend={`${formatCurrency(reports.charityCommittedInr, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
@@ -99,13 +102,13 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
           <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-slate">Paid out</p>
-              <p className="font-sans text-2xl text-status-active">
+              <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-status-active")}>
                 {formatCurrency(reports.totalPrizePaid)}
               </p>
             </div>
             <div>
               <p className="text-slate">Pending</p>
-              <p className="font-sans text-2xl text-status-pending">
+              <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-status-pending")}>
                 {formatCurrency(reports.totalPrizePending)}
               </p>
             </div>

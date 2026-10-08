@@ -15,6 +15,7 @@ import { createSubscriptionCheckoutAction } from "@/lib/payments/actions";
 import type { PlanPriceDisplay } from "@/lib/payments/prices";
 import { DURATION, EASE_OUT } from "@/lib/motion";
 import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 
@@ -180,7 +181,7 @@ function PlanCard({
           ) : null}
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">{priceLabel}</p>
+          <p className={cn("pb-1 text-2xl", editorialKeyNumber)}>{priceLabel}</p>
           <p>{description}</p>
           <span className="sr-only">
             {selected ? "Selected" : "Not selected"} {plan} plan

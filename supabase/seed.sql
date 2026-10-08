@@ -34,7 +34,7 @@ BEGIN
         'After-school coaching and kit for teens in East London.',
         '["/hero.webp"]'::jsonb,
         true,
-        'Youth & sports'
+        'Youth & Sports'
       ),
       (
         'Greenfield Food Bank',
@@ -42,7 +42,7 @@ BEGIN
         'Weekly groceries and dignity packs for families in crisis.',
         '["/hero.webp"]'::jsonb,
         true,
-        'Food & shelter'
+        'Hunger & Food'
       ),
       (
         'Harbour Mental Health',
@@ -50,7 +50,7 @@ BEGIN
         'Counselling slots funded for coastal communities.',
         '["/hero.webp"]'::jsonb,
         false,
-        'Health & wellbeing'
+        'Health'
       ),
       (
         'Hillside Literacy Trust',

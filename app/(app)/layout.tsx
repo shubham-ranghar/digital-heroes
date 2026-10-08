@@ -12,7 +12,7 @@ export default function AppLayout({
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>
-      <main className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+      <main data-route-content className="flex min-w-0 flex-1 flex-col overflow-x-clip">
         {children}
       </main>
     </>

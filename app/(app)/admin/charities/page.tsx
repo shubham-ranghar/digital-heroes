@@ -20,7 +20,7 @@ export default async function AdminCharitiesPage() {
     <div className="mx-auto max-w-6xl">
       <Reveal trigger="mount" fast>
         <AdminSection
-          title="Charities"
+          title={<em>Charities</em>}
           description="Add, edit, or remove partner causes and manage image URLs for marketing."
         />
       </Reveal>

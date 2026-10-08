@@ -7,7 +7,7 @@ import { WinnerProofUpload } from "@/components/winners/winner-proof-upload";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SectionHeading } from "@/components/ui/section-heading";
+import { AppPageHeading } from "@/components/layout/app-page-heading";
 import { requireUser } from "@/lib/auth/session";
 import { listWinnersForUser } from "@/lib/winners/queries";
 
@@ -25,9 +25,9 @@ export default async function PrizesPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <Reveal effect="clip" fast>
-        <SectionHeading
-          eyebrow="Draws"
-          title="Prize verification"
+        <AppPageHeading
+          label="Draws"
+          title={<>Prize <em>verification</em></>}
           description="Upload a screenshot as proof for each winning draw. Our team reviews verification only — payment is tracked separately."
           className="mb-10"
         />
@@ -46,9 +46,12 @@ export default async function PrizesPage() {
         />
       ) : (
         <RevealStagger trigger="mount" stagger={0.06} className="space-y-6">
-          {winners.map((winner) => (
+          {winners.map((winner, index) => (
             <RevealStaggerItem key={winner.id} fast>
-              <WinnerProofUpload winner={winner} />
+              <WinnerProofUpload
+                winner={winner}
+                tone={index === 0 ? "navy" : "light"}
+              />
             </RevealStaggerItem>
           ))}
         </RevealStagger>

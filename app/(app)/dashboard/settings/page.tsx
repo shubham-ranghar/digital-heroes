@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 
 import { SettingsForm } from "@/components/dashboard/settings-form";
-import { SectionHeading } from "@/components/ui/section-heading";
+import { AppPageHeading } from "@/components/layout/app-page-heading";
 import { getDashboardCharity } from "@/lib/dashboard/queries";
 import { requireUser } from "@/lib/auth/session";
 import {
@@ -49,9 +49,9 @@ export default async function DashboardSettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <SectionHeading
-        eyebrow="Account"
-        title="Settings"
+      <AppPageHeading
+        label="Account"
+        title={<em>Settings</em>}
         description="Update how you appear in the app, manage your charity share, and manage billing when you have an active subscription."
         className="mb-10"
       />

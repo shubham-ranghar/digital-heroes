@@ -2,7 +2,12 @@
 
 import Lenis from "lenis";
 import { usePathname } from "next/navigation";
-import { useReducedMotion } from "framer-motion";
+import {
+  cancelFrame,
+  frame,
+  useReducedMotion,
+  type FrameData,
+} from "framer-motion";
 import {
   useEffect,
   useLayoutEffect,
@@ -22,12 +27,13 @@ import { scrollToHash } from "@/lib/scroll-to-hash";
 
 type SmoothScrollProviderProps = {
   children: ReactNode;
-  menuOpen?: boolean;
+  /** Stop Lenis (menu open, first-load intro). */
+  paused?: boolean;
 };
 
 export function SmoothScrollProvider({
   children,
-  menuOpen = false,
+  paused = false,
 }: SmoothScrollProviderProps) {
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
@@ -62,15 +68,14 @@ export function SmoothScrollProvider({
     lenisRef.current = instance;
     setLenisSnapshot(instance);
 
-    let frame = 0;
-    const raf = (time: number) => {
-      instance.raf(time);
-      frame = requestAnimationFrame(raf);
-    };
-    frame = requestAnimationFrame(raf);
+    // Driven from Framer's frame loop (update phase) rather than a separate
+    // rAF, so motion values fed from Lenis' scroll event render in the same
+    // frame as the scroll itself instead of one frame later.
+    const raf = ({ timestamp }: FrameData) => instance.raf(timestamp);
+    frame.update(raf, true);
 
     return () => {
-      cancelAnimationFrame(frame);
+      cancelFrame(raf);
       instance.destroy();
       lenisRef.current = null;
       setLenisSnapshot(null);
@@ -82,15 +87,15 @@ export function SmoothScrollProvider({
     if (!instance) {
       return;
     }
-    if (menuOpen) {
+    if (paused) {
       instance.stop();
     } else {
       instance.start();
     }
-  }, [menuOpen, lenis]);
+  }, [paused, lenis]);
 
-  // Layout effect: reset before paint, ahead of the route template's enter
-  // animation (Framer starts it in a passive effect). `force` covers Lenis
+  // Layout effect: reset before paint, so the new route is at the top before
+  // `RouteWipe` starts lifting its columns. `force` covers Lenis
   // being stopped when navigating from the open menu overlay.
   useLayoutEffect(() => {
     const instance = lenisRef.current;

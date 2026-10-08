@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Container } from "@/components/layout/container";
+import { ColumnWipe, MENU_WIPE } from "@/components/motion/column-wipe";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import {
   DURATION,
@@ -379,29 +380,12 @@ export function MenuOverlay({
           }
         >
           {!reduceMotion ? (
-            <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              {[2, 1, 3, 0, 4].map((col, orderIdx) => (
-                <m.div
-                  key={col}
-                  className="h-full flex-1 bg-cream"
-                  initial={{ y: "-100%" }}
-                  animate={{ y: 0 }}
-                  exit={{
-                    y: "-100%",
-                    transition: {
-                      duration: 0.5,
-                      delay: (4 - orderIdx) * 0.06,
-                      ease: EASE_IN_OUT,
-                    },
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: orderIdx * 0.06,
-                    ease: EASE_IN_OUT,
-                  }}
-                />
-              ))}
-            </div>
+            <ColumnWipe
+              timing={MENU_WIPE}
+              initial="above"
+              animate="cover"
+              exit="above"
+            />
           ) : (
             <div className="absolute inset-0 bg-cream" aria-hidden />
           )}

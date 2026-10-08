@@ -6,6 +6,10 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
+import {
+  editorialTableHead,
+  editorialTableNumber,
+} from "@/lib/typography-editorial";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Button } from "@/components/ui/button";
 import {
@@ -178,6 +182,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
         rows={users}
         getRowId={(row) => row.id}
         emptyMessage="No users found."
+        headerTone="navy"
         columns={[
           {
             id: "email",
@@ -226,6 +231,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
             sortable: true,
             sortValue: (row) => row.scoreCount,
             cell: (row) => row.scoreCount,
+            numeric: true,
           },
           {
             id: "actions",
@@ -438,11 +444,13 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                     ) : (
                       <div className="max-h-[min(40dvh,16rem)] overflow-y-auto overscroll-contain">
                         <table className="w-full text-sm">
-                          <thead className="sticky top-0 bg-surface text-left text-xs text-muted-foreground">
+                          <thead
+                            className={`sticky top-0 bg-surface text-left text-navy/70 ${editorialTableHead}`}
+                          >
                             <tr className="border-b border-line">
-                              <th className="px-3 py-2 font-medium">Date</th>
-                              <th className="px-3 py-2 font-medium">Points</th>
-                              <th className="px-3 py-2 text-right font-medium">Actions</th>
+                              <th className="px-3 py-2 font-normal">Date</th>
+                              <th className="px-3 py-2 font-normal">Points</th>
+                              <th className="px-3 py-2 text-right font-normal">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -454,7 +462,9 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                                 <td className="px-3 py-2 whitespace-nowrap text-navy">
                                   {score.played_on}
                                 </td>
-                                <td className="px-3 py-2 font-medium text-navy">{score.score}</td>
+                                <td className={`px-3 py-2 ${editorialTableNumber}`}>
+                                  {score.score}
+                                </td>
                                 <td className="px-3 py-2">
                                   <div className="flex justify-end gap-1">
                                     <Button

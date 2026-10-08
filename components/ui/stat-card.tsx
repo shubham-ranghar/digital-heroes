@@ -6,7 +6,7 @@ import { useRef, type ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCountUp } from "@/hooks/use-count-up";
-import { tabularImpact } from "@/lib/typography";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 
 type StatCardProps = {
@@ -23,6 +23,8 @@ type StatCardProps = {
   duration?: number;
   /** When set, shown instead of prefix + animated value (e.g. `CountUpCurrency`). */
   valueLabel?: ReactNode;
+  /** `navy`: the page's single dark emphasis tile. */
+  tone?: "light" | "navy";
 };
 
 /** Dashboard metric tile with optional count-up animation. */
@@ -38,7 +40,9 @@ export function StatCard({
   animate = true,
   duration,
   valueLabel,
+  tone = "light",
 }: StatCardProps) {
+  const navy = tone === "navy";
   const valueRef = useRef<HTMLParagraphElement>(null);
   const countRef = useRef<HTMLSpanElement>(null);
   const inView = useInView(valueRef, { once: true, margin: "-10% 0px" });
@@ -49,7 +53,14 @@ export function StatCard({
   });
 
   return (
-    <Card className={cn("gap-0", className)}>
+    <Card
+      data-nav-theme={navy ? "dark" : undefined}
+      className={cn(
+        "gap-0",
+        navy && "section-navy border-navy bg-navy",
+        className,
+      )}
+    >
       <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
@@ -61,17 +72,21 @@ export function StatCard({
       <CardContent>
         <p
           ref={valueRef}
-          className={cn(
-            "font-sans text-display-sm font-semibold text-foreground",
-            tabularImpact,
-          )}
+          className={cn("text-[2rem]", editorialKeyNumber)}
         >
           {valueLabel ?? (
             <span ref={countRef}>{text}</span>
           )}
         </p>
         {trend ? (
-          <p className="mt-1 text-xs text-status-active">{trend}</p>
+          <p
+            className={cn(
+              "mt-2 text-xs",
+              navy ? "text-cream/75" : "text-status-active",
+            )}
+          >
+            {trend}
+          </p>
         ) : null}
       </CardContent>
     </Card>
