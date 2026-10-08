@@ -19,6 +19,7 @@ export function MarketingSection({
   return (
     <section
       id={id}
+      data-tone={variant}
       data-nav-theme={variant === "cream" ? "light" : "dark"}
       className={cn(
         variant === "cream" ? "section-cream" : "section-navy",

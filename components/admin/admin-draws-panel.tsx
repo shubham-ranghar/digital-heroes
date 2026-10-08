@@ -7,6 +7,9 @@ import { toast } from "sonner";
 
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
 import { StatusPill } from "@/components/admin/status-pill";
+import { CountUpCurrency } from "@/components/draw/count-up-currency";
+import { DrawStatusSteps } from "@/components/draw/draw-status-steps";
+import { WinningNumbers } from "@/components/draw/winning-numbers";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -25,6 +28,9 @@ import {
 import type { DrawMode } from "@/lib/draw/simulate";
 import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
+import { cn } from "@/lib/utils";
+
+type PendingAction = "create" | "simulate" | "publish" | null;
 
 type SerializedPreview = DrawSimulationPreview | null;
 
@@ -49,6 +55,7 @@ export function AdminDrawsPanel({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<DrawMode>("random");
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const selected =
     draws.find((draw) => draw.id === selectedDrawId) ?? draws[0] ?? null;
 
@@ -57,8 +64,10 @@ export function AdminDrawsPanel({
   }
 
   function createDraft() {
+    setPendingAction("create");
     startTransition(async () => {
       const result = await createDraftDrawAction({ month: currentMonthIso() });
+      setPendingAction(null);
       if (!result.ok) {
         toast.error(result.message);
         return;
@@ -72,11 +81,13 @@ export function AdminDrawsPanel({
     if (!selected) {
       return;
     }
+    setPendingAction("simulate");
     startTransition(async () => {
       const result = await runSimulationAction({
         drawId: selected.id,
         mode,
       });
+      setPendingAction(null);
       if (!result.ok) {
         toast.error(result.message);
         return;
@@ -90,8 +101,10 @@ export function AdminDrawsPanel({
     if (!selected) {
       return;
     }
+    setPendingAction("publish");
     startTransition(async () => {
       const result = await publishDrawAction({ drawId: selected.id });
+      setPendingAction(null);
       if (!result.ok) {
         toast.error(result.message);
         return;
@@ -177,15 +190,15 @@ export function AdminDrawsPanel({
       />
 
       {selected ? (
-        <div className="rounded-[20px] border border-line bg-surface p-5 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-5 rounded-[20px] border border-line bg-surface p-5 shadow-[var(--shadow-resting)] sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-sans text-lg text-navy">Draw {selected.month}</p>
               <p className="text-sm text-muted-foreground">
                 Simulation required before publish. Published draws are locked.
               </p>
             </div>
-            <StatusPill value={selected.status} />
+            <DrawStatusSteps status={selected.status} className="flex-wrap" />
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -209,58 +222,47 @@ export function AdminDrawsPanel({
               type="button"
               className="w-full sm:w-auto"
               disabled={isPending || selected.status === "published"}
+              loading={pendingAction === "simulate"}
               onClick={runSimulation}
             >
-              Run simulation
+              {pendingAction === "simulate" ? "Simulating…" : "Run simulation"}
             </Button>
             <Button
               type="button"
               variant="secondary"
               className="w-full sm:w-auto"
               disabled={isPending || !canPublish}
+              loading={pendingAction === "publish"}
               onClick={publishDraw}
             >
-              Publish draw
+              {pendingAction === "publish" ? "Publishing…" : "Publish draw"}
             </Button>
           </div>
 
           {preview ? (
-            <div className="space-y-4 border-t border-line pt-4">
+            <div
+              key={preview.winningNumbers.join("-")}
+              className="space-y-5 border-t border-line pt-5"
+            >
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate">
+                <p className="mb-3 text-xs uppercase tracking-wide text-slate">
                   Winning numbers
                 </p>
-                <p className={tabularImpact}>
-                  <span className="font-sans text-2xl text-coral">
-                    {preview.winningNumbers.join(" · ")}
-                  </span>
-                </p>
+                <WinningNumbers numbers={preview.winningNumbers} />
               </div>
-              <div className="grid gap-3 sm:grid-cols-4 text-sm">
-                <div className="rounded-xl bg-sand/40 px-3 py-2">
-                  <p className="text-slate">Total pool</p>
-                  <p className="font-sans text-navy">
-                    {formatCurrency(preview.totalPool)}
+              <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-coral/30 bg-coral/8 px-4 py-3 sm:col-span-2 lg:col-span-1 lg:row-span-1">
+                  <p className="text-xs uppercase tracking-wide text-coral-deep">
+                    5-match jackpot
                   </p>
+                  <CountUpCurrency
+                    value={preview.tier5Pool}
+                    className="mt-1 block font-sans text-2xl text-navy"
+                  />
                 </div>
-                <div className="rounded-xl bg-sand/40 px-3 py-2">
-                  <p className="text-slate">5-match</p>
-                  <p className="font-sans text-navy">
-                    {formatCurrency(preview.tier5Pool)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-sand/40 px-3 py-2">
-                  <p className="text-slate">4-match</p>
-                  <p className="font-sans text-navy">
-                    {formatCurrency(preview.tier4Pool)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-sand/40 px-3 py-2">
-                  <p className="text-slate">3-match</p>
-                  <p className="font-sans text-navy">
-                    {formatCurrency(preview.tier3Pool)}
-                  </p>
-                </div>
+                <PoolTile label="Total pool" value={preview.totalPool} />
+                <PoolTile label="4-match" value={preview.tier4Pool} />
+                <PoolTile label="3-match" value={preview.tier3Pool} />
               </div>
               {preview.nextJackpotCarryover > 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -281,7 +283,10 @@ export function AdminDrawsPanel({
                     {preview.winners.map((winner) => (
                       <li
                         key={`${winner.userId}-${winner.tier}`}
-                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                        className={cn(
+                          "flex flex-wrap items-center justify-between gap-2 px-3 py-2",
+                          winner.tier === 5 && "bg-coral/8",
+                        )}
                       >
                         <span className="text-slate">
                           {winner.userId.slice(0, 8)}… · {winner.matchCount}-match
@@ -296,9 +301,19 @@ export function AdminDrawsPanel({
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground border-t border-line pt-4">
-              Run a simulation to preview winning numbers, pools, and allocations.
-            </p>
+            <div className="flex items-center gap-3 border-t border-line pt-4">
+              <div className="flex shrink-0 gap-1.5" aria-hidden>
+                {Array.from({ length: 5 }, (_, index) => (
+                  <span
+                    key={index}
+                    className="size-6 rounded-full border border-dashed border-slate/40 bg-sand/40"
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Run a simulation to preview winning numbers, pools, and allocations.
+              </p>
+            </div>
           )}
 
           <Button variant="ghost" size="sm" render={<Link href="/admin/winners" />}>
@@ -306,6 +321,15 @@ export function AdminDrawsPanel({
           </Button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PoolTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-sand/40 px-4 py-3">
+      <p className="text-xs uppercase tracking-wide text-slate">{label}</p>
+      <CountUpCurrency value={value} className="mt-1 block font-sans text-lg text-navy" />
     </div>
   );
 }

@@ -1,182 +1,228 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import {
+  m,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { useRef, type CSSProperties, type RefObject } from "react";
 
+import { useClientMounted } from "@/hooks/use-client-mounted";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { useScrubFlag } from "@/hooks/use-scrub-flag";
 import {
   STEPPED_EDGE_COLUMNS_FIVE,
   STEPPED_EDGE_COLUMNS_THREE,
   STEPPED_EDGE_ORDER_FIVE,
   STEPPED_EDGE_ORDER_THREE,
-  columnRevealProgress,
+  columnScrollRange,
 } from "@/lib/stepped-edge-config";
 import { DURATION, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export type SteppedEdgePosition = "top" | "bottom";
+export type SteppedEdgeTrigger = "scroll" | "mount";
+type SteppedEdgeVariant = "five" | "three";
 
 type SteppedEdgeProps = {
   position: SteppedEdgePosition;
+  /** Column colour. */
   color?: string;
+  /** Band colour behind the columns when `fillBand` is on; defaults to `color`. */
+  bandColor?: string;
   className?: string;
+  /**
+   * `scroll` scrubs the columns with scroll progress; `mount` plays a timed
+   * reveal once (hero, route overlays).
+   */
+  trigger?: SteppedEdgeTrigger;
+  /** Element whose top edge drives scroll progress (defaults to the band). */
   scrollTargetRef?: RefObject<HTMLElement | null>;
-  playOnMount?: boolean;
+  /** Render fully revealed with no motion. Reduced motion implies this. */
   static?: boolean;
   /** Fill the band rectangle (section seams). Overlay reveals should leave this off. */
   fillBand?: boolean;
-  variant?: "five" | "three";
+  /** Fixed column layout. Scroll edges default to five on md+, three below. */
+  variant?: SteppedEdgeVariant;
 };
 
-function useMdUp() {
-  const [mdUp, setMdUp] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setMdUp(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return mdUp;
-}
+const COLUMNS = {
+  five: { units: STEPPED_EDGE_COLUMNS_FIVE, order: STEPPED_EDGE_ORDER_FIVE },
+  three: { units: STEPPED_EDGE_COLUMNS_THREE, order: STEPPED_EDGE_ORDER_THREE },
+} as const;
+
+/** Column step size lives in CSS so band height never depends on hydration. */
+const STEP_CLASS = "[--step-edge:16px] md:[--step-edge:32px]";
+
+type ColumnSpec = {
+  key: number;
+  orderIndex: number;
+  style: CSSProperties;
+};
 
 export function SteppedEdge({
   position,
   color = "var(--navy)",
+  bandColor,
   className,
+  trigger = "scroll",
   scrollTargetRef,
-  playOnMount = false,
   static: staticVisible = false,
   fillBand = true,
-  variant = "five",
+  variant,
 }: SteppedEdgeProps) {
+  const hydrated = useClientMounted();
   const reduceMotion = useReducedMotion();
-  const mdUp = useMdUp();
-  const fallbackRef = useRef<HTMLDivElement>(null);
-  const targetRef = scrollTargetRef ?? fallbackRef;
+  const mdUp = useMediaQuery("(min-width: 768px)");
+  const bandRef = useRef<HTMLDivElement>(null);
 
-  const { scrollYProgress } = useScroll({
-    target: targetRef,
-    offset: ["start end", "start 55%"],
-  });
+  // Mobile keeps the scroll scrub but drops to three columns rather than
+  // switching to an on-enter reveal: the scrub shares framer's single scroll
+  // listener and only writes three compositor transforms per frame, while
+  // on-enter would add an IntersectionObserver plus a JS tween per column for
+  // no saving, and would feel different from desktop.
+  const resolvedVariant: SteppedEdgeVariant =
+    variant ?? (trigger === "scroll" && !mdUp ? "three" : "five");
+  const { units, order } = COLUMNS[resolvedVariant];
+  const maxUnits = Math.max(...units);
 
-  const columns =
-    variant === "three" ? STEPPED_EDGE_COLUMNS_THREE : STEPPED_EDGE_COLUMNS_FIVE;
-  const order =
-    variant === "three" ? STEPPED_EDGE_ORDER_THREE : STEPPED_EDGE_ORDER_FIVE;
+  const columns: ColumnSpec[] = units.map((count, colIndex) => ({
+    key: colIndex,
+    orderIndex: Math.max(0, (order as readonly number[]).indexOf(colIndex)),
+    style: {
+      height: `calc(var(--step-edge) * ${count})`,
+      backgroundColor: color,
+    },
+  }));
 
-  const stepPx = mdUp ? 32 : 16;
-  const maxUnits = Math.max(...columns);
-  const bandHeight = maxUnits * stepPx;
-  const showStatic = staticVisible || reduceMotion;
-  const alignEnd = position === "top";
-  const navTheme =
-    color.includes("cream") || color === "var(--cream)" ? "light" : "dark";
+  // Server and hydration render a motionless, unrevealed frame (matching every
+  // animated start state); the real mode is picked once preferences are known,
+  // so reduced motion never mounts a scroll listener at all.
+  const mode = staticVisible
+    ? "static"
+    : !hydrated
+      ? "pending"
+      : reduceMotion
+        ? "static"
+        : trigger;
+
+  const navTheme = color.includes("cream") ? "light" : "dark";
 
   return (
     <div
-      ref={fallbackRef}
+      ref={bandRef}
       data-nav-theme={navTheme}
       className={cn(
         "pointer-events-none relative w-full overflow-hidden",
+        STEP_CLASS,
         position === "top" ? "-mb-px" : "-mt-px",
         className,
       )}
       style={{
-        height: bandHeight,
-        backgroundColor: fillBand ? color : "transparent",
+        height: `calc(var(--step-edge) * ${maxUnits})`,
+        backgroundColor: fillBand ? (bandColor ?? color) : "transparent",
       }}
       aria-hidden
     >
       <div
         className={cn(
           "absolute inset-0 flex",
-          alignEnd ? "items-end" : "items-start",
+          position === "top" ? "items-end" : "items-start",
         )}
       >
-        {columns.map((units, colIndex) => {
-          const colHeight = units * stepPx;
-          const orderIndex = Math.max(
-            0,
-            (order as readonly number[]).indexOf(colIndex),
-          );
-
-          return (
-            <div
-              key={colIndex}
-              className="flex min-w-0 flex-1 flex-col justify-end"
-            >
-              <SteppedEdgeColumn
-                color={color}
-                heightPx={colHeight}
-                orderIndex={orderIndex}
-                scrollYProgress={scrollYProgress}
-                playOnMount={playOnMount}
-                staticVisible={Boolean(showStatic)}
-                columnCount={columns.length}
-              />
+        {mode === "scroll" ? (
+          <ScrollColumns
+            columns={columns}
+            targetRef={scrollTargetRef ?? bandRef}
+          />
+        ) : (
+          columns.map((column) => (
+            <div key={column.key} className={COLUMN_SLOT}>
+              {mode === "mount" ? (
+                <m.div
+                  className="w-full shrink-0"
+                  style={column.style}
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  transition={{
+                    duration: DURATION.base,
+                    delay: column.orderIndex * 0.06,
+                    ease: EASE_OUT,
+                  }}
+                />
+              ) : (
+                <div
+                  className="w-full shrink-0"
+                  style={
+                    mode === "pending"
+                      ? { ...column.style, transform: "translateY(100%)" }
+                      : column.style
+                  }
+                />
+              )}
             </div>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-function SteppedEdgeColumn({
-  color,
-  heightPx,
-  orderIndex,
-  scrollYProgress,
-  playOnMount,
-  staticVisible,
-  columnCount,
+const COLUMN_SLOT = "flex min-w-0 flex-1 flex-col justify-end";
+
+/**
+ * Progress runs from the target's top entering the viewport to it reaching
+ * the centre. The target must be in normal flow (curtain sections pass their
+ * outer wrapper, not the sticky inner), so progress stays continuous while an
+ * earlier section is pinned.
+ */
+function ScrollColumns({
+  columns,
+  targetRef,
 }: {
-  color: string;
-  heightPx: number;
-  orderIndex: number;
-  scrollYProgress: ReturnType<typeof useScroll>["scrollYProgress"];
-  playOnMount: boolean;
-  staticVisible: boolean;
-  columnCount: number;
+  columns: ColumnSpec[];
+  targetRef: RefObject<HTMLElement | null>;
 }) {
-  const scrubY = useTransform(scrollYProgress, (p) => {
-    const progress = columnRevealProgress(p, orderIndex, 0.12, columnCount);
-    return `${(1 - progress) * 100}%`;
+  const groupRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: targetRef,
+    offset: ["start end", "start center"],
   });
-
-  if (staticVisible) {
-    return (
-      <div
-        className="w-full shrink-0"
-        style={{ height: heightPx, backgroundColor: color }}
-      />
-    );
-  }
-
-  if (playOnMount) {
-    return (
-      <motion.div
-        className="w-full shrink-0 will-change-transform"
-        style={{ height: heightPx, backgroundColor: color }}
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        transition={{
-          duration: DURATION.base,
-          delay: orderIndex * 0.06,
-          ease: EASE_OUT,
-        }}
-      />
-    );
-  }
+  // Columns are promoted only mid-scrub; at rest they're plain painted blocks.
+  useScrubFlag(scrollYProgress, groupRef);
 
   return (
-    <motion.div
-      className="w-full shrink-0 will-change-transform"
-      style={{
-        height: heightPx,
-        backgroundColor: color,
-        y: scrubY,
-      }}
+    <div ref={groupRef} className="group/edge contents">
+      {columns.map((column) => (
+        <div key={column.key} className={COLUMN_SLOT}>
+          <ScrollColumn
+            progress={scrollYProgress}
+            range={columnScrollRange(column.orderIndex, columns.length)}
+            style={column.style}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScrollColumn({
+  progress,
+  range,
+  style,
+}: {
+  progress: MotionValue<number>;
+  range: readonly [number, number];
+  style: CSSProperties;
+}) {
+  const y = useTransform(progress, [range[0], range[1]], ["100%", "0%"]);
+
+  return (
+    <m.div
+      className="w-full shrink-0 group-data-scrubbing/edge:will-change-transform"
+      style={{ ...style, y }}
     />
   );
 }

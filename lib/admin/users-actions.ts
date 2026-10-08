@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { listAdminUserScores } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { mapScoreWriteError, outsideLatestFiveError } from "@/lib/scores/errors";
+import { findRetentionCutoff } from "@/lib/scores/rolling";
 import type { ScoreRow } from "@/lib/scores/types";
 import {
   adminProfileSchema,
@@ -126,15 +128,43 @@ export async function saveAdminScoreAction(
   const admin = createAdminClient();
   const { userId, scoreId, score, playedOn } = parsed.data;
 
+  // Same retention rule as the member path; the DB trigger (DH001) also
+  // applies to the service-role client, so this is for the specific message.
+  const { data: existing, error: listError } = await admin
+    .from("scores")
+    .select("id, score, played_on, created_at")
+    .eq("user_id", userId);
+  if (listError) {
+    return { ok: false, message: listError.message };
+  }
+  const cutoff = findRetentionCutoff(existing ?? [], {
+    id: scoreId,
+    played_on: playedOn,
+  });
+  if (cutoff) {
+    return {
+      ok: false,
+      message: outsideLatestFiveError("admin", cutoff.played_on).message,
+    };
+  }
+
   if (scoreId) {
-    const { error } = await admin
+    const { data, error } = await admin
       .from("scores")
       .update({ score, played_on: playedOn })
       .eq("id", scoreId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
-      return { ok: false, message: error.message };
+      return {
+        ok: false,
+        message: mapScoreWriteError(error, "admin")?.message ?? error.message,
+      };
+    }
+    if (!data) {
+      return { ok: false, message: "Score not found." };
     }
   } else {
     const { error } = await admin.from("scores").insert({
@@ -144,7 +174,10 @@ export async function saveAdminScoreAction(
     });
 
     if (error) {
-      return { ok: false, message: error.message };
+      return {
+        ok: false,
+        message: mapScoreWriteError(error, "admin")?.message ?? error.message,
+      };
     }
   }
 

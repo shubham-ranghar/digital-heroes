@@ -117,11 +117,22 @@ export function filterDrawEntriesToActiveSubscribers(
   return entries.filter((entry) => activeUserIds.has(entry.userId));
 }
 
+/** ₹250 of a ₹499 monthly fee: a realistic share for the prize fund. */
+const DEFAULT_DRAW_FEE_INR = 250;
+
+/**
+ * Draw fund contribution per active subscriber, in whole rupees (major units,
+ * not paise). `DRAW_FEE_PER_SUBSCRIBER` is the legacy, unit-less name.
+ */
 export function getDrawFeeConfig() {
-  const fee = Number(process.env.DRAW_FEE_PER_SUBSCRIBER ?? "10");
+  const fee = Number(
+    process.env.DRAW_FEE_PER_SUBSCRIBER_INR ??
+      process.env.DRAW_FEE_PER_SUBSCRIBER ??
+      String(DEFAULT_DRAW_FEE_INR),
+  );
   const poolPercentage = Number(process.env.DRAW_PRIZE_POOL_PERCENTAGE ?? "100");
   return {
-    feePerSubscriber: Number.isFinite(fee) ? fee : 10,
+    feePerSubscriber: Number.isFinite(fee) ? fee : DEFAULT_DRAW_FEE_INR,
     poolPercentage: Number.isFinite(poolPercentage) ? poolPercentage : 100,
   };
 }

@@ -15,28 +15,29 @@ type HomepageCurtainProps = {
 };
 
 export function HomepageCurtain({ charitySlot }: HomepageCurtainProps) {
+  // Hero above is navy; each seam's band shows the section it leaves.
+  // Three pins, chosen for narrative weight: the mission statement (first
+  // beat after the hero), how you win (the prize hook that sets up the
+  // charity), and the charity spotlight (the emotional core). How-it-works,
+  // pricing and the final CTA are read or acted on, so they flow normally.
   return (
-    <CurtainStack baseZIndex={10}>
-      <CurtainSection edgeColor="var(--cream)" surfaceClassName="bg-cream">
+    <CurtainStack baseZIndex={10} leadColor="var(--navy)">
+      <CurtainSection tone="cream" edgeColor="var(--cream)" surfaceClassName="bg-cream" pin>
         <StatementSection />
       </CurtainSection>
-      <CurtainSection edgeColor="var(--navy)" surfaceClassName="bg-navy">
+      <CurtainSection tone="navy" edgeColor="var(--navy)" surfaceClassName="bg-navy">
         <EditorialHowItWorks />
       </CurtainSection>
-      <CurtainSection edgeColor="var(--cream)" surfaceClassName="bg-cream">
+      <CurtainSection tone="cream" edgeColor="var(--cream)" surfaceClassName="bg-cream" pin>
         <EditorialHowYouWin />
       </CurtainSection>
-      <CurtainSection edgeColor="var(--navy)" surfaceClassName="bg-navy">
+      <CurtainSection tone="navy" edgeColor="var(--navy)" surfaceClassName="bg-navy" pin>
         {charitySlot}
       </CurtainSection>
-      <CurtainSection edgeColor="var(--cream)" surfaceClassName="bg-cream">
+      <CurtainSection tone="cream" edgeColor="var(--cream)" surfaceClassName="bg-cream">
         <EditorialPricing />
       </CurtainSection>
-      <CurtainSection
-        edgeColor="var(--navy)"
-        surfaceClassName="bg-navy"
-        pin
-      >
+      <CurtainSection tone="navy" edgeColor="var(--navy)" surfaceClassName="bg-navy">
         <EditorialFinalCta />
       </CurtainSection>
     </CurtainStack>

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -31,7 +31,7 @@ export function PageOpenEdge() {
   const edgeColor = pageOpenEdgeColor(pathname);
 
   return (
-    <motion.div
+    <m.div
       key={pathKey}
       className={cn(
         "pointer-events-none fixed inset-x-0 z-[45] overflow-hidden",
@@ -51,9 +51,9 @@ export function PageOpenEdge() {
       <SteppedEdge
         position="top"
         color={edgeColor}
-        playOnMount
+        trigger="mount"
         fillBand
       />
-    </motion.div>
+    </m.div>
   );
 }

@@ -1,6 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  m,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import {
   Children,
   isValidElement,
@@ -12,154 +20,132 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { usePathname } from "next/navigation";
 
 import { SteppedEdge } from "@/components/editorial/stepped-edge";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { useResizeVersion } from "@/hooks/use-resize-version";
-import { useSmoothScroll } from "@/lib/smooth-scroll-context";
+import { useScrubFlag } from "@/hooks/use-scrub-flag";
 import { cn } from "@/lib/utils";
 
 export type CurtainSectionProps = {
   children: ReactNode;
+  /** Surface tone, read by the site nav via `data-tone`. */
+  tone: "cream" | "navy";
   edgeColor: string;
   surfaceClassName?: string;
   className?: string;
+  /** Hold this section while the next one slides over it (md+, if it fits). */
   pin?: boolean;
 };
 
 type CurtainStackProps = {
   children: ReactNode;
   baseZIndex?: number;
+  /** Colour directly above the first section, shown behind its stepped edge. */
+  leadColor?: string;
 };
 
-/** 0 = next section fully below viewport; 1 = next section start at viewport top */
-function useNextSectionCover(
-  nextSectionRef: RefObject<HTMLDivElement | null> | null,
-  enabled: boolean,
-  resetKey: string | number,
-) {
-  const { lenis } = useSmoothScroll();
-  const [cover, setCover] = useState(0);
+/**
+ * Feeds `cover` (0 = next section below the viewport, 1 = its top at the
+ * viewport top) from framer's shared scroll tracker. Mounted only while a
+ * section is actually pinned, so unpinned sections attach no scroll work.
+ */
+function PinCoverDriver({
+  nextSectionRef,
+  cover,
+}: {
+  nextSectionRef: RefObject<HTMLDivElement | null>;
+  cover: MotionValue<number>;
+}) {
+  const { scrollYProgress } = useScroll({
+    target: nextSectionRef,
+    offset: ["start end", "start start"],
+  });
 
+  useMotionValueEvent(scrollYProgress, "change", (value) => cover.set(value));
   useEffect(() => {
-    if (!enabled || !nextSectionRef) {
-      return;
-    }
+    cover.set(scrollYProgress.get());
+    return () => cover.set(0);
+  }, [cover, scrollYProgress]);
 
-    let rafId = 0;
-
-    const measure = () => {
-      const next = nextSectionRef.current;
-      if (!next) {
-        setCover(0);
-        return;
-      }
-
-      const top = next.getBoundingClientRect().top;
-      const vh = window.innerHeight;
-
-      if (top >= vh - 0.5) {
-        setCover(0);
-        return;
-      }
-
-      const progress = 1 - top / vh;
-      setCover(Math.max(0, Math.min(1, progress)));
-    };
-
-    const schedule = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(measure);
-    };
-
-    schedule();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", measure);
-    lenis?.on("scroll", schedule);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", measure);
-      lenis?.off("scroll", schedule);
-    };
-  }, [enabled, nextSectionRef, resetKey, lenis]);
-
-  if (!enabled || !nextSectionRef) {
-    return 0;
-  }
-
-  return cover;
+  return null;
 }
 
 function CurtainSectionInner({
   index,
   totalCount,
   zIndex,
+  tone,
   edgeColor,
   surfaceClassName,
   children,
   className,
-  pin = true,
+  pin = false,
   sectionRef,
   nextSectionRef,
+  previousColor,
 }: CurtainSectionProps & {
   index: number;
   totalCount: number;
   zIndex: number;
+  previousColor?: string;
   sectionRef: RefObject<HTMLDivElement | null>;
   nextSectionRef: RefObject<HTMLDivElement | null> | null;
 }) {
-  const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const mdUp = useMediaQuery("(min-width: 768px)");
-  const resizeVersion = useResizeVersion();
   const innerRef = useRef<HTMLDivElement>(null);
   const [tall, setTall] = useState(false);
-  const layoutKey = `${pathname}:${resizeVersion}`;
+  const cover = useMotionValue(0);
+  const overlayOpacity = useTransform(cover, [0.12, 1], [0, 0.45]);
+  const contentY = useTransform(cover, (value) => `${-4 * value}vh`);
+  // Layers are promoted only while the next section is sliding over.
+  useScrubFlag(cover, sectionRef);
 
-  const isLast = index >= totalCount - 1;
-  const hasNext = !isLast && nextSectionRef != null;
+  const canPin = pin && index < totalCount - 1 && nextSectionRef != null;
 
   useEffect(() => {
     const node = innerRef.current;
-    if (!node) {
+    if (!canPin || !node) {
       return;
     }
+    let frame = 0;
     const measure = () => {
+      frame = 0;
       setTall(node.scrollHeight > window.innerHeight * 1.05);
     };
+    const schedule = () => {
+      if (!frame) {
+        frame = requestAnimationFrame(measure);
+      }
+    };
     measure();
-    const ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(schedule);
     ro.observe(node);
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", schedule);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
     };
-  }, [layoutKey]);
+  }, [canPin]);
 
-  const pinActive = pin && !tall && mdUp && !reduceMotion && hasNext;
-  const cover = useNextSectionCover(nextSectionRef, pinActive, layoutKey);
-
-  const dimActive = cover > 0.12;
-  const overlayOpacity = dimActive
-    ? Math.min(0.45, ((cover - 0.12) / 0.88) * 0.45)
-    : 0;
-  const contentShiftVh = pinActive ? -4 * Math.min(1, cover) : 0;
+  const pinActive = canPin && !tall && mdUp && !reduceMotion;
 
   return (
     <div
       ref={sectionRef}
-      className={cn("relative", surfaceClassName, className)}
+      data-tone={tone}
+      className={cn("group/curtain relative", surfaceClassName, className)}
       style={{ zIndex }}
     >
+      {pinActive && nextSectionRef ? (
+        <PinCoverDriver nextSectionRef={nextSectionRef} cover={cover} />
+      ) : null}
       <SteppedEdge
         position="top"
         color={edgeColor}
+        bandColor={previousColor}
         scrollTargetRef={sectionRef}
-        static={Boolean(reduceMotion)}
       />
       <div
         className={cn(
@@ -167,26 +153,19 @@ function CurtainSectionInner({
         )}
       >
         <div ref={innerRef} className="relative">
-          {pinActive && overlayOpacity > 0 ? (
-            <div
-              className="pointer-events-none absolute inset-0 z-0 bg-navy"
+          {pinActive ? (
+            <m.div
+              className="pointer-events-none absolute inset-0 z-0 bg-navy group-data-scrubbing/curtain:will-change-[opacity]"
               style={{ opacity: overlayOpacity }}
               aria-hidden
             />
           ) : null}
-          <motion.div
-            className="relative z-10"
-            style={
-              pinActive
-                ? {
-                    y: `${contentShiftVh}vh`,
-                    willChange: "transform",
-                  }
-                : undefined
-            }
+          <m.div
+            className="relative z-10 group-data-scrubbing/curtain:will-change-transform"
+            style={pinActive ? { y: contentY } : undefined}
           >
             {children}
-          </motion.div>
+          </m.div>
         </div>
       </div>
     </div>
@@ -199,7 +178,11 @@ export function CurtainSection(_props: CurtainSectionProps) {
   return null;
 }
 
-export function CurtainStack({ children, baseZIndex = 10 }: CurtainStackProps) {
+export function CurtainStack({
+  children,
+  baseZIndex = 10,
+  leadColor,
+}: CurtainStackProps) {
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<
     CurtainSectionProps
   >[];
@@ -221,6 +204,9 @@ export function CurtainStack({ children, baseZIndex = 10 }: CurtainStackProps) {
           sectionRef={sectionRefs[index]}
           nextSectionRef={
             index < items.length - 1 ? sectionRefs[index + 1] : null
+          }
+          previousColor={
+            index === 0 ? leadColor : items[index - 1].props.edgeColor
           }
           {...child.props}
         />

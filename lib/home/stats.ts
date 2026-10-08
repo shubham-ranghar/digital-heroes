@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { CURRENCY_SYMBOL } from "@/lib/money";
 import { getMonthlySubscriptionFeeInr } from "@/lib/subscription/fees";
 
 export type HomeStats = {
@@ -35,7 +36,8 @@ export async function getHomeStats(): Promise<HomeStats> {
       const { data: donations } = await admin
         .from("donations")
         .select("amount_cents")
-        .eq("status", "succeeded");
+        .eq("status", "succeeded")
+        .eq("currency", "inr");
 
       const donationTotal =
         (donations ?? []).reduce(
@@ -92,7 +94,7 @@ export async function getHomeStats(): Promise<HomeStats> {
 
   return {
     totalRaisedDisplay: totalRaised,
-    currencySymbol: "₹",
+    currencySymbol: CURRENCY_SYMBOL,
     nextDrawDate: nextDraw.toISOString(),
     daysUntilDraw,
     jackpotRollover,

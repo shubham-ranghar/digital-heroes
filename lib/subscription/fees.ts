@@ -1,4 +1,3 @@
-import { formatMoney } from "@/lib/money";
 import type { SubscriptionPlan } from "@/lib/subscription/types";
 
 /** Monthly subscription fee in whole rupees (display / charity math). */
@@ -25,9 +24,4 @@ export function getSubscriptionFeePaise(
     return Math.round(monthlyPaise * 12 * 0.9);
   }
   return monthlyPaise;
-}
-
-/** @deprecated Use formatMoney from @/lib/money */
-export function formatInrFromPaise(paise: number): string {
-  return formatMoney(paise);
 }

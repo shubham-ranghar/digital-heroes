@@ -9,7 +9,7 @@ import { createDonationCheckoutAction } from "@/lib/payments/donation-actions";
 import { donationCheckoutSchema } from "@/lib/validations/donation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/money";
+import { CURRENCY_SYMBOL, formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 const PRESETS = [5, 10, 25, 50] as const;
@@ -134,7 +134,7 @@ export function DonationForm({
 
       <div className="space-y-2">
         <label htmlFor="donation-amount" className="text-sm font-medium text-navy">
-          Custom amount (₹)
+          Custom amount ({CURRENCY_SYMBOL})
         </label>
         <Input
           id="donation-amount"
@@ -149,7 +149,7 @@ export function DonationForm({
         <FieldError message={fieldErrors.amount} />
       </div>
 
-      <Button type="button" className="w-full" disabled={isPending} onClick={submit}>
+      <Button type="button" className="w-full" loading={isPending} onClick={submit}>
         {isPending ? "Opening checkout…" : "Donate with Razorpay"}
       </Button>
     </div>

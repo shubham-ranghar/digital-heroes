@@ -5,6 +5,7 @@ import { AdminSection } from "@/components/admin/admin-section";
 import { AdminWinnersTable } from "@/components/admin/admin-winners-table";
 import { requireAdmin } from "@/lib/auth/session";
 import { listWinnersForAdmin } from "@/lib/winners/queries";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Admin · Winners",
@@ -19,11 +20,15 @@ export default async function AdminWinnersPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <AdminSection
-        title="Winners"
-        description="Verify proof uploads, approve or reject claims, and mark payouts as paid."
-      />
-      <AdminWinnersTable winners={winners} />
+      <Reveal trigger="mount" fast>
+        <AdminSection
+          title="Winners"
+          description="Verify proof uploads, approve or reject claims, and mark payouts as paid."
+        />
+      </Reveal>
+      <Reveal trigger="mount" fast>
+        <AdminWinnersTable winners={winners} />
+      </Reveal>
     </div>
   );
 }

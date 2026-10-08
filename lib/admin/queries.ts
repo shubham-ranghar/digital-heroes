@@ -389,7 +389,8 @@ export async function getAdminReports(): Promise<AdminReports> {
   const { data: donations, error: donError } = await client
     .from("donations")
     .select("amount_cents")
-    .eq("status", "succeeded");
+    .eq("status", "succeeded")
+    .eq("currency", "inr");
 
   if (donError) {
     throw new Error(donError.message);

@@ -42,7 +42,7 @@ cp .env.example .env.local
 | `RAZORPAY_WEBHOOK_SECRET` | Razorpay | Webhook signing secret from Dashboard |
 | `RAZORPAY_PLAN_ID_MONTHLY` | Razorpay | Subscription plan ID for monthly billing |
 | `RAZORPAY_PLAN_ID_YEARLY` | Razorpay | Subscription plan ID for yearly billing |
-| `DRAW_FEE_PER_SUBSCRIBER` | Draws | Fee unit per active subscriber (default `10`) |
+| `DRAW_FEE_PER_SUBSCRIBER_INR` | Draws | Draw fund contribution per active subscriber, in whole rupees (default `250`). Legacy name `DRAW_FEE_PER_SUBSCRIBER` is still read as a fallback. |
 | `DRAW_PRIZE_POOL_PERCENTAGE` | Draws | % of fees into pool (default `100`) |
 | `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` | UI | Display-only monthly fee for charity ₹ slider (default `499`) |
 | `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR_YEARLY` | UI | Optional yearly display fee |
@@ -71,18 +71,19 @@ Or run SQL from `supabase/migrations/` in order in the Supabase SQL editor.
 # Supabase SQL editor, or after linking: supabase db execute -f supabase/seed.sql
 ```
 
-**Dev test users** (local only — requires `SUPABASE_SERVICE_ROLE_KEY`):
+**Demo data** (local / demo only — requires `SUPABASE_SERVICE_ROLE_KEY`). Run `supabase/seed.sql` first (sample charities), then:
 
 ```bash
-npx tsx scripts/seed.ts
+npm run seed   # npx tsx scripts/seed.ts
 ```
 
-| Account | Email | Password |
-|---------|-------|----------|
-| Admin | `admin@digital-heroes.test` | `TestAdmin!digital25` |
-| Active subscriber | `subscriber@digital-heroes.test` | `TestMember!digital25` |
+This creates the test accounts below plus a full draw lifecycle, so draw and prize screens are populated on a fresh database:
 
-Run `supabase/seed.sql` first if you need sample charities for signup.
+- **Last month:** a published draw (random mode) with entries and four winners — one per verification state.
+- **This month:** a draft draw, already holding the subscriber's entry, so members can sync scores straight away.
+- **Subscriber extras:** active monthly subscription, charity choice, five recent scores (rolling-5 at its limit), and one succeeded ₹500 donation.
+
+Prize amounts and the draft's `jackpot_carryover` are computed by the draw engine (`lib/draw/pools.ts`) from `DRAW_FEE_PER_SUBSCRIBER_INR` and the active-subscriber count, exactly as a real publish would; the script prints the breakdown. Last month has a tier-5 winner, so carryover is ₹0. Re-running is safe: nothing is duplicated, and the demo winners' states reset to the values below. If last month already has a real draw, the script leaves it (and the current draft's carryover) alone; it never rolls a simulated or published current-month draw back to draft.
 
 **Seed charities (example):**
 
@@ -93,7 +94,7 @@ VALUES
   ('Green Hearth', 'green-hearth', 'Shelter and rehousing support.', false, '[]'::jsonb);
 ```
 
-**Create a draft draw for the current month** (admin UI can also do this):
+**Create a draft draw for the current month** manually (the seed and the admin UI both do this for you):
 
 ```sql
 INSERT INTO public.draws (month, status, mode)
@@ -132,7 +133,18 @@ npm test
 
 ## Test credentials & roles
 
-There are **no built-in default users**. Create accounts through the app:
+`npm run seed` creates these accounts (all fake, `@digital-heroes.test`):
+
+| Account | Email | Password | Demonstrates |
+|---------|-------|----------|--------------|
+| Admin | `admin@digital-heroes.test` | `TestAdmin!digital25` | Admin panel: last month's published draw, a winners queue in every state (approve/reject/mark paid), this month's draft ready to simulate, non-zero reports |
+| Subscriber | `subscriber@digital-heroes.test` | `TestMember!digital25` | Member dashboard: five scores at the rolling limit, entered in this month's draft, an approved + paid jackpot win, a ₹500 donation |
+| No subscription | `nosub@digital-heroes.test` | `TestNoSub!digital25` | Logged-in member without a subscription: inactive dashboard, subscribe CTA, gated scores |
+| Demo winner — proof to review | `winner.pending@digital-heroes.test` | `TestWinner!digital25` | Tier-4 prize, proof uploaded, pending admin review |
+| Demo winner — awaiting proof | `winner.noproof@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize with no proof yet: the member upload flow |
+| Demo winner — proof rejected | `winner.rejected@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize whose proof was rejected: the re-upload path |
+
+To create real accounts through the app instead:
 
 | Role | How to create |
 |------|----------------|
@@ -189,20 +201,20 @@ Middleware (`lib/supabase/middleware.ts`) enforces login for `/dashboard`, `/sub
 
 Monthly draw prize pools are **not** read from Razorpay plan amounts in code. They are computed as:
 
-`totalPool = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER × (DRAW_PRIZE_POOL_PERCENTAGE / 100)`
+`totalPool (₹) = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER_INR × (DRAW_PRIZE_POOL_PERCENTAGE / 100)`
 
-Defaults in `.env.example`: **`DRAW_FEE_PER_SUBSCRIBER=10`**, **`DRAW_PRIZE_POOL_PERCENTAGE=100`** (see `lib/draw/db.ts` → `getDrawFeeConfig()` and `lib/draw/pools.ts`).
+Defaults in `.env.example`: **`DRAW_FEE_PER_SUBSCRIBER_INR=250`**, **`DRAW_PRIZE_POOL_PERCENTAGE=100`** (see `lib/draw/db.ts` → `getDrawFeeConfig()` and `lib/draw/pools.ts`).
 
 That total is split across tiers **40% / 35% / 25%** for 5-, 4-, and 3-match winners (`lib/draw/constants.ts`). Each tier pool is divided equally among winners in that tier. If there are **no 5-match winners**, the entire 5-match tier pool rolls into **`jackpot_carryover`** on the next month’s draw (`splitPrizes()` in `lib/draw/pools.ts`).
 
-Align **Razorpay charge currency (INR)** with how you display fees and prizes (draw engine may still use **GBP (£)** for prize amounts; marketing sliders use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR`).
+All money is **INR (₹)**, matching Razorpay. Display goes through `lib/money.ts` (`en-IN` grouping).
 
 ---
 
 ## Assumptions & limitations
 
-1. **Currency display:** Prize pools and draw fees use **GBP (£)** in draw engine and winner records; marketing/dashboard charity amounts often use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` for display — align Razorpay plan currency with your production region.
-2. **Draw entries** require a **draft/simulated draw row** for the current month; admins create it under **Admin → Draws**. Members sync entries when they save scores (if a draw exists).
+1. **Currency:** The whole app uses **INR (₹)**. Prize amounts (`winners.prize_amount`, `draws.jackpot_carryover`) are stored as rupees in `numeric(12,2)`, while donations (`donations.amount_cents`) are stored as integer paise. Legacy Stripe-era donation rows may carry `currency = 'gbp'` and are excluded from INR totals.
+2. **Draw entries** require a **draft/simulated draw row** for the current month; admins create it under **Admin → Draws** (`npm run seed` creates one). Members sync entries when they save scores (if a draw exists).
 3. **Active subscription** is determined server-side from `subscriptions` (+ cancelled-until-renewal-date). Razorpay webhooks (or `mock` checkout) must run for checkout to grant access.
 4. **Admin user list / reports** need `SUPABASE_SERVICE_ROLE_KEY`. Winner verification works with admin session + RLS alone.
 5. **Homepage “total raised”** uses donations + estimated subscription commitments when `SUPABASE_SERVICE_ROLE_KEY` is set; otherwise the hero stat is hidden (no fabricated number).

@@ -35,6 +35,10 @@
   --status-danger: #c0392b;
 
   --glow-coral: rgba(242, 84, 45, 0.1);
+  --shadow-resting: 0 1px 2px rgba(20, 33, 61, 0.04),
+    0 4px 16px -8px rgba(20, 33, 61, 0.08);
+  --shadow-raised: 0 2px 4px rgba(20, 33, 61, 0.04),
+    0 16px 40px -16px rgba(20, 33, 61, 0.18);
 
   --fluid-display-xl: clamp(2.5rem, 4vw + 1.25rem, 4.5rem);
   --fluid-display-lg: clamp(2rem, 2.5vw + 1.15rem, 3.25rem);
@@ -289,16 +293,21 @@ body.site-menu-open [data-mobile-subscribe-bar] {
     transition-timing-function: var(--ease-out);
   }
 
-  .motion-card-hover:hover {
-    transform: translateY(-4px);
+  /* Hover-capable pointers only: touch would leave the lift stuck on tap. */
+  @media (hover: hover) {
+    .motion-card-hover:hover {
+      transform: translateY(-4px);
+    }
   }
 
   .motion-link-arrow [data-arrow] {
     transition: transform var(--dur-fast) var(--ease-out);
   }
 
-  .motion-link-arrow:hover [data-arrow] {
-    transform: translateX(4px);
+  @media (hover: hover) {
+    .motion-link-arrow:hover [data-arrow] {
+      transform: translateX(4px);
+    }
   }
 
   .motion-crossfade {
@@ -314,6 +323,92 @@ body.site-menu-open [data-mobile-subscribe-bar] {
     }
   }
 
+  /* Interactive controls: colour + transform + shadow share one transition. */
+  .motion-interactive {
+    transition-property: color, background-color, border-color, box-shadow,
+      transform, opacity;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  /* Nav tone swap: slow, soft colour; transforms keep the snappy press. */
+  .motion-tone {
+    transition-property: color, fill, stroke, background-color, border-color,
+      box-shadow, transform;
+    transition-duration: var(--dur-base), var(--dur-base), var(--dur-base),
+      var(--dur-base), var(--dur-base), var(--dur-fast), var(--dur-fast);
+    transition-timing-function: var(--ease-soft), var(--ease-soft),
+      var(--ease-soft), var(--ease-soft), var(--ease-soft), var(--ease-out),
+      var(--ease-out);
+  }
+  .motion-press:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: scale(0.97);
+  }
+  /* Clickable cards only — a small rise plus a soft shadow. */
+  .motion-lift {
+    transition-property: transform, box-shadow, border-color;
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+  @media (hover: hover) {
+    .motion-lift:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-raised);
+      border-color: color-mix(in srgb, var(--navy) 18%, var(--line));
+    }
+    .motion-nudge:hover {
+      transform: translateY(-1px);
+    }
+  }
+  .motion-pop-in {
+    animation: motion-pop-in 520ms var(--ease-out) both;
+  }
+  @keyframes motion-pop-in {
+    0% {
+      transform: scale(0.92);
+      opacity: 0.4;
+    }
+    60% {
+      transform: scale(1.03);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .motion-fade-down {
+    animation: motion-fade-down var(--dur-fast) var(--ease-out) both;
+  }
+  @keyframes motion-fade-down {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .motion-ball-in {
+    /* Utility surfaces cap entrances at --dur-base; 60ms matches app staggers. */
+    animation: motion-ball-in var(--dur-base) var(--ease-out) both;
+    animation-delay: calc(var(--ball-i, 0) * 60ms);
+  }
+  @keyframes motion-ball-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .shadow-resting {
+    box-shadow: var(--shadow-resting);
+  }
+  .shadow-raised {
+    box-shadow: var(--shadow-raised);
+  }
   .roll-text__track {
     transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
   }
@@ -343,6 +438,123 @@ body.site-menu-open [data-mobile-subscribe-bar] {
 
   :is(.group, .roll-link):hover .roll-text__track {
     transform: none;
+  }
+  .motion-press:active:not(:disabled):not([aria-disabled="true"]),
+  .motion-lift:hover,
+  .motion-nudge:hover {
+    transform: none;
+  }
+  .motion-pop-in,
+  .motion-fade-down,
+  .motion-ball-in {
+    animation: none;
+  }
+}
+
+/* Skeleton shimmer: one translated highlight, compositor-only. */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface) 55%, transparent),
+    transparent
+  );
+  animation: skeleton-shimmer 1.6s var(--ease-in-out) infinite;
+}
+:is(.section-navy, .bg-navy) .skeleton-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--cream) 10%, transparent),
+    transparent
+  );
+}
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Site nav takes the inverse of the section beneath it (see useSectionTone). */
+[data-site-navbar] {
+  --nav-fg: var(--navy);
+  --nav-pill-bg: color-mix(in srgb, var(--cream) 85%, transparent);
+  --nav-pill-bg-scrolled: color-mix(in srgb, var(--cream) 95%, transparent);
+  --nav-pill-bg-hover: color-mix(in srgb, var(--sand) 90%, transparent);
+  --nav-pill-border: color-mix(in srgb, var(--navy) 25%, transparent);
+  --nav-pill-border-hover: color-mix(in srgb, var(--navy) 45%, transparent);
+}
+[data-site-navbar][data-surface-tone="navy"] {
+  --nav-fg: var(--cream);
+  --nav-pill-bg: color-mix(in srgb, var(--navy) 70%, transparent);
+  --nav-pill-bg-scrolled: color-mix(in srgb, var(--navy) 90%, transparent);
+  --nav-pill-bg-hover: color-mix(in srgb, var(--cream) 12%, var(--navy));
+  --nav-pill-border: color-mix(in srgb, var(--cream) 30%, transparent);
+  --nav-pill-border-hover: color-mix(in srgb, var(--cream) 60%, transparent);
+}
+
+/* Focus rings stay visible on dark surfaces. */
+:is(.section-navy, .bg-navy, [data-nav-theme="dark"], [data-surface-tone="navy"])
+  :is(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline-color: var(--cream);
+}
+:is(.section-navy, .bg-navy, [data-nav-theme="dark"])
+  .tone-surface
+  :is(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline-color: var(--navy);
+}
+
+/* Hero ambient glow — one slow, transform-only drift. */
+.hero-glow-drift {
+  position: relative;
+  isolation: isolate;
+}
+.hero-glow-drift::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -15%;
+  top: 10%;
+  width: 70%;
+  height: 70%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--coral) 16%, transparent),
+    transparent
+  );
+  animation: hero-glow-drift 18s var(--ease-in-out) infinite alternate;
+}
+@keyframes hero-glow-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(12%, 8%, 0) scale(1.12);
+  }
+}
+/* Mobile: an endless transform on a large blurred layer costs battery and
+   competes with scrolling for little visual return on a small screen. */
+@media (max-width: 767px) {
+  .hero-glow-drift::after {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow-drift::after {
+    animation: none;
+  }
+  .skeleton-shimmer::after {
+    display: none;
   }
 }
 
@@ -443,6 +655,15 @@ body.site-menu-open [data-mobile-subscribe-bar] {
   opacity: 0.04;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Mobile: a fixed blend layer re-blends everything under it on every scroll
+   frame (worst on iOS Safari). Plain alpha at a lower opacity composites for
+   free and keeps the texture. */
+@media (max-width: 767px) {
+  .grain-overlay {
+    opacity: 0.025;
+    mix-blend-mode: normal;
+  }
 }
 
 .hero-glow {

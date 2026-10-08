@@ -145,7 +145,7 @@ export function SignupForm({ charities }: { charities: CharityOption[] }) {
         <FieldError message={result?.fieldErrors?.percentage} />
       </div>
 
-      <Button type="submit" className="h-12 w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" loading={isPending}>
         {isPending ? "Creating account…" : "Create account"}
       </Button>
     </form>

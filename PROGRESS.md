@@ -13,7 +13,7 @@
 | **A.** Subscription & payment | **70%** | Partial | Subscription not enforced in DB (RLS); not checked on every authenticated request |
 | **B.** Score management | **100%** | Done | Trigger not covered by automated tests (Vitest covers app-side retention only) |
 | **C.** Draw & reward | **90%** | Partial | No auto-create next month’s draft; E2E simulate → publish not run on live Supabase |
-| **D.** Prize pool | **75%** | Partial | Pool uses `DRAW_FEE_PER_SUBSCRIBER` (default 10), not Razorpay revenue; charity % not reserved |
+| **D.** Prize pool | **75%** | Partial | Pool uses `DRAW_FEE_PER_SUBSCRIBER_INR` (₹250 default), not Razorpay revenue; charity % not reserved |
 | **E.** Charity | **75%** | Partial | Charity % stored/displayed only — no payout ledger or payment provider transfer; no admin event CRUD |
 | **F.** Winner verification | **100%** | Done | Needs manual test on real Storage + RLS (code paths present) |
 | **G.** User dashboard | **100%** | Done | Intentional: non-subscribers see overview/settings/prizes; scores gated under `(member)` |
@@ -115,7 +115,7 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 | Draws: simulate, publish | Done | `app/admin/draws/page.tsx`, `lib/draw/admin-actions.ts` |
 | Charities CRUD + media | Partial | `lib/admin/charities-actions.ts` — URL list only, no events UI |
 | Winners verify + paid | Done | `app/admin/winners/page.tsx` |
-| Reports & analytics | Partial | `lib/admin/queries.ts` `getAdminReports` — estimates, INR/GBP mix |
+| Reports & analytics | Partial | `lib/admin/queries.ts` `getAdminReports` — estimates (INR) |
 
 ### I. Roles & access
 
@@ -150,7 +150,7 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 ### Critical
 
 1. **Paid gate bypassable in database** — RLS on `scores` and `draw_entries` allows insert/update for any authenticated user without checking subscription. App uses `requireActiveSubscription()` only on server actions. **Fix:** SQL helper mirroring `subscriptionGrantsAccess`; tighten INSERT/UPDATE policies.
-2. **Prize pool ignores real money and charity share** — `DRAW_FEE_PER_SUBSCRIBER` + `DRAW_PRIZE_POOL_PERCENTAGE` (default 100%) can award full fictional pool while UI promises ≥10% to charity. **Fix:** Derive pool from collected amount minus charity reservation; single currency aligned with Razorpay.
+2. **Prize pool ignores real money and charity share** — `DRAW_FEE_PER_SUBSCRIBER_INR` + `DRAW_PRIZE_POOL_PERCENTAGE` (default 100%) can award full fictional pool while UI promises ≥10% to charity. **Fix:** Derive pool from collected amount minus charity reservation; single currency aligned with Razorpay.
 3. **Charity percentage is not paid** — Stored in `user_charity` and shown on dashboard; no ledger or payment provider transfer. **Fix:** Record payables on payment success; payout process before marketing "impact" as settled.
 
 ### High
@@ -162,7 +162,7 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 
 ### Medium
 
-8. **Currency mismatch** — Draw/prizes in £-style amounts; charity slider and reports use `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR`; donation cents ÷ 100 as INR.
+8. ~~**Currency mismatch**~~ — Resolved: app standardised on INR via `lib/money.ts`. Open: prize amounts are rupees `numeric(12,2)` while donations are integer paise (two storage conventions).
 9. **Algorithmic draw with replacement** — Same number can appear multiple times in five winning numbers (`lib/draw/algorithmic.ts`).
 10. **Admin cannot manage `charity_events`** — Table exists; no admin UI.
 11. **`npm run lint` fails** — Blocks CI if lint is required.
@@ -178,7 +178,7 @@ Evidence paths and one-line notes for every item are in the canvas. Abbreviated 
 ### P0 — blocking / core
 
 1. RLS: require active subscription (or admin) on `scores` and `draw_entries` writes.
-2. Prize pool formula: collected fees − charity % → then 40/35/25; remove default “100% of flat £10” unless that is explicit product policy.
+2. Prize pool formula: collected fees − charity % → then 40/35/25; remove default “100% of flat ₹250” unless that is explicit product policy.
 3. Charity payout or ledger (even if payout is manual at first).
 
 ### P1 — important

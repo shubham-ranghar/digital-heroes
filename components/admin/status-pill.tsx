@@ -14,9 +14,32 @@ const DOT_CLASS: Record<StatusTone, string> = {
   neutral: "bg-slate",
 };
 
-const ACTIVE = new Set(["active", "approved", "paid", "published", "succeeded", "featured"]);
-const PENDING = new Set(["pending", "draft", "simulated", "cancelled", "not featured"]);
-const DANGER = new Set(["rejected", "lapsed", "failed"]);
+/**
+ * Tone only. The label is always the value itself (schema vocabulary: draft /
+ * simulated / published, pending / approved / rejected, pending / paid, ...),
+ * so the same status reads the same on every surface. Booleans such as
+ * "featured" are not statuses and must not be routed through this pill.
+ */
+const TONE_BY_VALUE: Record<string, StatusTone> = {
+  active: "active",
+  approved: "active",
+  paid: "active",
+  published: "active",
+  succeeded: "active",
+  pending: "pending",
+  draft: "pending",
+  simulated: "pending",
+  cancelled: "pending",
+  "past due": "pending",
+  rejected: "danger",
+  lapsed: "danger",
+  failed: "danger",
+};
+
+/** Values with a clearer label than their raw form. */
+const LABEL_OVERRIDES: Record<string, string> = {
+  none: "No payouts yet",
+};
 
 function normalizeKey(value: string) {
   return value.toLowerCase().replaceAll("_", " ").trim();
@@ -24,31 +47,9 @@ function normalizeKey(value: string) {
 
 function resolveStatus(raw: string): { label: string; tone: StatusTone } {
   const key = normalizeKey(raw);
-
-  if (ACTIVE.has(key)) {
-    if (key === "paid" || key === "succeeded" || key === "approved") {
-      return { label: "Paid", tone: "active" };
-    }
-    return { label: "Active", tone: "active" };
-  }
-
-  if (PENDING.has(key)) {
-    return { label: "Pending", tone: "pending" };
-  }
-
-  if (DANGER.has(key)) {
-    if (key === "lapsed") {
-      return { label: "Lapsed", tone: "danger" };
-    }
-    return { label: "Rejected", tone: "danger" };
-  }
-
-  if (key === "inactive") {
-    return { label: "Inactive", tone: "neutral" };
-  }
-
-  const label = key.charAt(0).toUpperCase() + key.slice(1);
-  return { label, tone: "neutral" };
+  const label =
+    LABEL_OVERRIDES[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+  return { label, tone: TONE_BY_VALUE[key] ?? "neutral" };
 }
 
 export function StatusPill({ value, className }: StatusPillProps) {

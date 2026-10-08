@@ -102,21 +102,22 @@ export default async function CharityDetailPage({
         <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
           <div className="space-y-10">
             {charity.images.length > 0 ? (
-              <RevealStagger as="div" className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {charity.images.map((src, index) => (
-                  <RevealStaggerItem key={`${src}-${index}`} as="div">
+                  <div key={`${src}-${index}`}>
                     <div
                       className="overflow-hidden rounded-[20px] border border-[color-mix(in_srgb,var(--navy)_12%,transparent)]"
                     >
+                      {/* CharityImage wipes itself in; no extra fade here. */}
                       <CharityImage
                         src={src}
                         alt={`${charity.name} image ${index + 1}`}
                         className="aspect-[4/3] w-full"
                       />
                     </div>
-                  </RevealStaggerItem>
+                  </div>
                 ))}
-              </RevealStagger>
+              </div>
             ) : null}
 
             <Reveal>

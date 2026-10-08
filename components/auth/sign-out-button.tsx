@@ -25,8 +25,7 @@ export function SignOutButton({
       variant="secondary"
       size="lg"
       className={cn("shrink-0 justify-center", className)}
-      disabled={isPending}
-      aria-busy={isPending}
+      loading={isPending}
       onClick={() =>
         startTransition(async () => {
           await signOutAction();

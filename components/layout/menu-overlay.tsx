@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -11,7 +11,6 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Container } from "@/components/layout/container";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import {
-  buttonMotionProps,
   DURATION,
   EASE_IN_OUT,
   EASE_OUT,
@@ -119,7 +118,7 @@ function BrowseRow({
   const enterDelay = 0.25 + index * 0.05;
 
   return (
-    <motion.li
+    <m.li
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: mdUp ? 20 : 12 }}
       animate={
         reduceMotion
@@ -163,7 +162,7 @@ function BrowseRow({
           aria-hidden
         />
       </Link>
-    </motion.li>
+    </m.li>
   );
 }
 
@@ -190,29 +189,28 @@ function MenuOverlayTopBarMobile({
           digital<span className="text-coral">.HEROES</span>
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <motion.button
+          <button
             id={closeButtonId}
             type="button"
             className={cn(
               menuFocusRing,
-              "inline-flex h-11 min-w-16 items-center justify-center rounded-none border border-line bg-white px-3 text-sm font-medium text-navy",
+              "motion-interactive motion-press inline-flex h-11 min-w-16 items-center justify-center rounded-none border border-line bg-white px-3 text-sm font-medium text-navy hover:bg-sand/60",
             )}
             onClick={onClose}
-            {...buttonMotionProps(false)}
           >
             Close
-          </motion.button>
-          <motion.div {...buttonMotionProps(false)}>
+          </button>
+          <div>
             <Link
               href="/subscribe"
               className={cn(
                 menuFocusRing,
-                "inline-flex h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep",
+                "motion-interactive motion-press inline-flex h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep",
               )}
             >
               Subscribe
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
@@ -240,29 +238,28 @@ function MenuOverlayTopBarDesktop({
           digital<span className="text-coral">.HEROES</span>
         </Link>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <motion.button
+          <button
             id={closeButtonId}
             type="button"
             className={cn(
               menuFocusRing,
-              "inline-flex h-10 min-w-10 items-center justify-center rounded-none border border-line bg-white px-3 text-sm font-medium text-navy",
+              "motion-interactive motion-press inline-flex h-10 min-w-10 items-center justify-center rounded-none border border-line bg-white px-3 text-sm font-medium text-navy hover:bg-sand/60",
             )}
             onClick={onClose}
-            {...buttonMotionProps(false)}
           >
             Close
-          </motion.button>
-          <motion.div {...buttonMotionProps(false)}>
+          </button>
+          <div>
             <Link
               href="/subscribe"
               className={cn(
                 menuFocusRing,
-                "inline-flex h-10 items-center rounded-full bg-coral px-5 text-sm font-medium text-navy hover:bg-coral-deep",
+                "motion-interactive motion-press inline-flex h-10 items-center rounded-full bg-coral px-5 text-sm font-medium text-navy hover:bg-coral-deep",
               )}
             >
               Subscribe
             </Link>
-          </motion.div>
+          </div>
         </div>
       </Container>
     </div>
@@ -355,7 +352,7 @@ export function MenuOverlay({
     <AnimatePresence>
       {open ? (
         <>
-          <motion.div
+          <m.div
             className="fixed inset-0 z-[99] bg-navy/40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -363,7 +360,7 @@ export function MenuOverlay({
             transition={{ duration: DURATION.fast, ease: EASE_IN_OUT }}
             aria-hidden
           />
-          <motion.div
+          <m.div
           id="site-menu"
           role="dialog"
           aria-modal="true"
@@ -384,7 +381,7 @@ export function MenuOverlay({
           {!reduceMotion ? (
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
               {[2, 1, 3, 0, 4].map((col, orderIdx) => (
-                <motion.div
+                <m.div
                   key={col}
                   className="h-full flex-1 bg-cream"
                   initial={{ y: "-100%" }}
@@ -408,7 +405,7 @@ export function MenuOverlay({
           ) : (
             <div className="absolute inset-0 bg-cream" aria-hidden />
           )}
-          <motion.div
+          <m.div
             className="relative z-10 flex min-h-0 flex-1 flex-col bg-cream/0"
             initial={reduceMotion ? false : { opacity: 0, y: 16 }}
             animate={
@@ -448,7 +445,7 @@ export function MenuOverlay({
           >
             <section className="pt-6">
               <MenuSectionLabel>Browse</MenuSectionLabel>
-              <motion.div
+              <m.div
                 className="mt-2 h-px origin-left bg-navy"
                 initial={reduceMotion ? false : { scaleX: 0 }}
                 animate={reduceMotion ? { scaleX: 1 } : { scaleX: 1 }}
@@ -539,7 +536,7 @@ export function MenuOverlay({
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0">
               <div className="min-h-0 lg:col-span-7">
                 <MenuSectionLabel>Browse</MenuSectionLabel>
-                <motion.div
+                <m.div
                   className="mt-2 h-px origin-left bg-line"
                   initial={reduceMotion ? false : { scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -623,8 +620,8 @@ export function MenuOverlay({
               </div>
             </div>
           </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
         </>
       ) : null}
     </AnimatePresence>,

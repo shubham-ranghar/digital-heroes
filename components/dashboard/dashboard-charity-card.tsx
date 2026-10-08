@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { m, useInView, useReducedMotion, useSpring } from "framer-motion";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,10 +11,8 @@ import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
 import { updateCharityPercentageAction } from "@/lib/charity/actions";
 import { calculateCharityContribution } from "@/lib/charity/contribution";
-import {
-  formatInrFromPaise,
-  getSubscriptionFeePaise,
-} from "@/lib/subscription/fees";
+import { formatMoney } from "@/lib/money";
+import { getSubscriptionFeePaise } from "@/lib/subscription/fees";
 import type { SubscriptionPlan } from "@/lib/subscription/types";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -41,7 +40,7 @@ export function DashboardCharityCard({
 
   if (!charity) {
     return (
-      <BentoCard title="Your charity">
+      <BentoCard title="Your charity" icon={Heart}>
         <DashboardEmptyState
           icon={Heart}
           title="No cause linked yet"
@@ -75,6 +74,7 @@ export function DashboardCharityCard({
   return (
     <BentoCard
       title="Your charity"
+      icon={Heart}
       headerAction={
         <Button
           variant="ghost"
@@ -118,10 +118,11 @@ export function DashboardCharityCard({
             disabled={isPending || !hasAccess}
             aria-label="Charity contribution percentage"
           />
+          <SavedShareBar percentage={savedPercentage} />
           <p className={tabularImpact}>
             <span className="text-sm text-slate">Goes to your cause each cycle: </span>
             <span className="font-sans text-lg text-status-active">
-              {formatInrFromPaise(liveAmount.amountCents)}
+              {formatMoney(liveAmount.amountCents)}
             </span>
             <span className="text-xs text-muted-foreground">
               {" "}
@@ -134,7 +135,8 @@ export function DashboardCharityCard({
           <Button
             type="button"
             size="sm"
-            disabled={isPending || percentage === savedPercentage}
+            disabled={percentage === savedPercentage}
+            loading={isPending}
             onClick={handleSave}
           >
             {isPending ? "Saving…" : "Save share"}
@@ -151,5 +153,43 @@ export function DashboardCharityCard({
         )}
       </div>
     </BentoCard>
+  );
+}
+
+/**
+ * Committed share (last saved %), springing to its value when it scrolls into
+ * view and again after each save. The slider above stays 1:1 with the pointer.
+ * scaleX only; the track clips the fill so no radius distorts mid-spring.
+ * Decorative: the percentage is already shown as text.
+ */
+function SavedShareBar({ percentage }: { percentage: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const reduceMotion = useReducedMotion();
+  const scale = useSpring(0, { stiffness: 200, damping: 25 });
+  const target = Math.min(100, Math.max(0, percentage)) / 100;
+
+  useEffect(() => {
+    if (!inView) {
+      return;
+    }
+    if (reduceMotion) {
+      scale.jump(target);
+    } else {
+      scale.set(target);
+    }
+  }, [inView, reduceMotion, scale, target]);
+
+  return (
+    <div
+      ref={ref}
+      className="h-1 overflow-hidden rounded-full bg-status-active/15"
+      aria-hidden
+    >
+      <m.div
+        className="h-full origin-left bg-status-active"
+        style={{ scaleX: scale }}
+      />
+    </div>
   );
 }

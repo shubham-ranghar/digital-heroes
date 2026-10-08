@@ -2,18 +2,17 @@
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion, useReducedMotion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
-import { buttonInteraction } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border bg-clip-padding text-sm font-medium whitespace-nowrap motion-transition-colors motion-transition-transform outline-none select-none disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-status-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-full border bg-clip-padding text-sm font-medium whitespace-nowrap motion-interactive motion-press outline-none select-none disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 aria-busy:cursor-progress aria-invalid:border-status-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-coral text-navy hover:bg-coral-deep",
+          "border-transparent bg-coral text-navy shadow-[0_1px_0_rgba(20,33,61,0.08),inset_0_1px_0_rgba(255,255,255,0.18)] hover:bg-coral-deep hover:shadow-[0_8px_20px_-8px_rgba(217,68,31,0.55)]",
         outline:
           "border-navy bg-transparent text-navy hover:bg-navy/5",
         secondary:
@@ -42,7 +41,11 @@ const buttonVariants = cva(
   },
 );
 
-type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants>;
+type ButtonProps = ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /** Shows a spinner, sets aria-busy, and disables the button. */
+    loading?: boolean;
+  };
 
 function Button({
   className,
@@ -50,25 +53,26 @@ function Button({
   size = "default",
   render,
   nativeButton,
+  loading = false,
+  disabled,
+  children,
   ...props
 }: ButtonProps) {
-  const reduceMotion = useReducedMotion();
-
-  const defaultRender = (
-    <motion.button
-      whileHover={reduceMotion ? undefined : buttonInteraction.hover}
-      whileTap={reduceMotion ? undefined : buttonInteraction.tap}
-    />
-  );
-
   return (
     <ButtonPrimitive
       data-slot="button"
       nativeButton={nativeButton ?? (render != null ? false : undefined)}
-      render={render ?? defaultRender}
+      render={render}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {loading ? (
+        <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+      ) : null}
+      {children}
+    </ButtonPrimitive>
   );
 }
 

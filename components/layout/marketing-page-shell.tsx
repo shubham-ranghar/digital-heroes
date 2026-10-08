@@ -18,6 +18,7 @@ export function MarketingPageShell({
 }: MarketingPageShellProps) {
   return (
     <div
+      data-tone={variant}
       data-nav-theme={variant === "cream" ? "light" : "dark"}
       className={cn(
         variant === "cream" ? "section-cream" : "section-navy",

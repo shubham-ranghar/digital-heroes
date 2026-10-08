@@ -41,7 +41,7 @@ export function FooterLinkGrid({ columns }: FooterLinkGridProps) {
       : "grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10";
 
   return (
-    <div className="bg-sand text-navy">
+    <div data-tone="cream" className="bg-sand text-navy">
       <Container className="py-14 md:py-20 lg:py-24">
         <RevealStagger className={gridClass} stagger={0.06}>
           {visibleColumns.map((column) => (

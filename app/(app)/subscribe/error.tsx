@@ -10,7 +10,7 @@ export default function SubscribeError({
   reset: () => void;
 }) {
   return (
-    <div className="section-navy flex min-h-[calc(100dvh-var(--header-height))] flex-1 items-center justify-center px-4 py-16 pt-[var(--header-height)]">
+    <div data-tone="navy" className="section-navy flex min-h-[calc(100dvh-var(--header-height))] flex-1 items-center justify-center px-4 py-16 pt-[var(--header-height)]">
       <div className="mx-auto w-full max-w-lg">
         <ErrorPageState
           title="Subscribe unavailable"

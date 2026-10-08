@@ -5,7 +5,7 @@ import { createSeededRng } from "@/lib/draw/rng";
 import { previewDrawResult, simulateDraw } from "@/lib/draw/simulate";
 import type { DrawEntryInput } from "@/lib/draw/types";
 
-const TEN_POUND_POOL_BASE = {
+const TEN_RUPEE_POOL_BASE = {
   subscriberScores: [10, 11, 12],
   activeSubscribers: 1,
   feePerSubscriber: 10,
@@ -13,12 +13,12 @@ const TEN_POUND_POOL_BASE = {
   carryover: 0,
 };
 
-function previewWithTenPoundPool(
+function previewWithTenRupeePool(
   winningNumbers: number[],
   entries: DrawEntryInput[],
 ) {
   return previewDrawResult(winningNumbers, {
-    ...TEN_POUND_POOL_BASE,
+    ...TEN_RUPEE_POOL_BASE,
     entries,
   });
 }
@@ -48,17 +48,17 @@ describe("previewDrawResult", () => {
     const winningNumbers = [10, 11, 12, 30, 40];
 
     const expectedPools = calculatePrizePools(
-      TEN_POUND_POOL_BASE.activeSubscribers,
-      TEN_POUND_POOL_BASE.feePerSubscriber,
-      TEN_POUND_POOL_BASE.poolPercentage,
-      TEN_POUND_POOL_BASE.carryover,
+      TEN_RUPEE_POOL_BASE.activeSubscribers,
+      TEN_RUPEE_POOL_BASE.feePerSubscriber,
+      TEN_RUPEE_POOL_BASE.poolPercentage,
+      TEN_RUPEE_POOL_BASE.carryover,
     );
 
     expect(expectedPools.totalPool).toBe(10);
     expect(expectedPools.tier3Pool).toBe(2.5);
     expect(expectedPools.tier5Pool).toBe(4);
 
-    const result = previewWithTenPoundPool(winningNumbers, [
+    const result = previewWithTenRupeePool(winningNumbers, [
       { userId: "test-subscriber", scores: [10, 11, 12] },
     ]);
 
@@ -79,7 +79,7 @@ describe("previewDrawResult", () => {
   it("allocates no prizes when the entry has fewer than 3 matches", () => {
     const winningNumbers = [10, 11, 12, 30, 40];
 
-    const result = previewWithTenPoundPool(winningNumbers, [
+    const result = previewWithTenRupeePool(winningNumbers, [
       { userId: "no-tier", scores: [10, 11, 99] },
     ]);
 
@@ -93,7 +93,7 @@ describe("previewDrawResult", () => {
   it("awards tier 4 and ₹3.50 from a ₹10 pool for four matches", () => {
     const winningNumbers = [10, 11, 12, 13, 40];
 
-    const result = previewWithTenPoundPool(winningNumbers, [
+    const result = previewWithTenRupeePool(winningNumbers, [
       { userId: "tier-four", scores: [10, 11, 12, 13, 1] },
     ]);
 
@@ -110,7 +110,7 @@ describe("previewDrawResult", () => {
   it("awards tier 5 and ₹4.00 with no jackpot carryover when five matches exist", () => {
     const winningNumbers = [10, 11, 12, 13, 14];
 
-    const result = previewWithTenPoundPool(winningNumbers, [
+    const result = previewWithTenRupeePool(winningNumbers, [
       { userId: "jackpot", scores: [10, 11, 12, 13, 14] },
     ]);
 
@@ -127,7 +127,7 @@ describe("previewDrawResult", () => {
   it("preserves one-to-one matching when winning numbers contain duplicates", () => {
     const winningNumbers = [10, 10, 12, 13, 14];
 
-    const result = previewWithTenPoundPool(winningNumbers, [
+    const result = previewWithTenRupeePool(winningNumbers, [
       { userId: "dupes", scores: [10, 10, 10, 99, 98] },
     ]);
 

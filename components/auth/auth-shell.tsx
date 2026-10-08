@@ -28,6 +28,7 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <section
+      data-tone="navy"
       data-nav-theme="dark"
       className="section-navy hero-glow flex min-h-dvh flex-1 flex-col items-center justify-center px-4 py-6 pt-[var(--header-height)] sm:px-6"
     >

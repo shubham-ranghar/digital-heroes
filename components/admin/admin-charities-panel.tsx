@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
-import { StatusPill } from "@/components/admin/status-pill";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -144,9 +144,18 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
             header: "Featured",
             sortable: true,
             sortValue: (row) => (row.isFeatured ? 1 : 0),
-            cell: (row) => (
-              <StatusPill value={row.isFeatured ? "featured" : "not featured"} />
-            ),
+            cell: (row) =>
+              row.isFeatured ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-navy">
+                  <Star className="size-4 fill-coral text-coral" aria-hidden />
+                  Featured
+                </span>
+              ) : (
+                <span className="text-sm text-slate">
+                  <span aria-hidden>—</span>
+                  <span className="sr-only">Not featured</span>
+                </span>
+              ),
           },
           {
             id: "supporters",

@@ -1,9 +1,10 @@
 import { countUnreadContactMessages } from "@/lib/contact/admin-queries";
-import { getDrawFeeConfig } from "@/lib/draw/db";
+import {
+  activeSubscriberUserIdsFromRows,
+  getDrawFeeConfig,
+} from "@/lib/draw/db";
 import { calculatePrizePools } from "@/lib/draw/pools";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { subscriptionGrantsAccess } from "@/lib/subscription/access";
-import type { SubscriptionStatus } from "@/lib/subscription/types";
 
 export type AdminOverviewStats = {
   totalUsers: number;
@@ -24,15 +25,12 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
 
   const { data: subscriptions } = await admin
     .from("subscriptions")
-    .select("user_id, status, renewal_date, cancel_at_period_end");
+    .select("user_id, status, renewal_date, cancel_at_period_end, created_at");
 
-  const activeSubscribers = (subscriptions ?? []).filter((row) =>
-    subscriptionGrantsAccess({
-      status: row.status as SubscriptionStatus,
-      renewal_date: row.renewal_date as string | null,
-      cancel_at_period_end: Boolean(row.cancel_at_period_end),
-    }),
-  ).length;
+  // Latest row per user, the same count the draw engine uses for pools.
+  const activeSubscribers = activeSubscriberUserIdsFromRows(
+    (subscriptions ?? []) as Parameters<typeof activeSubscriberUserIdsFromRows>[0],
+  ).size;
 
   const monthIso = new Date();
   const monthKey = `${monthIso.getUTCFullYear()}-${String(monthIso.getUTCMonth() + 1).padStart(2, "0")}-01`;

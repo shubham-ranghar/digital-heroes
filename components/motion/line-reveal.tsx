@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 
 import { DURATION, EASE_OUT } from "@/lib/motion";
@@ -40,7 +40,7 @@ export function LineReveal({
     <div ref={ref} className={cn(className)}>
       {lines.map((line, index) => (
         <span key={index} className="block overflow-hidden">
-          <motion.span
+          <m.span
             className={cn("block", lineClassName)}
             initial={{ y: "110%" }}
             animate={shouldPlay ? { y: 0 } : { y: "110%" }}
@@ -51,7 +51,7 @@ export function LineReveal({
             }}
           >
             {line}
-          </motion.span>
+          </m.span>
         </span>
       ))}
     </div>

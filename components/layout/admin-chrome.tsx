@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { m, useReducedMotion } from "framer-motion";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { adminNavItems } from "@/lib/admin/nav";
+import { layoutSpring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+/** Overview is exact-match so it isn't highlighted on every /admin/* page. */
+function isAdminNavActive(pathname: string, href: string) {
+  if (href === "/admin") {
+    return pathname === "/admin";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 type AdminChromeProps = {
   children: React.ReactNode;
@@ -19,6 +29,8 @@ export function AdminChrome({
   showServiceRoleWarning,
 }: AdminChromeProps) {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+  const indicatorTransition = reduceMotion ? { duration: 0 } : layoutSpring;
 
   return (
     <div className="shell-dashboard min-h-screen lg:flex">
@@ -29,7 +41,7 @@ export function AdminChrome({
         <div className="border-b border-line px-5 py-6">
           <Link
             href="/dashboard"
-            className="text-xs text-slate hover:text-navy"
+            className="motion-link-arrow text-xs text-slate motion-interactive hover:text-navy"
           >
             ← Member dashboard
           </Link>
@@ -40,21 +52,38 @@ export function AdminChrome({
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {adminNavItems.map((item) => {
-            const active = pathname.startsWith(item.href);
+            const active = isAdminNavActive(pathname, item.href);
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+                  "group/nav motion-interactive relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm",
                   active
-                    ? "bg-sand text-navy"
+                    ? "text-navy"
                     : "text-slate hover:bg-sand/60 hover:text-navy",
                 )}
               >
-                <Icon className="size-4" aria-hidden />
-                {item.label}
+                {active ? (
+                  <m.span
+                    layoutId="admin-sidebar-indicator"
+                    transition={indicatorTransition}
+                    className="absolute inset-0 rounded-xl bg-sand"
+                    aria-hidden
+                  >
+                    <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-coral" />
+                  </m.span>
+                ) : null}
+                <Icon
+                  className={cn(
+                    "relative size-4 transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/nav:translate-x-0.5 motion-reduce:transform-none",
+                    active && "text-coral",
+                  )}
+                  aria-hidden
+                />
+                <span className="relative">{item.label}</span>
               </Link>
             );
           })}
@@ -74,33 +103,40 @@ export function AdminChrome({
           aria-label="Admin sections"
         >
           {adminNavItems.map((item) => {
-            const active = pathname.startsWith(item.href);
+            const active = isAdminNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 py-2 text-xs",
-                  active
-                    ? "bg-sand text-navy"
-                    : "text-slate hover:text-navy",
+                  "motion-interactive motion-press relative inline-flex min-h-11 shrink-0 items-center rounded-full px-4 py-2 text-xs",
+                  active ? "text-navy" : "text-slate hover:bg-sand/50 hover:text-navy",
                 )}
               >
-                {item.label}
+                {active ? (
+                  <m.span
+                    layoutId="admin-tabs-indicator"
+                    transition={indicatorTransition}
+                    className="absolute inset-0 rounded-full bg-sand"
+                    aria-hidden
+                  />
+                ) : null}
+                <span className="relative">{item.label}</span>
               </Link>
             );
           })}
         </nav>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <div id="admin-content" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           {showServiceRoleWarning ? (
-            <p className="mb-6 rounded-xl border border-line bg-sand px-4 py-3 text-sm text-navy">
+            <p className="motion-fade-down mb-6 rounded-xl border border-line bg-sand px-4 py-3 text-sm text-navy">
               Set <code className="font-medium">SUPABASE_SERVICE_ROLE_KEY</code> for
               full admin data (users, draws, charities, reports). Winner actions
               still work via your admin session.
             </p>
           ) : null}
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

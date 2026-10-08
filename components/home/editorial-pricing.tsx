@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 
 import { SectionHeadline } from "@/components/motion/section-headline";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
@@ -98,7 +98,7 @@ export function EditorialPricing() {
                     <p className="mt-1 text-[17px] text-navy/80">{plan.effective}</p>
                   ) : null}
                   <p className="mt-2 text-[17px] text-navy/80">{plan.note}</p>
-                  <motion.div className="mt-auto pt-8" {...buttonMotionProps(reduceMotion)}>
+                  <m.div className="mt-auto pt-8" {...buttonMotionProps(reduceMotion)}>
                     <Link
                       href="/subscribe"
                       className={cn(
@@ -110,7 +110,7 @@ export function EditorialPricing() {
                     >
                       Subscribe
                     </Link>
-                  </motion.div>
+                  </m.div>
                 </div>
               </EditorialCard>
             </RevealStaggerItem>

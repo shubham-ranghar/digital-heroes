@@ -85,7 +85,7 @@ export function LoginForm() {
         <FieldError message={result?.fieldErrors?.password} />
       </div>
 
-      <Button type="submit" className="h-12 w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" loading={isPending}>
         {isPending ? "Signing in…" : "Sign in"}
       </Button>
     </form>

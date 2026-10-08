@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 
 import { DURATION, EASE_OUT } from "@/lib/motion";
@@ -60,7 +60,7 @@ export function StepMark({ className }: StepMarkProps) {
           const animIndex = STEP_COUNT - 1 - index;
 
           return (
-            <motion.rect
+            <m.rect
               key={index}
               x={x}
               y={y}

@@ -1,69 +1,58 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { animate, useReducedMotion } from "framer-motion";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+
+import { EASE_OUT } from "@/lib/motion";
 
 type UseCountUpOptions = {
   /** Animation duration in milliseconds. */
   duration?: number;
-  /** Decimal places in the displayed value. */
-  decimals?: number;
   /** Start counting when true (e.g. after in-view). */
   enabled?: boolean;
+  /** Text for a given numeric value (counting from zero up to `end`). */
+  format: (value: number) => string;
 };
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
 /**
- * Animates a number from zero to `end` for stat displays.
- * Respects prefers-reduced-motion by showing the final value immediately.
+ * Counts a number up from zero, off the React render path: each frame writes
+ * the element's text directly, and React renders once more at the end with
+ * the final value so its output and the DOM agree.
+ *
+ * `ref` must point at an element whose only child is the returned `text`.
+ * Reduced motion shows the final value immediately.
  */
 export function useCountUp(
+  ref: RefObject<HTMLElement | null>,
   end: number,
-  {
-    duration = 1600,
-    decimals = 0,
-    enabled = true,
-  }: UseCountUpOptions = {},
+  { duration = 1600, enabled = true, format }: UseCountUpOptions,
 ) {
   const reduceMotion = useReducedMotion();
-  const [animated, setAnimated] = useState(0);
-  const frameRef = useRef<number | null>(null);
-  const startRef = useRef<number | null>(null);
+  const [settledEnd, setSettledEnd] = useState<number | null>(null);
+  const formatRef = useRef(format);
+
+  useLayoutEffect(() => {
+    formatRef.current = format;
+  });
 
   useEffect(() => {
     if (!enabled || reduceMotion) {
       return;
     }
+    const node = ref.current;
+    const controls = animate(0, end, {
+      duration: duration / 1000,
+      ease: EASE_OUT,
+      onUpdate: (latest) => {
+        if (node) {
+          node.textContent = formatRef.current(latest);
+        }
+      },
+      onComplete: () => setSettledEnd(end),
+    });
+    return () => controls.stop();
+  }, [ref, end, duration, enabled, reduceMotion]);
 
-    startRef.current = null;
-
-    const step = (timestamp: number) => {
-      if (startRef.current === null) {
-        startRef.current = timestamp;
-      }
-      const elapsed = timestamp - startRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = easeOutCubic(progress);
-      setAnimated(end * eased);
-
-      if (progress < 1) {
-        frameRef.current = requestAnimationFrame(step);
-      }
-    };
-
-    frameRef.current = requestAnimationFrame(step);
-
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, [end, duration, enabled, reduceMotion]);
-
-  const value = !enabled ? 0 : reduceMotion ? end : animated;
-  const formatted = value.toFixed(decimals);
-  return { value, formatted };
+  const settled = reduceMotion || settledEnd === end;
+  return { text: format(settled ? end : 0) };
 }

@@ -49,7 +49,7 @@ export function ConfirmDialog({
             type="button"
             variant="secondary"
             className="border-status-danger/40 bg-status-danger/15 text-navy hover:bg-status-danger/25"
-            disabled={pending}
+            loading={pending}
             onClick={onConfirm}
           >
             {pending ? "Working…" : confirmLabel}

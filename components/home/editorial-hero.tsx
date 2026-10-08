@@ -3,14 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  motion,
+  m,
   useReducedMotion,
   useScroll,
   useTransform,
   useInView,
 } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { HighlightHeadline } from "@/components/editorial/highlight-headline";
 import { SteppedEdge } from "@/components/editorial/stepped-edge";
@@ -18,10 +18,10 @@ import { LineReveal } from "@/components/motion/line-reveal";
 import { Container } from "@/components/layout/container";
 import { useCountUp } from "@/hooks/use-count-up";
 import { HERO_IMAGE_ALT, HERO_IMAGE_SRC } from "@/lib/home/hero-image";
+import { formatAmount } from "@/lib/money";
 import type { HomeStats } from "@/lib/home/stats";
 import type { Variants } from "framer-motion";
 import {
-  buttonMotionProps,
   DURATION,
   EASE_IN_OUT,
   EASE_OUT,
@@ -84,7 +84,7 @@ function HeroOpenEdge({ reduceMotion }: { reduceMotion: boolean | null }) {
   }
 
   return (
-    <motion.div
+    <m.div
       className="pointer-events-none absolute inset-x-0 top-0 z-[4] overflow-hidden bg-navy md:[clip-path:polygon(0_0,60%_0,60%_100%,0_100%)] xl:[clip-path:polygon(0_0,54%_0,54%_100%,0_100%)]"
       aria-hidden
       initial={{ opacity: 1 }}
@@ -99,10 +99,10 @@ function HeroOpenEdge({ reduceMotion }: { reduceMotion: boolean | null }) {
       <SteppedEdge
         position="top"
         color="var(--navy)"
-        playOnMount
+        trigger="mount"
         fillBand={false}
       />
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -128,11 +128,12 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
     <section
       ref={sectionRef}
       id="welcome"
+      data-tone="navy"
       className="relative isolate min-h-0 overflow-hidden bg-navy md:min-h-[100svh]"
     >
       <HeroOpenEdge reduceMotion={reduceMotion} />
 
-      <motion.div
+      <m.div
         className="relative z-0 aspect-[4/3] w-full shrink-0 overflow-hidden md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
         data-nav-theme="dark"
         initial={reduceMotion ? false : heroPhotoEnter.initial}
@@ -156,14 +157,14 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
           className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-40 bg-gradient-to-b from-[rgba(20,33,61,0.55)] to-transparent"
           aria-hidden
         />
-      </motion.div>
+      </m.div>
 
       <div
         className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden md:block xl:hidden"
         style={{ clipPath: HERO_PANEL_CLIP_DESKTOP_TABLET }}
         aria-hidden
       >
-        <motion.div
+        <m.div
           className="absolute inset-0 bg-navy"
           initial={reduceMotion ? false : heroPanelSlide.initial}
           animate={reduceMotion ? undefined : heroPanelSlide.animate}
@@ -175,7 +176,7 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
         style={{ clipPath: HERO_PANEL_CLIP_DESKTOP_WIDE }}
         aria-hidden
       >
-        <motion.div
+        <m.div
           className="absolute inset-0 bg-navy"
           initial={reduceMotion ? false : heroPanelSlide.initial}
           animate={reduceMotion ? undefined : heroPanelSlide.animate}
@@ -188,14 +189,14 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
           className="relative overflow-hidden bg-navy md:hidden"
           style={{ clipPath: HERO_PANEL_CLIP_MOBILE }}
         >
-          <motion.div
+          <m.div
             className="pointer-events-none absolute inset-0 z-0 bg-navy"
             aria-hidden
             initial={reduceMotion ? false : heroPanelSlide.initial}
             animate={reduceMotion ? undefined : heroPanelSlide.animate}
             transition={heroPanelSlide.transition}
           />
-          <motion.div
+          <m.div
             className="relative z-10"
             initial={reduceMotion ? false : heroPanelSlide.initial}
             animate={reduceMotion ? undefined : heroPanelSlide.animate}
@@ -211,7 +212,7 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
                 totalRaisedDisplay={stats.totalRaisedDisplay}
               />
             </Container>
-          </motion.div>
+          </m.div>
         </div>
 
         <Container
@@ -222,8 +223,8 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
             HERO_BOTTOM_PADDING,
           )}
         >
-          <motion.div
-            className="flex min-h-0 flex-1 flex-col"
+          <m.div
+            className="hero-glow-drift flex min-h-0 flex-1 flex-col"
             initial={reduceMotion ? false : heroPanelSlide.initial}
             animate={reduceMotion ? undefined : heroPanelSlide.animate}
             transition={heroPanelSlide.transition}
@@ -239,15 +240,14 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
                 totalRaisedDisplay={stats.totalRaisedDisplay}
               />
             </div>
-          </motion.div>
+          </m.div>
         </Container>
       </div>
       <SteppedEdge
         position="bottom"
         color="var(--navy)"
         className="relative z-[3]"
-        playOnMount={!reduceMotion}
-        static={Boolean(reduceMotion)}
+        trigger="mount"
       />
     </section>
   );
@@ -270,7 +270,7 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
           ]}
         />
       </HighlightHeadline>
-      <motion.p
+      <m.p
         className="mt-6 max-w-[34ch] text-[17px] leading-relaxed text-cream/[0.78]"
         custom={0}
         initial={reduceMotion ? false : "hidden"}
@@ -279,22 +279,24 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
       >
         Subscribe, log your latest five scores, and enter the monthly draw while
         your chosen charity receives a meaningful share of every payment.
-      </motion.p>
-      <motion.div
+      </m.p>
+      <m.div
         className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5"
         custom={1}
         initial={reduceMotion ? false : "hidden"}
         animate={reduceMotion ? undefined : "visible"}
         variants={contentStagger}
       >
-        <motion.div {...buttonMotionProps(reduceMotion)}>
-          <Link
-            href="/subscribe"
-            className="inline-flex h-12 min-h-11 w-full items-center justify-center rounded-full bg-coral px-8 text-base font-medium text-navy hover:bg-coral-deep motion-transition-colors sm:w-auto"
-          >
-            Subscribe now
-          </Link>
-        </motion.div>
+        <Link
+          href="/subscribe"
+          className="group/cta motion-interactive motion-press motion-nudge inline-flex h-12 min-h-11 w-full items-center justify-center gap-2 rounded-full bg-coral px-8 text-base font-medium text-navy shadow-[0_10px_30px_-12px_rgba(242,84,45,0.6)] hover:bg-coral-deep hover:shadow-[0_14px_34px_-12px_rgba(242,84,45,0.75)] sm:w-auto"
+        >
+          Subscribe now
+          <ArrowRight
+            className="size-4 transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/cta:translate-x-0.5 motion-reduce:transform-none"
+            aria-hidden
+          />
+        </Link>
         <Link
           href="#how-it-works"
           className="motion-link-arrow inline-flex items-center gap-1.5 text-[17px] font-normal text-coral underline decoration-coral/80 underline-offset-4 hover:underline"
@@ -302,7 +304,7 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
           See how it works
           <ArrowRight className="size-4" data-arrow aria-hidden />
         </Link>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -335,24 +337,17 @@ function HeroStatsCountUp({
 }) {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLParagraphElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
 
-  const { value } = useCountUp(totalRaisedDisplay, {
-    decimals: 0,
+  const { text: formattedRaised } = useCountUp(countRef, totalRaisedDisplay, {
     enabled: inView,
     duration: 1600,
+    format: formatAmount,
   });
 
-  const formattedRaised = useMemo(
-    () =>
-      new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-        Math.round(value),
-      ),
-    [value],
-  );
-
   return (
-    <motion.p
+    <m.p
       ref={ref}
       className={cn("text-sm", tabularImpact)}
       custom={2}
@@ -367,8 +362,8 @@ function HeroStatsCountUp({
       </span>
       <span className="mt-1 block font-sans text-3xl font-light text-coral">
         {currencySymbol}
-        {formattedRaised}
+        <span ref={countRef}>{formattedRaised}</span>
       </span>
-    </motion.p>
+    </m.p>
   );
 }

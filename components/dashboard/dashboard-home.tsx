@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useInView } from "framer-motion";
 import { useRef } from "react";
 import {
+  ArrowRight,
   CalendarDays,
+  Check,
+  CreditCard,
   Sparkles,
+  Target,
   Trophy,
   Wallet,
 } from "lucide-react";
 
+import { DrawStatusSteps } from "@/components/draw/draw-status-steps";
 import { DashboardCharityCard } from "@/components/dashboard/dashboard-charity-card";
-import { formatCurrency } from "@/lib/money";
+import { CountUpCurrency } from "@/components/draw/count-up-currency";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
 import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
@@ -26,9 +31,15 @@ import type {
   DashboardParticipation,
   DashboardWinnings,
 } from "@/lib/dashboard/queries";
-import { fadeUp, staggerContainer, useCountUp } from "@/lib/motion";
+import {
+  Reveal,
+  RevealStagger,
+  RevealStaggerItem,
+} from "@/components/motion/reveal";
+import { useCountUp } from "@/hooks/use-count-up";
 import type { ScoreRow } from "@/lib/scores/types";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
+import type { PlanPriceDisplay } from "@/lib/payments/prices";
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +57,7 @@ export type DashboardHomeProps = {
   scores: ScoreRow[];
   participation: DashboardParticipation;
   winnings: DashboardWinnings;
+  prices: PlanPriceDisplay;
 };
 
 export function DashboardHome(props: DashboardHomeProps) {
@@ -59,14 +71,6 @@ export function DashboardHome(props: DashboardHomeProps) {
         },
     props.hasAccess,
   );
-  const reduceMotion = useReducedMotion();
-  const motionProps = reduceMotion
-    ? {}
-    : {
-        initial: "hidden",
-        animate: "visible",
-        variants: staggerContainer,
-      };
 
   const title = props.displayName
     ? `Hello, ${props.displayName}`
@@ -74,78 +78,66 @@ export function DashboardHome(props: DashboardHomeProps) {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <motion.header
-        className="mb-8"
-        variants={fadeUp}
-        initial={reduceMotion ? false : "hidden"}
-        animate={reduceMotion ? undefined : "visible"}
-      >
-        <p className="text-sm font-medium uppercase tracking-widest text-slate">
-          Member
-        </p>
-        <h1 className="mt-2 font-sans text-3xl text-navy sm:text-4xl">
-          {title}
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          {props.hasAccess
-            ? "Your scores, draws, and charity impact — all in one place."
-            : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."}
-        </p>
-      </motion.header>
-
-      <motion.div
-        className="grid auto-rows-min gap-4 md:grid-cols-12"
-        {...motionProps}
-      >
-        <motion.div className="md:col-span-4" variants={fadeUp}>
-          <BentoCard title="Subscription">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <SubscriptionAccessPill label={accessLabel} />
-                {props.plan ? (
-                  <Badge variant="outline" className="capitalize">
-                    {props.plan}
-                  </Badge>
-                ) : null}
-              </div>
-              <p className="text-sm text-muted-foreground">{props.email}</p>
-              {props.renewalDate ? (
-                <p className={tabularImpact}>
-                  <span className="text-slate">
-                    {props.hasAccess ? "Renews " : "Access until "}
-                  </span>
-                  <span className="text-navy">
-                    {new Intl.DateTimeFormat("en-IN", {
-                      dateStyle: "medium",
-                    }).format(new Date(`${props.renewalDate}T12:00:00`))}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Renewal date appears once billing is active.
-                </p>
-              )}
-              {props.hasAccess ? (
-                <BillingManageButtons
-                  showManage={props.hasBillingSubscription}
-                  cancelAtPeriodEnd={props.cancelAtPeriodEnd}
-                />
-              ) : (
-                <Button
-                  size="lg"
-                  className="w-full"
-                  render={<Link href="/subscribe" />}
-                >
-                  Subscribe now
-                </Button>
-              )}
+      <Reveal trigger="mount" fast className="mb-8">
+      <header>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm font-medium uppercase tracking-widest text-slate">
+                Member
+              </p>
+              <SubscriptionAccessPill label={accessLabel} />
             </div>
-          </BentoCard>
-        </motion.div>
+            <h1 className="mt-2 font-sans text-3xl text-navy sm:text-4xl">
+              {title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {props.hasAccess
+                ? "Your scores, draws, and charity impact — all in one place."
+                : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."}
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="w-full sm:w-auto"
+            render={
+              <Link href={props.hasAccess ? "/dashboard/scores" : "/subscribe"} />
+            }
+          >
+            {props.hasAccess ? "Log a round" : "Subscribe now"}
+            <ArrowRight
+              className="transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/button:translate-x-0.5 motion-reduce:transform-none"
+              aria-hidden
+            />
+          </Button>
+        </div>
+      </header>
+      </Reveal>
 
-        <motion.div className="md:col-span-8" variants={fadeUp}>
+      <RevealStagger
+        trigger="mount"
+        stagger={0.06}
+        className="grid auto-rows-min gap-4 md:grid-cols-12"
+      >
+        <RevealStaggerItem fast className="min-w-0 md:col-span-4">
+          <BentoCard title="Subscription" icon={CreditCard}>
+            <SubscriptionSummary
+              hasAccess={props.hasAccess}
+              plan={props.plan}
+              email={props.email}
+              renewalDate={props.renewalDate}
+              cancelAtPeriodEnd={props.cancelAtPeriodEnd}
+              hasBillingSubscription={props.hasBillingSubscription}
+              prices={props.prices}
+            />
+          </BentoCard>
+        </RevealStaggerItem>
+
+        <RevealStaggerItem fast className="min-w-0 md:col-span-8">
           <BentoCard
             title="Stableford scores"
+            icon={Target}
+            emphasis={props.hasAccess}
             headerAction={
               props.hasAccess ? (
                 <Button
@@ -174,18 +166,18 @@ export function DashboardHome(props: DashboardHomeProps) {
               />
             )}
           </BentoCard>
-        </motion.div>
+        </RevealStaggerItem>
 
-        <motion.div className="md:col-span-6" variants={fadeUp}>
+        <RevealStaggerItem fast className="min-w-0 md:col-span-12 lg:col-span-6">
           <DashboardCharityCard
             charity={props.charity}
             plan={props.plan}
             hasAccess={props.hasAccess}
           />
-        </motion.div>
+        </RevealStaggerItem>
 
-        <motion.div className="md:col-span-3" variants={fadeUp}>
-          <BentoCard title="Draw participation">
+        <RevealStaggerItem fast className="min-w-0 md:col-span-6 lg:col-span-3">
+          <BentoCard title="Draw participation" icon={CalendarDays}>
             {props.participation.drawsEntered === 0 &&
             !props.participation.upcomingDrawMonth ? (
               <DashboardEmptyState
@@ -196,16 +188,12 @@ export function DashboardHome(props: DashboardHomeProps) {
               />
             ) : (
               <div className="space-y-4">
-                <div>
-                  <p className={tabularImpact}>
-                    <span className="font-sans text-3xl text-coral">
-                      {props.participation.drawsEntered}
-                    </span>
-                  </p>
-                  <p className="text-sm text-slate">Draws entered</p>
-                </div>
+                <AnimatedCount
+                  value={props.participation.drawsEntered}
+                  label="Draws entered"
+                />
                 {props.participation.upcomingDrawMonth ? (
-                  <div className="rounded-xl border border-line bg-sand/40 px-3 py-3">
+                  <div className="rounded-xl border border-line bg-sand/40 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                     <p className="text-xs uppercase tracking-wide text-slate">
                       Upcoming draw
                     </p>
@@ -213,9 +201,10 @@ export function DashboardHome(props: DashboardHomeProps) {
                       {props.participation.upcomingDrawMonth}
                     </p>
                     {props.participation.upcomingDrawStatus ? (
-                      <p className="mt-1 text-xs capitalize text-muted-foreground">
-                        Status: {props.participation.upcomingDrawStatus}
-                      </p>
+                      <DrawStatusSteps
+                        status={props.participation.upcomingDrawStatus}
+                        className="mt-2 flex-wrap"
+                      />
                     ) : null}
                   </div>
                 ) : (
@@ -226,11 +215,12 @@ export function DashboardHome(props: DashboardHomeProps) {
               </div>
             )}
           </BentoCard>
-        </motion.div>
+        </RevealStaggerItem>
 
-        <motion.div className="md:col-span-3" variants={fadeUp}>
+        <RevealStaggerItem fast className="min-w-0 md:col-span-6 lg:col-span-3">
           <BentoCard
             title="Winnings"
+            icon={Trophy}
             headerAction={
               props.winnings.winCount > 0 ? (
                 <Button
@@ -255,30 +245,44 @@ export function DashboardHome(props: DashboardHomeProps) {
               <AnimatedWinnings totalWon={props.winnings.totalWon} winCount={props.winnings.winCount} paymentPill={props.winnings.paymentPill} />
             )}
           </BentoCard>
-        </motion.div>
-      </motion.div>
+        </RevealStaggerItem>
+      </RevealStagger>
+    </div>
+  );
+}
+
+function AnimatedCount({ value, label }: { value: number; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const { text } = useCountUp(countRef, value, {
+    enabled: inView,
+    duration: 900,
+    format: (current) => String(Math.round(current)),
+  });
+
+  return (
+    <div ref={ref}>
+      <p className={tabularImpact}>
+        <span ref={countRef} className="font-sans text-3xl text-coral">
+          {text}
+        </span>
+      </p>
+      <p className="text-sm text-slate">{label}</p>
     </div>
   );
 }
 
 function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: number; winCount: number; paymentPill: string }) {
-  const reduceMotion = useReducedMotion();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
-
-  const { value } = useCountUp(totalWon, {
-    decimals: 0,
-    enabled: inView,
-    duration: 1200,
-  });
-
   return (
-    <div ref={ref} className="space-y-4">
+    <div className="space-y-4">
       <div>
         <p className={tabularImpact}>
-          <span className="font-sans text-3xl text-navy">
-            {formatCurrency(value)}
-          </span>
+          <CountUpCurrency
+            value={totalWon}
+            duration={1000}
+            className="font-sans text-3xl text-navy"
+          />
         </p>
         <p className="text-sm text-slate">
           Total won · {winCount} {winCount === 1 ? "prize" : "prizes"}
@@ -288,6 +292,114 @@ function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: numbe
         <Wallet className="size-4 text-slate" aria-hidden />
         <StatusPill value={paymentPill} />
       </div>
+    </div>
+  );
+}
+
+const MEMBER_BENEFITS = [
+  "Entry into every monthly prize draw",
+  "Your latest five Stableford scores tracked",
+  "10%+ of each payment to your charity",
+];
+
+function BenefitList() {
+  return (
+    <ul className="space-y-1.5 text-sm text-slate">
+      {MEMBER_BENEFITS.map((benefit) => (
+        <li key={benefit} className="flex items-start gap-2">
+          <Check className="mt-0.5 size-4 shrink-0 text-status-active" aria-hidden />
+          {benefit}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Active: plan, price, renewal and billing. Inactive: plans, prices and a CTA. */
+function SubscriptionSummary({
+  hasAccess,
+  plan,
+  email,
+  renewalDate,
+  cancelAtPeriodEnd,
+  hasBillingSubscription,
+  prices,
+}: {
+  hasAccess: boolean;
+  plan: SubscriptionPlan | null;
+  email: string;
+  renewalDate: string | null;
+  cancelAtPeriodEnd: boolean;
+  hasBillingSubscription: boolean;
+  prices: PlanPriceDisplay;
+}) {
+  if (!hasAccess) {
+    return (
+      <div className="space-y-4">
+        <ul className="divide-y divide-line rounded-xl border border-line">
+          <li className="flex items-baseline justify-between gap-3 px-3 py-2.5">
+            <span className="text-sm text-slate">Monthly</span>
+            <span className={cn("font-sans text-navy", tabularImpact)}>
+              {prices.monthlyLabel}
+            </span>
+          </li>
+          <li className="px-3 py-2.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-slate">Yearly</span>
+              <span className={cn("font-sans text-navy", tabularImpact)}>
+                {prices.yearlyLabel}
+              </span>
+            </div>
+            {prices.yearlySavingsHint ? (
+              <p className={cn("mt-0.5 text-xs text-status-active", tabularImpact)}>
+                {prices.yearlySavingsHint}
+              </p>
+            ) : null}
+          </li>
+        </ul>
+        <BenefitList />
+        <Button size="lg" className="w-full" render={<Link href="/subscribe" />}>
+          Subscribe now
+        </Button>
+      </div>
+    );
+  }
+
+  const planPrice =
+    plan === "yearly" ? prices.yearlyLabel : plan === "monthly" ? prices.monthlyLabel : null;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {plan ? (
+            <Badge variant="outline" className="capitalize">
+              {plan} plan
+            </Badge>
+          ) : null}
+          {planPrice ? (
+            <span className={cn("text-sm text-navy", tabularImpact)}>{planPrice}</span>
+          ) : null}
+        </div>
+        <p className="truncate text-sm text-muted-foreground">{email}</p>
+      </div>
+      {renewalDate ? (
+        <p className={tabularImpact}>
+          <span className="text-slate">
+            {cancelAtPeriodEnd ? "Access until " : "Renews "}
+          </span>
+          <span className="text-navy">
+            {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(
+              new Date(`${renewalDate}T12:00:00`),
+            )}
+          </span>
+        </p>
+      ) : null}
+      <BenefitList />
+      <BillingManageButtons
+        showManage={hasBillingSubscription}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+      />
     </div>
   );
 }

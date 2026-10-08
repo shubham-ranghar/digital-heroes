@@ -88,13 +88,13 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
             ref={inputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            className="text-sm text-slate file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy"
+            className="text-sm text-slate file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy file:transition-colors file:duration-200 hover:file:bg-coral-deep"
             disabled={isPending}
           />
           <Button
             type="button"
             className="w-full sm:w-auto"
-            disabled={isPending}
+            loading={isPending}
             onClick={handleUpload}
           >
             {isPending ? "Uploading…" : "Upload screenshot"}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { WinnerProofUpload } from "@/components/winners/winner-proof-upload";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { Trophy } from "lucide-react";
@@ -23,12 +24,14 @@ export default async function PrizesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <SectionHeading
-        eyebrow="Draws"
-        title="Prize verification"
-        description="Upload a screenshot as proof for each winning draw. Our team reviews verification only — payment is tracked separately."
-        className="mb-10"
-      />
+      <Reveal effect="clip" fast>
+        <SectionHeading
+          eyebrow="Draws"
+          title="Prize verification"
+          description="Upload a screenshot as proof for each winning draw. Our team reviews verification only — payment is tracked separately."
+          className="mb-10"
+        />
+      </Reveal>
 
       {winners.length === 0 ? (
         <DashboardEmptyState
@@ -42,11 +45,13 @@ export default async function PrizesPage() {
           }
         />
       ) : (
-        <div className="space-y-6">
+        <RevealStagger trigger="mount" stagger={0.06} className="space-y-6">
           {winners.map((winner) => (
-            <WinnerProofUpload key={winner.id} winner={winner} />
+            <RevealStaggerItem key={winner.id} fast>
+              <WinnerProofUpload winner={winner} />
+            </RevealStaggerItem>
           ))}
-        </div>
+        </RevealStagger>
       )}
     </div>
   );

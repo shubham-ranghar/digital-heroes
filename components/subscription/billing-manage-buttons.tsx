@@ -63,7 +63,7 @@ export function BillingManageButtons({
           type="button"
           variant="secondary"
           className="w-full"
-          disabled={isPending}
+          loading={isPending}
           onClick={resume}
         >
           Resume subscription
@@ -73,7 +73,7 @@ export function BillingManageButtons({
           type="button"
           variant="ghost"
           className="w-full"
-          disabled={isPending}
+          loading={isPending}
           onClick={cancelAtEnd}
         >
           Cancel at end of billing period

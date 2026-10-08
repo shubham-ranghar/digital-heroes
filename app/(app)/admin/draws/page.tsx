@@ -7,6 +7,7 @@ import {
   getDrawSimulationPreview,
   listAdminDraws,
 } from "@/lib/admin/queries";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Admin · Draws",
@@ -28,15 +29,19 @@ export default async function AdminDrawsPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <AdminSection
-        title="Draws"
-        description="Choose random or algorithmic mode, simulate results, review the preview, then publish."
-      />
-      <AdminDrawsPanel
-        draws={draws}
-        selectedDrawId={selectedDrawId}
-        preview={preview}
-      />
+      <Reveal trigger="mount" fast>
+        <AdminSection
+          title="Draws"
+          description="Choose random or algorithmic mode, simulate results, review the preview, then publish."
+        />
+      </Reveal>
+      <Reveal trigger="mount" fast>
+        <AdminDrawsPanel
+          draws={draws}
+          selectedDrawId={selectedDrawId}
+          preview={preview}
+        />
+      </Reveal>
     </div>
   );
 }

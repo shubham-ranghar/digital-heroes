@@ -15,7 +15,7 @@ export function FormError({
     <p
       role="alert"
       className={cn(
-        "rounded-xl border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger",
+        "motion-fade-down rounded-xl border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger",
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function FormSuccess({
     <p
       role="status"
       className={cn(
-        "rounded-xl border border-status-active/40 bg-status-active/15 px-3 py-2 text-sm text-navy",
+        "motion-fade-down rounded-xl border border-status-active/40 bg-status-active/15 px-3 py-2 text-sm text-navy",
         className,
       )}
     >
@@ -54,7 +54,7 @@ export function FieldError({ message }: { message?: string }) {
   }
 
   return (
-    <p className="text-xs text-status-danger" role="alert">
+    <p className="motion-fade-down text-xs text-status-danger" role="alert">
       {message}
     </p>
   );

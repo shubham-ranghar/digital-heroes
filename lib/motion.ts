@@ -5,11 +5,15 @@ export const EASE_IN_OUT: Transition["ease"] = [0.65, 0, 0.35, 1];
 export const EASE_SOFT: Transition["ease"] = [0.4, 0, 0.2, 1];
 
 export const DURATION = {
+  instant: 0.15,
   fast: 0.2,
   base: 0.4,
   slow: 0.7,
   hero: 1.0,
 } as const;
+
+/** Vertical rise (px) for page-to-page route enters. */
+export const ROUTE_ENTER_OFFSET = 12;
 
 /** @deprecated Use EASE_OUT */
 export const motionEase = EASE_OUT;
@@ -71,4 +75,3 @@ export function buttonMotionProps(reduceMotion: boolean | null) {
   };
 }
 
-export { useCountUp } from "@/hooks/use-count-up";

@@ -1,9 +1,11 @@
 "use client";
 
+import { useInView } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
+import { useRef, type ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCountUp } from "@/lib/motion";
+import { useCountUp } from "@/hooks/use-count-up";
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +19,10 @@ type StatCardProps = {
   trend?: string;
   className?: string;
   animate?: boolean;
-  /** When set, shown instead of prefix + animated value (e.g. locale currency). */
-  valueLabel?: string;
+  /** Count-up length in ms; the count starts when the card scrolls into view. */
+  duration?: number;
+  /** When set, shown instead of prefix + animated value (e.g. `CountUpCurrency`). */
+  valueLabel?: ReactNode;
 };
 
 /** Dashboard metric tile with optional count-up animation. */
@@ -32,11 +36,16 @@ export function StatCard({
   trend,
   className,
   animate = true,
+  duration,
   valueLabel,
 }: StatCardProps) {
-  const { formatted } = useCountUp(value, {
-    decimals,
-    enabled: animate,
+  const valueRef = useRef<HTMLParagraphElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
+  const inView = useInView(valueRef, { once: true, margin: "-10% 0px" });
+  const { text } = useCountUp(countRef, value, {
+    duration,
+    enabled: animate && inView,
+    format: (current) => `${prefix}${current.toFixed(decimals)}${suffix}`,
   });
 
   return (
@@ -51,17 +60,14 @@ export function StatCard({
       </CardHeader>
       <CardContent>
         <p
+          ref={valueRef}
           className={cn(
             "font-sans text-display-sm font-semibold text-foreground",
             tabularImpact,
           )}
         >
           {valueLabel ?? (
-            <>
-              {prefix}
-              {formatted}
-              {suffix}
-            </>
+            <span ref={countRef}>{text}</span>
           )}
         </p>
         {trend ? (

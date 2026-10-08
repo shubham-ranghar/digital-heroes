@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 
 import { LineReveal } from "@/components/motion/line-reveal";
 import { Container } from "@/components/layout/container";
@@ -28,14 +28,14 @@ export function EditorialFinalCta() {
               </>,
             ]}
           />
-          <motion.div className="mt-10" {...buttonMotionProps(reduceMotion)}>
+          <m.div className="mt-10" {...buttonMotionProps(reduceMotion)}>
             <Link
               href="/subscribe"
               className="inline-flex h-14 items-center rounded-full bg-coral px-10 text-lg font-medium text-navy hover:bg-coral-deep motion-transition-colors"
             >
               Subscribe now
             </Link>
-          </motion.div>
+          </m.div>
         </div>
       </Container>
     </section>

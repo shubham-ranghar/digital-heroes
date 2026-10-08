@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useTransition } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 
 import {
@@ -13,9 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSubscriptionCheckoutAction } from "@/lib/payments/actions";
 import type { PlanPriceDisplay } from "@/lib/payments/prices";
-import { buttonMotionProps, cardLift, DURATION, EASE_OUT } from "@/lib/motion";
+import { DURATION, EASE_OUT } from "@/lib/motion";
 import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
+import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 
 type Plan = "monthly" | "yearly";
 
@@ -67,11 +68,13 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
 
   return (
     <div className="space-y-6">
+      <RevealStagger trigger="mount" stagger={0.06}>
       <div
         className="grid gap-4 sm:grid-cols-2"
         role="radiogroup"
         aria-label="Billing plan"
       >
+        <RevealStaggerItem fast className="grid">
         <PlanCard
           plan="monthly"
           selected={plan === "monthly"}
@@ -82,6 +85,8 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
           onSelect={() => setPlan("monthly")}
           reduceMotion={reduceMotion}
         />
+        </RevealStaggerItem>
+        <RevealStaggerItem fast className="grid">
         <PlanCard
           plan="yearly"
           selected={plan === "yearly"}
@@ -103,20 +108,20 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
           className="border-coral/40"
           reduceMotion={reduceMotion}
         />
+        </RevealStaggerItem>
       </div>
+      </RevealStagger>
 
       <FormError message={error} />
-      <motion.div {...buttonMotionProps(reduceMotion)}>
-        <Button
-          type="button"
-          size="lg"
-          className="w-full"
-          disabled={isPending}
-          onClick={startCheckout}
-        >
-          {isPending ? "Starting checkout…" : "Subscribe"}
-        </Button>
-      </motion.div>
+      <Button
+        type="button"
+        size="lg"
+        className="w-full"
+        loading={isPending}
+        onClick={startCheckout}
+      >
+        {isPending ? "Starting checkout…" : "Subscribe"}
+      </Button>
     </div>
   );
 }
@@ -147,20 +152,16 @@ function PlanCard({
   reduceMotion,
 }: PlanCardProps) {
   return (
-    <motion.button
+    <button
       type="button"
       role="radio"
       aria-checked={selected}
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        "rounded-[20px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+        "motion-lift motion-press rounded-[20px] text-left motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 disabled:opacity-60",
         selected && "ring-2 ring-coral ring-offset-2 ring-offset-background",
       )}
-      {...(reduceMotion ? {} : cardLift)}
-      whileHover={reduceMotion ? {} : { scale: 1.02 }}
-      whileTap={reduceMotion ? {} : { scale: 0.98 }}
-      transition={{ duration: DURATION.fast, ease: EASE_OUT }}
     >
       <Card
         interactive={false}
@@ -169,13 +170,13 @@ function PlanCard({
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">{title}</CardTitle>
           {badge ? (
-            <motion.div
+            <m.div
               initial={false}
               animate={{ scale: selected ? 1 : 0.95, opacity: selected ? 1 : 0.7 }}
-              transition={{ duration: DURATION.fast, ease: EASE_OUT }}
+              transition={reduceMotion ? { duration: 0 } : { duration: DURATION.fast, ease: EASE_OUT }}
             >
               <Badge className={selected ? "bg-coral text-navy" : ""}>{badge}</Badge>
-            </motion.div>
+            </m.div>
           ) : null}
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
@@ -186,6 +187,6 @@ function PlanCard({
           </span>
         </CardContent>
       </Card>
-    </motion.button>
+    </button>
   );
 }

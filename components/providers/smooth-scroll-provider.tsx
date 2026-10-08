@@ -3,7 +3,14 @@
 import Lenis from "lenis";
 import { usePathname } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 
 import {
   getLenisSnapshot,
@@ -44,7 +51,12 @@ export function SmoothScrollProvider({
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
       syncTouch: false,
+      // Scrollable tables/panels keep native scrolling.
       allowNestedScroll: true,
+      // Base UI dialogs/selects lock scroll with inline overflow on <html> or
+      // <body>. Lenis scrolls the window directly, so it must stand down or
+      // the page behind an open modal would still move.
+      virtualScroll: () => !isDocumentScrollLocked(),
     });
 
     lenisRef.current = instance;
@@ -77,10 +89,13 @@ export function SmoothScrollProvider({
     }
   }, [menuOpen, lenis]);
 
-  useEffect(() => {
+  // Layout effect: reset before paint, ahead of the route template's enter
+  // animation (Framer starts it in a passive effect). `force` covers Lenis
+  // being stopped when navigating from the open menu overlay.
+  useLayoutEffect(() => {
     const instance = lenisRef.current;
     if (instance) {
-      instance.scrollTo(0, { immediate: true });
+      instance.scrollTo(0, { immediate: true, force: true });
     } else {
       window.scrollTo(0, 0);
     }
@@ -122,5 +137,12 @@ export function SmoothScrollProvider({
         {children}
       </div>
     </SmoothScrollContext.Provider>
+  );
+}
+
+function isDocumentScrollLocked(): boolean {
+  return (
+    document.documentElement.style.overflowY === "hidden" ||
+    document.body.style.overflowY === "hidden"
   );
 }

@@ -9,18 +9,23 @@ export const STEPPED_EDGE_ORDER_FIVE = [2, 1, 3, 0, 4] as const;
 
 export const STEPPED_EDGE_ORDER_THREE = [1, 0, 2] as const;
 
-export const STEPPED_EDGE_STAGGER = 0.12;
+/** How far each column's slice spills into its neighbours' (0 = strictly sequential). */
+export const STEPPED_EDGE_OVERLAP = 0.6;
 
-export function columnRevealProgress(
-  scrollProgress: number,
+/**
+ * Scroll-progress slice for the column revealed `orderIndex`-th: roughly
+ * i/cols → (i+1)/cols, widened by the overlap and spaced so the last column
+ * finishes exactly at 1.
+ */
+export function columnScrollRange(
   orderIndex: number,
-  stagger = STEPPED_EDGE_STAGGER,
-  columnCount = 5,
-): number {
-  const start = orderIndex * stagger;
-  const span = 1 - (columnCount - 1) * stagger;
-  if (span <= 0) {
-    return scrollProgress >= start ? 1 : 0;
+  columnCount: number,
+  overlap = STEPPED_EDGE_OVERLAP,
+): readonly [number, number] {
+  if (columnCount <= 1) {
+    return [0, 1];
   }
-  return Math.min(1, Math.max(0, (scrollProgress - start) / span));
+  const width = Math.min(1, (1 + overlap) / columnCount);
+  const start = (orderIndex * (1 - width)) / (columnCount - 1);
+  return [start, start + width];
 }

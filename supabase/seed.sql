@@ -1,4 +1,11 @@
 -- SAMPLE DATA — local / demo charities (not production partners)
+--
+-- Run this first, then `npm run seed` (scripts/seed.ts). The draw lifecycle
+-- (published + draft draws, entries, winners, scores, donation, subscription)
+-- lives in the script, not here: it needs auth users, which only the Admin
+-- API can create, and its prize amounts and jackpot carryover are computed by
+-- the draw engine (lib/draw/pools.ts) so they can never drift from the
+-- 40/35/25 split.
 -- Defensive insert: checks if category column exists before inserting with it
 DO $$
 DECLARE

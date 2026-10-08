@@ -1,5 +1,6 @@
 "use client";
 
+import { CountUpCurrency } from "@/components/draw/count-up-currency";
 import { StatCard } from "@/components/ui/stat-card";
 import type { AdminReports } from "@/lib/admin/queries";
 import { formatCurrency } from "@/lib/money";
@@ -32,7 +33,7 @@ function SimpleBarChart({
           >
             <span className="text-xs tabular-impact text-coral">{value}</span>
             <div
-              className="w-full rounded-t-lg bg-coral/80 transition-all"
+              className="w-full rounded-t-lg bg-coral/80"
               style={{ height: `${height}%` }}
             />
             <span className="text-[10px] text-slate text-center leading-tight">
@@ -52,6 +53,7 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
         <StatCard
           label="Total users"
           value={reports.totalUsers}
+          duration={1000}
           icon={Users}
         />
         <StatCard
@@ -63,17 +65,22 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
         <StatCard
           label="Estimated prize pool (active subscribers × fee)"
           value={reports.estimatedPrizePool}
-          valueLabel={formatCurrency(reports.estimatedPrizePool)}
+          valueLabel={
+            <CountUpCurrency value={reports.estimatedPrizePool} duration={1000} />
+          }
           animate={false}
           icon={Trophy}
         />
         <StatCard
           label="Total charity contribution"
           value={reports.totalCharityContribution}
-          valueLabel={formatCurrency(reports.totalCharityContribution, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          })}
+          valueLabel={
+            // Rounded: this tile has always shown whole rupees.
+            <CountUpCurrency
+              value={Math.round(reports.totalCharityContribution)}
+              duration={1000}
+            />
+          }
           animate={false}
           icon={Heart}
           trend={`${formatCurrency(reports.charityCommittedInr, {

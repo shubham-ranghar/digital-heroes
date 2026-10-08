@@ -54,7 +54,7 @@ export function ResetPasswordForm() {
         <FieldError message={result?.fieldErrors?.confirmPassword} />
       </div>
 
-      <Button type="submit" className="h-12 w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" loading={isPending}>
         {isPending ? "Updating…" : "Update password"}
       </Button>
 

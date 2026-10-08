@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { m } from "framer-motion";
+import { useMemo, useRef, type ReactNode } from "react";
 
+import { useClipReveal } from "@/components/motion/clip-reveal";
 import { SectionHeadline } from "@/components/motion/section-headline";
 import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
@@ -24,6 +26,17 @@ import { cn } from "@/lib/utils";
 type EditorialCharitySpotlightProps = {
   data: HomepageCharities;
 };
+
+/** Positioned frame for `fill` images; wipes left→right like `CharityImage`. */
+function ImageWipe({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const clip = useClipReveal(ref, { from: "right" });
+  return (
+    <m.div ref={ref} className="absolute inset-0" {...clip}>
+      {children}
+    </m.div>
+  );
+}
 
 type CharityCardProps = {
   name: string;
@@ -55,6 +68,7 @@ function CharityCard({
               Featured
             </span>
           ) : null}
+          <ImageWipe>
           {imageSrc ? (
             <Image
               src={imageSrc}
@@ -73,6 +87,7 @@ function CharityCard({
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           )}
+          </ImageWipe>
         </div>
         <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
           <h3 className="font-sans text-lg font-medium leading-snug tracking-tight text-cream sm:text-xl">

@@ -21,11 +21,11 @@ export function DashboardEmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-[20px] border border-dashed border-line bg-sand/40 px-6 py-10 text-center",
+        "group/empty flex flex-col items-center justify-center rounded-[20px] border border-dashed border-line bg-sand/40 px-6 py-10 text-center",
         className,
       )}
     >
-      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-coral/15 text-coral">
+      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-coral/15 text-coral ring-8 ring-coral/5 transition-transform duration-500 ease-[var(--ease-out)] group-hover/empty:-translate-y-0.5 motion-reduce:transform-none">
         <Icon className="size-6" aria-hidden />
       </div>
       <p className="font-sans text-lg text-navy">{title}</p>

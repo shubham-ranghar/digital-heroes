@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 
 import { Container } from "@/components/layout/container";
@@ -71,9 +71,14 @@ export function FooterSteppedBrand({ contact, year }: FooterSteppedBrandProps) {
   const shouldAnimate = hydrated && !reduceMotion && inView;
 
   return (
-    <div ref={ref} className="relative overflow-x-clip" data-nav-theme="dark">
-      <motion.div
-        className="will-change-[clip-path] overflow-x-clip"
+    <div
+      ref={ref}
+      className="relative overflow-x-clip"
+      data-tone="navy"
+      data-nav-theme="dark"
+    >
+      <m.div
+        className="overflow-x-clip"
         initial={false}
         animate={
           reduceMotion
@@ -96,7 +101,7 @@ export function FooterSteppedBrand({ contact, year }: FooterSteppedBrandProps) {
             </div>
           </Container>
         </div>
-      </motion.div>
+      </m.div>
 
       <div className="bg-navy pb-8 pt-2">
         <Container>

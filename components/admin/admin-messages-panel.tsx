@@ -7,6 +7,7 @@ import { AdminSection } from "@/components/admin/admin-section";
 import { Button } from "@/components/ui/button";
 import { markContactMessageResolvedAction } from "@/lib/contact/admin-actions";
 import type { AdminContactMessage } from "@/lib/contact/admin-queries";
+import { Reveal } from "@/components/motion/reveal";
 
 type AdminMessagesPanelProps = {
   messages: AdminContactMessage[];
@@ -30,10 +31,13 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
 
   return (
     <div className="space-y-6">
-      <AdminSection
-        title="Contact messages"
-        description="Inbound messages from the public contact form."
-      />
+      <Reveal trigger="mount" fast>
+        <AdminSection
+          title="Contact messages"
+          description="Inbound messages from the public contact form."
+        />
+      </Reveal>
+      <Reveal trigger="mount" fast>
       {messages.length === 0 ? (
         <p className="text-sm text-muted-foreground">No messages yet.</p>
       ) : (
@@ -74,6 +78,7 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
           ))}
         </ul>
       )}
+      </Reveal>
     </div>
   );
 }

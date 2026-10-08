@@ -41,7 +41,7 @@ export function ForgotPasswordForm() {
         <FieldError message={result?.fieldErrors?.email} />
       </div>
 
-      <Button type="submit" className="h-12 w-full" disabled={isPending}>
+      <Button type="submit" className="h-12 w-full" loading={isPending}>
         {isPending ? "Sending…" : "Send reset link"}
       </Button>
     </form>

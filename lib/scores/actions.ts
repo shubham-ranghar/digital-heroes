@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { syncUserDrawEntryForCurrentMonth } from "@/lib/draw/sync-entry";
 import { requireActiveSubscription } from "@/lib/subscription/access";
+import {
+  mapScoreWriteError,
+  outsideLatestFiveError,
+  type ScoreWriteError,
+} from "@/lib/scores/errors";
+import { findRetentionCutoff } from "@/lib/scores/rolling";
 import type { ScoreActionResult, ScoreRow } from "@/lib/scores/types";
 import { scoreFormSchema, scoreIdSchema } from "@/lib/validations/score";
 import type { ZodError } from "zod";
@@ -39,6 +45,19 @@ async function listUserScores(
   return (data ?? []) as ScoreRow[];
 }
 
+function failure(
+  error: ScoreWriteError,
+  duplicate?: ScoreRow,
+): ScoreActionResult {
+  return {
+    ok: false,
+    reason: error.reason,
+    message: error.message,
+    fieldErrors: { playedOn: error.fieldError },
+    duplicate,
+  };
+}
+
 export async function saveScoreAction(
   input: unknown,
 ): Promise<ScoreActionResult> {
@@ -54,6 +73,13 @@ export async function saveScoreAction(
   const { supabase, user } = await requireActiveSubscription();
   const { scoreId, score, playedOn } = parsed.data;
 
+  // Pre-check for a specific message; the DB trigger (DH001) is the authority.
+  const existing = await listUserScores(supabase, user.id);
+  const cutoff = findRetentionCutoff(existing, { id: scoreId, played_on: playedOn });
+  if (cutoff) {
+    return failure(outsideLatestFiveError("self", cutoff.played_on));
+  }
+
   if (scoreId) {
     const { data, error } = await supabase
       .from("scores")
@@ -64,14 +90,8 @@ export async function saveScoreAction(
       .maybeSingle();
 
     if (error) {
-      if (error.code === "23505") {
-        return {
-          ok: false,
-          message: "You already have a score for that date.",
-          fieldErrors: { playedOn: "One score per calendar date" },
-        };
-      }
-      return { ok: false, message: error.message };
+      const mapped = mapScoreWriteError(error, "self");
+      return mapped ? failure(mapped) : { ok: false, message: error.message };
     }
 
     if (!data) {
@@ -89,29 +109,31 @@ export async function saveScoreAction(
     return { ok: true, scores };
   }
 
-  const { error } = await supabase.from("scores").insert({
-    user_id: user.id,
-    score,
-    played_on: playedOn,
-  });
+  const { data: inserted, error } = await supabase
+    .from("scores")
+    .insert({
+      user_id: user.id,
+      score,
+      played_on: playedOn,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    if (error.code === "23505") {
-      const { data: existing } = await supabase
+  if (error || !inserted) {
+    const mapped = mapScoreWriteError(error, "self");
+    if (mapped?.reason === "duplicate_date") {
+      const { data: sameDay } = await supabase
         .from("scores")
         .select("id, user_id, score, played_on, created_at")
         .eq("user_id", user.id)
         .eq("played_on", playedOn)
         .maybeSingle();
-
-      return {
-        ok: false,
-        message: "You already logged a score for this date.",
-        fieldErrors: { playedOn: "One score per calendar date" },
-        duplicate: existing as ScoreRow | undefined,
-      };
+      return failure(mapped, (sameDay as ScoreRow | null) ?? undefined);
     }
-    return { ok: false, message: error.message };
+    if (mapped) {
+      return failure(mapped);
+    }
+    return { ok: false, message: error?.message ?? "Could not save score." };
   }
 
   revalidatePath("/dashboard/scores");
@@ -122,6 +144,10 @@ export async function saveScoreAction(
     /* draw row may not exist yet */
   }
   const scores = await listUserScores(supabase, user.id);
+  // Never report success for a row the retention trim removed.
+  if (!scores.some((row) => row.id === inserted.id)) {
+    return { ok: false, message: "Your score could not be kept. Refresh and try again." };
+  }
   return { ok: true, scores };
 }
 

@@ -43,6 +43,24 @@ export function applyScoreRetention(
   return keepLatestScores([...withoutSameDay, incoming], limit);
 }
 
+/**
+ * The oldest kept score that `incoming` would have to beat, or null when it
+ * would be retained. `incoming.id` is set on edits so the row being changed
+ * doesn't count against itself. Mirrors `scores_reject_outside_latest_five`.
+ */
+export function findRetentionCutoff(
+  existing: ScoreRecord[],
+  incoming: Pick<ScoreRecord, "played_on"> & { id?: string },
+  limit = MAX_STORED_SCORES,
+): ScoreRecord | null {
+  const others = existing.filter((row) => row.id !== incoming.id);
+  if (others.length < limit) {
+    return null;
+  }
+  const cutoff = sortScoresNewestFirst(others)[limit - 1];
+  return incoming.played_on < cutoff.played_on ? cutoff : null;
+}
+
 export function findScoreOnDate(
   scores: ScoreRecord[],
   playedOn: string,

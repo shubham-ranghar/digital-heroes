@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 
 type SettingsFormProps = {
   email: string;
@@ -139,8 +140,9 @@ export function SettingsForm({
   }
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6">
+    <RevealStagger trigger="mount" stagger={0.06} className="space-y-10">
+      <RevealStaggerItem fast>
+      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-resting)]">
         <h2 className="font-sans text-lg font-semibold text-navy">Profile</h2>
         <div className="space-y-2">
           <label className="text-sm text-slate" htmlFor="settings-email">
@@ -164,14 +166,18 @@ export function SettingsForm({
           type="button"
           size="sm"
           className="w-full sm:w-auto"
-          disabled={isNamePending || name === (displayName ?? "")}
+          disabled={name === (displayName ?? "")}
+          loading={isNamePending}
           onClick={handleSaveName}
         >
           {isNamePending ? "Saving…" : "Save name"}
         </Button>
       </section>
+      </RevealStaggerItem>
 
-      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6">
+      <RevealStaggerItem fast>
+
+      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-resting)]">
         <h2 className="font-sans text-lg font-semibold text-navy">Your charity</h2>
         {charities.length === 0 ? (
           <FormError message="No charities are available. Check back later." />
@@ -222,10 +228,10 @@ export function SettingsForm({
               size="sm"
               className="w-full sm:w-auto"
               disabled={
-                isCharityPending ||
-                (selectedCharityId === (charityId ?? "") &&
-                  percentage === charityPercentage)
+                selectedCharityId === (charityId ?? "") &&
+                percentage === charityPercentage
               }
+              loading={isCharityPending}
               onClick={handleSaveCharity}
             >
               {isCharityPending ? "Saving…" : "Save charity"}
@@ -233,9 +239,11 @@ export function SettingsForm({
           </>
         )}
       </section>
+      </RevealStaggerItem>
 
       {hasBillingSubscription ? (
-        <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6">
+        <RevealStaggerItem fast>
+        <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-resting)]">
           <h2 className="font-sans text-lg font-semibold text-navy">Billing</h2>
           <SubscriptionAccessPill label={membershipLabel} />
           <p className="text-sm text-muted-foreground">
@@ -248,9 +256,12 @@ export function SettingsForm({
             cancelAtPeriodEnd={cancelAtPeriodEnd}
           />
         </section>
+        </RevealStaggerItem>
       ) : null}
 
-      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6">
+      <RevealStaggerItem fast>
+
+      <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-resting)]">
         <h2 className="font-sans text-lg font-semibold text-navy">Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div className="space-y-2">
@@ -278,12 +289,15 @@ export function SettingsForm({
             type="submit"
             size="sm"
             className="w-full sm:w-auto"
-            disabled={isPasswordPending}
+            loading={isPasswordPending}
           >
             {isPasswordPending ? "Updating…" : "Update password"}
           </Button>
         </form>
       </section>
+      </RevealStaggerItem>
+
+      <RevealStaggerItem fast>
 
       <section className="space-y-4 rounded-[20px] border border-dashed border-status-danger/40 bg-status-danger/5 p-6">
         <h2 className="font-sans text-lg font-semibold text-navy">Delete account</h2>
@@ -296,12 +310,13 @@ export function SettingsForm({
           variant="destructive"
           size="sm"
           className="w-full sm:w-auto"
-          disabled={isDeletePending}
+          loading={isDeletePending}
           onClick={handleDeletionRequest}
         >
           {isDeletePending ? "Submitting…" : "Request account deletion"}
         </Button>
       </section>
-    </div>
+      </RevealStaggerItem>
+    </RevealStagger>
   );
 }

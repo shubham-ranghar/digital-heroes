@@ -26,9 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       >
         <div className="grain-overlay" aria-hidden />
         <AppMotionShell>
-          <main className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+          <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
             {children}
-          </main>
+          </div>
         </AppMotionShell>
         <Toaster position="top-center" richColors closeButton />
         {process.env.NODE_ENV === "development" ? <FontFamilyAudit /> : null}

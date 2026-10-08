@@ -78,7 +78,7 @@ export function ContactForm() {
         />
       </div>
 
-      <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+      <Button type="submit" className="w-full sm:w-auto" loading={isPending}>
         {isPending ? "Sending…" : "Send message"}
       </Button>
     </form>

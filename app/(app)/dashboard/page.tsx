@@ -3,6 +3,7 @@ import { connection } from "next/server";
 
 import { CheckoutToast } from "@/components/dashboard/checkout-toast";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
+import { getPlanPriceDisplay } from "@/lib/payments/prices";
 import {
   getDashboardCharity,
   getDashboardParticipation,
@@ -58,6 +59,7 @@ export default async function DashboardPage({
         charity={charity}
         scores={scores}
         participation={participation}
+        prices={getPlanPriceDisplay()}
         winnings={winnings}
       />
     </>

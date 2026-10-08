@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { MenuOpenProvider, useMenuOpen } from "@/components/providers/menu-open-context";
+import { MotionFeatures } from "@/components/providers/motion-features";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 
 function SmoothScrollWithMenu({ children }: { children: ReactNode }) {
@@ -12,8 +13,10 @@ function SmoothScrollWithMenu({ children }: { children: ReactNode }) {
 
 export function AppMotionShell({ children }: { children: ReactNode }) {
   return (
-    <MenuOpenProvider>
-      <SmoothScrollWithMenu>{children}</SmoothScrollWithMenu>
-    </MenuOpenProvider>
+    <MotionFeatures>
+      <MenuOpenProvider>
+        <SmoothScrollWithMenu>{children}</SmoothScrollWithMenu>
+      </MenuOpenProvider>
+    </MotionFeatures>
   );
 }

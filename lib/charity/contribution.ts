@@ -1,12 +1,10 @@
-import { formatCurrency } from "@/lib/money";
-
 /** Minimum share of subscription fee directed to charity (PRD). */
 export const MIN_CHARITY_PERCENTAGE = 10;
 
 export type CharityContribution = {
   /** Effective percentage after clamping to [10, 100]. */
   percentage: number;
-  /** Whole pence/cents allocated to charity (rounded). */
+  /** Whole paise allocated to charity (rounded). */
   amountCents: number;
 };
 
@@ -20,7 +18,7 @@ export function normalizeCharityPercentage(percentage: number): number {
 
 /**
  * Compute charity amount from subscription fee and member percentage.
- * Fee is in smallest currency unit (e.g. pence). Percentage minimum 10%.
+ * Fee is in paise (INR minor units). Percentage minimum 10%.
  */
 export function calculateCharityContribution(
   subscriptionFeeCents: number,
@@ -39,9 +37,4 @@ export function calculateCharityContribution(
     percentage: effectivePercentage,
     amountCents,
   };
-}
-
-/** Format minor units (paise) for display. */
-export function formatMoneyFromCents(amountCents: number): string {
-  return formatCurrency(amountCents, { paise: true });
 }

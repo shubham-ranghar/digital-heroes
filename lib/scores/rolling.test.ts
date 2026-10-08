@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyScoreRetention,
+  findRetentionCutoff,
   findScoreOnDate,
   keepLatestScores,
   sortScoresNewestFirst,
@@ -71,5 +72,40 @@ describe("findScoreOnDate", () => {
   it("returns a row for the given calendar date", () => {
     expect(findScoreOnDate(rows, "2026-10-05")?.score).toBe(34);
     expect(findScoreOnDate(rows, "2026-01-01")).toBeUndefined();
+  });
+});
+
+describe("findRetentionCutoff", () => {
+  // Five on file: 09-28, 10-01, 10-03, 10-05, 10-07 (oldest kept = 09-28).
+  const five = rows.slice(0, 5);
+
+  it("allows a sixth score newer than all five", () => {
+    expect(findRetentionCutoff(five, { played_on: "2026-10-08" })).toBeNull();
+  });
+
+  it("allows a sixth score in the middle of the window", () => {
+    expect(findRetentionCutoff(five, { played_on: "2026-10-02" })).toBeNull();
+  });
+
+  it("rejects a sixth score older than all five, naming the cutoff", () => {
+    expect(findRetentionCutoff(five, { played_on: "2026-09-01" })?.played_on).toBe(
+      "2026-09-28",
+    );
+  });
+
+  it("does not reject the duplicate of the oldest date (left to the unique constraint)", () => {
+    expect(findRetentionCutoff(five, { played_on: "2026-09-28" })).toBeNull();
+  });
+
+  it("allows editing any of the five to an older date", () => {
+    expect(
+      findRetentionCutoff(five, { id: "3", played_on: "2026-01-01" }),
+    ).toBeNull();
+  });
+
+  it("allows anything with fewer than five on file", () => {
+    expect(
+      findRetentionCutoff(five.slice(0, 4), { played_on: "2020-01-01" }),
+    ).toBeNull();
   });
 });

@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/money";
+
 export type PlanPriceDisplay = {
   monthlyLabel: string;
   yearlyLabel: string;
@@ -14,12 +16,12 @@ export function getPlanPriceDisplay(): PlanPriceDisplay {
     Number.isFinite(monthlyNum) &&
     Number.isFinite(yearlyNum) &&
     monthlyNum * 12 > yearlyNum
-      ? `Save ₹${Math.round(monthlyNum * 12 - yearlyNum)} vs 12× monthly`
+      ? `Save ${formatCurrency(Math.round(monthlyNum * 12 - yearlyNum))} vs 12× monthly`
       : "Discounted annual billing";
 
   return {
-    monthlyLabel: `₹${monthlyInr}/month`,
-    yearlyLabel: `₹${yearly}/year`,
+    monthlyLabel: `${formatCurrency(monthlyNum)}/month`,
+    yearlyLabel: `${formatCurrency(yearlyNum)}/year`,
     yearlySavingsHint: savings,
   };
 }
