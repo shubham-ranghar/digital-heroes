@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { DrawEntryInput } from "@/lib/draw/types";
-import { subscriptionGrantsAccess } from "@/lib/subscription/access";
+import { subscriptionGrantsAccess } from "@/lib/subscription/grants";
 
 export function parseScoreSnapshot(snapshot: unknown): number[] {
   if (!Array.isArray(snapshot)) {
@@ -31,33 +31,70 @@ export async function loadDrawEntries(
   }));
 }
 
+type SubscriptionAccessRow = {
+  user_id: string;
+  status: "active" | "cancelled" | "lapsed" | "past_due";
+  renewal_date: string | null;
+  cancel_at_period_end?: boolean | null;
+  created_at: string;
+};
+
+/** Keep only the newest subscription row per user (by created_at). */
+export function latestSubscriptionRowPerUser(
+  rows: SubscriptionAccessRow[],
+): SubscriptionAccessRow[] {
+  const byUser = new Map<string, SubscriptionAccessRow>();
+  for (const row of rows) {
+    const existing = byUser.get(row.user_id);
+    if (!existing || row.created_at > existing.created_at) {
+      byUser.set(row.user_id, row);
+    }
+  }
+  return Array.from(byUser.values());
+}
+
+/** User IDs whose latest subscription row grants product access. */
+export function activeSubscriberUserIdsFromRows(
+  rows: SubscriptionAccessRow[],
+  today = new Date(),
+): Set<string> {
+  const activeUserIds = new Set<string>();
+  for (const row of latestSubscriptionRowPerUser(rows)) {
+    if (
+      subscriptionGrantsAccess(
+        {
+          status: row.status,
+          renewal_date: row.renewal_date,
+          cancel_at_period_end: row.cancel_at_period_end ?? false,
+        },
+        today,
+      )
+    ) {
+      activeUserIds.add(row.user_id);
+    }
+  }
+  return activeUserIds;
+}
+
 /** Latest scores for all users with an active subscription (for algorithmic draws). */
 export async function loadActiveSubscriberScores(
   supabase: SupabaseClient,
-): Promise<{ activeCount: number; scores: number[] }> {
+): Promise<{ activeCount: number; scores: number[]; activeUserIds: Set<string> }> {
   const { data: subscriptions, error } = await supabase
     .from("subscriptions")
-    .select("user_id, status, renewal_date")
+    .select("user_id, status, renewal_date, cancel_at_period_end, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const activeUserIds = new Set<string>();
-  for (const row of subscriptions ?? []) {
-    if (
-      subscriptionGrantsAccess({
-        status: row.status as "active" | "cancelled" | "lapsed",
-        renewal_date: row.renewal_date as string | null,
-      })
-    ) {
-      activeUserIds.add(row.user_id as string);
-    }
-  }
+  const activeUserIds = activeSubscriberUserIdsFromRows(
+    (subscriptions ?? []) as SubscriptionAccessRow[],
+  );
 
   if (activeUserIds.size === 0) {
-    return { activeCount: 0, scores: [] };
+    return { activeCount: 0, scores: [], activeUserIds };
   }
 
   const { data: scoreRows, error: scoresError } = await supabase
@@ -70,7 +107,14 @@ export async function loadActiveSubscriberScores(
   }
 
   const scores = (scoreRows ?? []).map((row) => Number(row.score));
-  return { activeCount: activeUserIds.size, scores };
+  return { activeCount: activeUserIds.size, scores, activeUserIds };
+}
+
+export function filterDrawEntriesToActiveSubscribers(
+  entries: DrawEntryInput[],
+  activeUserIds: Set<string>,
+): DrawEntryInput[] {
+  return entries.filter((entry) => activeUserIds.has(entry.userId));
 }
 
 export function getDrawFeeConfig() {

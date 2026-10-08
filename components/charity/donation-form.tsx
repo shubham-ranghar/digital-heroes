@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { FieldError, FormError } from "@/components/auth/form-message";
-import { createDonationCheckoutAction } from "@/lib/stripe/donation-actions";
+import { openRazorpayOrderCheckout } from "@/components/subscription/razorpay-checkout";
+import { createDonationCheckoutAction } from "@/lib/payments/donation-actions";
 import { donationCheckoutSchema } from "@/lib/validations/donation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 const PRESETS = [5, 10, 25, 50] as const;
@@ -41,6 +43,7 @@ export function DonationForm({
         </p>
         <Button
           size="sm"
+          className="w-full sm:w-auto"
           render={
             <Link
               href={`/login?next=${encodeURIComponent(`/charities/${charitySlug}`)}`}
@@ -71,7 +74,24 @@ export function DonationForm({
     startTransition(async () => {
       const result = await createDonationCheckoutAction(parsed.data);
       if (result.ok) {
-        window.location.href = result.url;
+        if (result.mode === "mock") {
+          window.location.href = result.redirectUrl;
+          return;
+        }
+        try {
+          await openRazorpayOrderCheckout({
+            ...result.checkout,
+            onSuccess: () => {
+              window.location.href = `/charities/${charitySlug}?donation=success`;
+            },
+          });
+        } catch (checkoutError) {
+          setError(
+            checkoutError instanceof Error
+              ? checkoutError.message
+              : "Could not open checkout.",
+          );
+        }
         return;
       }
       setError(result.message);
@@ -87,7 +107,7 @@ export function DonationForm({
         </h3>
         <p className="mt-1 text-sm text-slate">
           Independent of your subscription and gameplay — goes directly to this
-          cause via Stripe.
+          cause via Razorpay.
         </p>
       </div>
 
@@ -104,14 +124,17 @@ export function DonationForm({
             onClick={() => setAmount(String(preset))}
             disabled={isPending}
           >
-            £{preset}
+            {formatCurrency(preset, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })}
           </Button>
         ))}
       </div>
 
       <div className="space-y-2">
         <label htmlFor="donation-amount" className="text-sm font-medium text-navy">
-          Custom amount (£)
+          Custom amount (₹)
         </label>
         <Input
           id="donation-amount"
@@ -127,7 +150,7 @@ export function DonationForm({
       </div>
 
       <Button type="button" className="w-full" disabled={isPending} onClick={submit}>
-        {isPending ? "Opening checkout…" : "Donate with Stripe"}
+        {isPending ? "Opening checkout…" : "Donate with Razorpay"}
       </Button>
     </div>
   );

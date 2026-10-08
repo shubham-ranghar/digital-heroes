@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { TIER_PERCENTAGES } from "@/lib/draw/constants";
 import { getDrawFeeConfig } from "@/lib/draw/db";
 import { getHomeStats } from "@/lib/home/stats";
+import { formatCurrency } from "@/lib/money";
 
 export const metadata: Metadata = {
   title: "How it works",
@@ -83,7 +84,7 @@ export default async function HowItWorksPage() {
         <SectionHeading
           eyebrow="Pools"
           title="Prize pools & rollover"
-          description={`Each active subscriber contributes £${feeConfig.feePerSubscriber} toward the draw fund (${feeConfig.poolPercentage}% allocated to prizes). Tier split: ${TIER_PERCENTAGES[5] * 100}% / ${TIER_PERCENTAGES[4] * 100}% / ${TIER_PERCENTAGES[3] * 100}%. Unclaimed 5-match pools roll into the next jackpot.`}
+          description={`Each active subscriber contributes ${formatCurrency(feeConfig.feePerSubscriber)} toward the draw fund (${feeConfig.poolPercentage}% allocated to prizes). Tier split: ${TIER_PERCENTAGES[5] * 100}% / ${TIER_PERCENTAGES[4] * 100}% / ${TIER_PERCENTAGES[3] * 100}%. Unclaimed 5-match pools roll into the next jackpot.`}
         />
         <div className="mt-10">
           <PoolCalculator

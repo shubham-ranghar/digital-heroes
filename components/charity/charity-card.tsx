@@ -32,8 +32,13 @@ export function CharityCard({ charity }: { charity: Charity }) {
             </Badge>
           ) : null}
         </div>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle className="text-base">{charity.name}</CardTitle>
+          {charity.category ? (
+            <Badge variant="secondary" className="w-fit text-xs font-normal">
+              {charity.category}
+            </Badge>
+          ) : null}
         </CardHeader>
         <CardContent className="flex-1">
           <p className="line-clamp-3 text-sm text-muted-foreground">

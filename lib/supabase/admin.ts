@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
-/** Service-role client for Stripe webhooks (bypasses RLS). */
+/** Service-role client for payment webhooks and admin tasks (bypasses RLS). */
 export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {

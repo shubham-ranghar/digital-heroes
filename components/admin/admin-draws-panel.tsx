@@ -23,6 +23,7 @@ import {
   runSimulationAction,
 } from "@/lib/draw/admin-actions";
 import type { DrawMode } from "@/lib/draw/simulate";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 type SerializedPreview = DrawSimulationPreview | null;
@@ -105,7 +106,14 @@ export function AdminDrawsPanel({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
-        <Button type="button" size="sm" variant="secondary" disabled={isPending} onClick={createDraft}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="w-full sm:w-auto"
+          disabled={isPending}
+          onClick={createDraft}
+        >
           Create draft (this month)
         </Button>
       </div>
@@ -148,11 +156,12 @@ export function AdminDrawsPanel({
             header: "Carryover",
             sortable: true,
             sortValue: (row) => row.jackpotCarryover,
-            cell: (row) => `£${row.jackpotCarryover.toFixed(2)}`,
+            cell: (row) => formatCurrency(row.jackpotCarryover),
           },
           {
             id: "pick",
             header: "",
+            className: "!whitespace-normal",
             cell: (row) => (
               <Button
                 type="button"
@@ -179,8 +188,8 @@ export function AdminDrawsPanel({
             <StatusPill value={selected.status} />
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[180px] space-y-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="w-full min-w-0 space-y-1 sm:max-w-xs sm:flex-1">
               <label className="text-xs text-slate">Draw mode</label>
               <Select
                 value={mode}
@@ -198,6 +207,7 @@ export function AdminDrawsPanel({
             </div>
             <Button
               type="button"
+              className="w-full sm:w-auto"
               disabled={isPending || selected.status === "published"}
               onClick={runSimulation}
             >
@@ -206,6 +216,7 @@ export function AdminDrawsPanel({
             <Button
               type="button"
               variant="secondary"
+              className="w-full sm:w-auto"
               disabled={isPending || !canPublish}
               onClick={publishDraw}
             >
@@ -229,32 +240,32 @@ export function AdminDrawsPanel({
                 <div className="rounded-xl bg-sand/40 px-3 py-2">
                   <p className="text-slate">Total pool</p>
                   <p className="font-sans text-navy">
-                    £{preview.totalPool.toFixed(2)}
+                    {formatCurrency(preview.totalPool)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-sand/40 px-3 py-2">
                   <p className="text-slate">5-match</p>
                   <p className="font-sans text-navy">
-                    £{preview.tier5Pool.toFixed(2)}
+                    {formatCurrency(preview.tier5Pool)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-sand/40 px-3 py-2">
                   <p className="text-slate">4-match</p>
                   <p className="font-sans text-navy">
-                    £{preview.tier4Pool.toFixed(2)}
+                    {formatCurrency(preview.tier4Pool)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-sand/40 px-3 py-2">
                   <p className="text-slate">3-match</p>
                   <p className="font-sans text-navy">
-                    £{preview.tier3Pool.toFixed(2)}
+                    {formatCurrency(preview.tier3Pool)}
                   </p>
                 </div>
               </div>
               {preview.nextJackpotCarryover > 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Unclaimed 5-match funds roll forward: £
-                  {preview.nextJackpotCarryover.toFixed(2)}
+                  Unclaimed 5-match funds roll forward:{" "}
+                  {formatCurrency(preview.nextJackpotCarryover)}
                 </p>
               ) : null}
               <div>
@@ -276,7 +287,7 @@ export function AdminDrawsPanel({
                           {winner.userId.slice(0, 8)}… · {winner.matchCount}-match
                         </span>
                         <span className={tabularImpact}>
-                          Tier {winner.tier} · £{winner.prizeAmount.toFixed(2)}
+                          Tier {winner.tier} · {formatCurrency(winner.prizeAmount)}
                         </span>
                       </li>
                     ))}

@@ -45,6 +45,7 @@ export async function saveCharityAction(
     slug: parsed.data.slug,
     description: parsed.data.description || null,
     images,
+    category: parsed.data.category?.trim() ? parsed.data.category : null,
     is_featured: Boolean(parsed.data.isFeatured),
     updated_at: new Date().toISOString(),
   };

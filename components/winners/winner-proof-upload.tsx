@@ -8,6 +8,7 @@ import { FormError, FormSuccess } from "@/components/auth/form-message";
 import { uploadWinnerProofAction } from "@/lib/winners/actions";
 import { Button } from "@/components/ui/button";
 import type { WinnerWithDraw } from "@/lib/winners/types";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +67,7 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
             {winner.tier}-match tier
           </p>
           <p className={tabularImpact}>
-            <span className="text-coral">£{winner.prize_amount.toFixed(2)}</span>
+            <span className="text-coral">{formatCurrency(winner.prize_amount)}</span>
             <span className="text-slate"> · Draw {winner.draw_month}</span>
           </p>
         </div>
@@ -90,7 +91,12 @@ export function WinnerProofUpload({ winner }: WinnerProofUploadProps) {
             className="text-sm text-slate file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy"
             disabled={isPending}
           />
-          <Button type="button" disabled={isPending} onClick={handleUpload}>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            disabled={isPending}
+            onClick={handleUpload}
+          >
             {isPending ? "Uploading…" : "Upload screenshot"}
           </Button>
         </div>

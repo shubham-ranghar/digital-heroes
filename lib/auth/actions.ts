@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import type { ZodError } from "zod";
 
+import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import type { AuthActionResult } from "@/lib/auth/types";
 import { createClient } from "@/lib/supabase/server";
 import { signInSchema, signUpSchema } from "@/lib/validations/auth";
@@ -52,10 +53,9 @@ export async function signInAction(
   }
 
   const nextPath = formData.get("redirect") ?? formData.get("next");
-  const destination =
-    typeof nextPath === "string" && nextPath.startsWith("/")
-      ? nextPath
-      : "/dashboard";
+  const destination = safeRedirectPath(
+    typeof nextPath === "string" ? nextPath : null,
+  );
 
   revalidatePath("/dashboard");
   redirect(destination);

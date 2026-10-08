@@ -5,6 +5,7 @@ import { AdminSection } from "@/components/admin/admin-section";
 import { getAdminOverviewStats } from "@/lib/admin/overview";
 import { adminNavItems } from "@/lib/admin/nav";
 import { requireAdmin } from "@/lib/auth/session";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 export const instant = false;
@@ -25,8 +26,8 @@ export default async function AdminIndexPage() {
         { label: "Total users", value: stats.totalUsers },
         { label: "Active subscribers", value: stats.activeSubscribers },
         {
-          label: "Current prize pool",
-          value: `£${stats.currentPrizePool.toFixed(2)}`,
+          label: "Estimated prize pool (active subscribers × fee)",
+          value: formatCurrency(stats.currentPrizePool),
         },
         { label: "Next draw status", value: stats.nextDrawStatus },
         {

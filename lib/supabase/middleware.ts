@@ -7,6 +7,9 @@ export type ProfileRole = "subscriber" | "admin";
 
 export async function updateSession(request: NextRequest) {
   if (!hasSupabaseEnv()) {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse("Service misconfigured", { status: 503 });
+    }
     return NextResponse.next({ request });
   }
 
@@ -36,7 +39,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  if (pathname.startsWith("/api/stripe")) {
+  if (pathname.startsWith("/api/payments")) {
     return supabaseResponse;
   }
 

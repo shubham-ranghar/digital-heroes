@@ -4,13 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/session";
 import {
+  filterDrawEntriesToActiveSubscribers,
   getDrawFeeConfig,
   loadActiveSubscriberScores,
   loadDrawEntries,
 } from "@/lib/draw/db";
+import { computePublishDrawOutcome } from "@/lib/draw/publish-outcome";
 import { simulateDraw, type DrawMode } from "@/lib/draw/simulate";
 import { syncAllDrawEntriesForDraw } from "@/lib/draw/sync-entry";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { drawCreateSchema } from "@/lib/validations/admin";
 
 export type DrawSimulationPreview = {
   winningNumbers: number[];
@@ -84,8 +87,13 @@ export async function runSimulationAction(input: {
 
   const syncedCount = await syncAllDrawEntriesForDraw(admin, draw.id);
 
-  const entries = await loadDrawEntries(admin, draw.id);
-  const { activeCount, scores } = await loadActiveSubscriberScores(admin);
+  const rawEntries = await loadDrawEntries(admin, draw.id);
+  const { activeCount, scores, activeUserIds } =
+    await loadActiveSubscriberScores(admin);
+  const entries = filterDrawEntriesToActiveSubscribers(
+    rawEntries,
+    activeUserIds,
+  );
   const { feePerSubscriber, poolPercentage } = getDrawFeeConfig();
 
   const simulation = simulateDraw({
@@ -125,10 +133,19 @@ export async function createDraftDrawAction(input: {
   month: string;
 }): Promise<DrawAdminResult> {
   await requireAdmin();
+
+  const parsed = drawCreateSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "Invalid draw month.",
+    };
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin.from("draws").insert({
-    month: input.month,
+    month: parsed.data.month,
     status: "draft",
     mode: "random",
     jackpot_carryover: 0,
@@ -175,12 +192,17 @@ export async function publishDrawAction(input: {
 
   await syncAllDrawEntriesForDraw(admin, draw.id);
 
-  const entries = await loadDrawEntries(admin, draw.id);
-  const { activeCount, scores } = await loadActiveSubscriberScores(admin);
+  const rawEntries = await loadDrawEntries(admin, draw.id);
+  const { activeCount, scores, activeUserIds } =
+    await loadActiveSubscriberScores(admin);
+  const entries = filterDrawEntriesToActiveSubscribers(
+    rawEntries,
+    activeUserIds,
+  );
   const { feePerSubscriber, poolPercentage } = getDrawFeeConfig();
 
-  const simulation = simulateDraw({
-    mode: (draw.mode as DrawMode) ?? "random",
+  const simulation = computePublishDrawOutcome({
+    storedWinningNumbers: winningNumbers,
     entries,
     subscriberScores: scores,
     activeSubscribers: activeCount,
@@ -188,16 +210,6 @@ export async function publishDrawAction(input: {
     poolPercentage,
     carryover: Number(draw.jackpot_carryover ?? 0),
   });
-
-  if (
-    simulation.winningNumbers.join(",") !== winningNumbers.join(",")
-  ) {
-    return {
-      ok: false,
-      message:
-        "Entry data changed since simulation. Re-run simulation before publishing.",
-    };
-  }
 
   await admin.from("winners").delete().eq("draw_id", draw.id);
 

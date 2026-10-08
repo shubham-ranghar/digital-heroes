@@ -9,6 +9,7 @@ import { GlassCard } from "@/components/home/glass-card";
 import { Button } from "@/components/ui/button";
 import { useCountUp } from "@/hooks/use-count-up";
 import type { HomeStats } from "@/lib/home/stats";
+import { formatCurrency } from "@/lib/money";
 import { bodyLead, headingHero, tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -69,13 +70,18 @@ export function HeroSection({ stats }: HeroSectionProps) {
             choose.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button size="lg" render={<Link href="/subscribe" />}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto"
+              render={<Link href="/subscribe" />}
+            >
               Subscribe now
             </Button>
             <Button
               variant="ghost"
               size="lg"
+              className="w-full sm:w-auto"
               render={<Link href="#how-it-works" />}
             >
               See how it works
@@ -171,7 +177,10 @@ export function HeroSection({ stats }: HeroSectionProps) {
                 <div>
                   <p className="text-xs text-slate">Jackpot rollover</p>
                   <p className={cn("font-sans text-sm text-coral", tabularImpact)}>
-                    £{stats.jackpotRollover.toFixed(0)}
+                    {formatCurrency(stats.jackpotRollover, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
                   <p className="text-[11px] text-muted-on-dark">
                     Unclaimed 5-match tier

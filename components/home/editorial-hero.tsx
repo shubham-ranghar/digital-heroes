@@ -281,7 +281,7 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
         your chosen charity receives a meaningful share of every payment.
       </motion.p>
       <motion.div
-        className="mt-8 flex flex-wrap items-center gap-5"
+        className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5"
         custom={1}
         initial={reduceMotion ? false : "hidden"}
         animate={reduceMotion ? undefined : "visible"}
@@ -290,7 +290,7 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
         <motion.div {...buttonMotionProps(reduceMotion)}>
           <Link
             href="/subscribe"
-            className="inline-flex h-12 items-center rounded-full bg-coral px-8 text-base font-medium text-navy hover:bg-coral-deep motion-transition-colors"
+            className="inline-flex h-12 min-h-11 w-full items-center justify-center rounded-full bg-coral px-8 text-base font-medium text-navy hover:bg-coral-deep motion-transition-colors sm:w-auto"
           >
             Subscribe now
           </Link>

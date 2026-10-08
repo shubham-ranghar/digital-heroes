@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { CHARITY_CATEGORIES } from "@/lib/charity/categories";
 import { scoreFormSchema } from "@/lib/validations/score";
 
 export const adminUserIdSchema = z.object({
@@ -20,7 +21,7 @@ export const adminProfileSchema = z.object({
 export const adminSubscriptionSchema = z.object({
   userId: z.string().uuid(),
   plan: z.enum(["monthly", "yearly"]),
-  status: z.enum(["active", "cancelled", "lapsed"]),
+  status: z.enum(["active", "cancelled", "lapsed", "past_due"]),
   renewalDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
@@ -48,6 +49,10 @@ export const charityFormSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase slug with hyphens only"),
   description: z.string().trim().max(2000).optional().or(z.literal("")),
   imageUrls: z.string().optional().or(z.literal("")),
+  category: z
+    .enum(CHARITY_CATEGORIES)
+    .optional()
+    .or(z.literal("")),
   isFeatured: z.coerce.boolean().optional(),
 });
 

@@ -5,7 +5,10 @@ import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { getDashboardCharity } from "@/lib/dashboard/queries";
 import { requireUser } from "@/lib/auth/session";
-import { getLatestSubscription } from "@/lib/subscription/access";
+import {
+  getLatestSubscription,
+  getSubscriptionAccess,
+} from "@/lib/subscription/access";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { ConfigMissingState } from "@/components/ui/page-state";
 
@@ -36,6 +39,7 @@ export default async function DashboardSettingsPage() {
 
   const charity = await getDashboardCharity(supabase, user.id);
   const subscription = await getLatestSubscription(supabase, user.id);
+  const access = await getSubscriptionAccess(supabase, user.id);
 
   const { data: charities } = await supabase
     .from("charities")
@@ -48,7 +52,7 @@ export default async function DashboardSettingsPage() {
       <SectionHeading
         eyebrow="Account"
         title="Settings"
-        description="Update how you appear in the app, manage your charity share, and open billing when you have an active Stripe customer."
+        description="Update how you appear in the app, manage your charity share, and manage billing when you have an active subscription."
         className="mb-10"
       />
       <SettingsForm
@@ -57,7 +61,11 @@ export default async function DashboardSettingsPage() {
         charityId={charity?.charityId ?? null}
         charityPercentage={charity?.percentage ?? 10}
         charities={charities ?? []}
-        hasStripeCustomer={Boolean(subscription?.stripe_customer_id)}
+        hasBillingSubscription={Boolean(subscription?.stripe_subscription_id)}
+        cancelAtPeriodEnd={subscription?.cancel_at_period_end ?? false}
+        subscriptionStatus={subscription?.status ?? null}
+        renewalDate={subscription?.renewal_date ?? null}
+        hasSubscriptionAccess={access.hasAccess}
       />
     </div>
   );

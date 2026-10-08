@@ -14,6 +14,7 @@ function mapCharity(row: Record<string, unknown>): Charity {
     slug: String(row.slug),
     description: row.description ? String(row.description) : null,
     images: parseCharityImages(row.images),
+    category: row.category ? String(row.category) : null,
     is_featured: Boolean(row.is_featured),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),

@@ -1,27 +1,18 @@
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
-import type { SubscriptionRow, SubscriptionStatus } from "@/lib/subscription/types";
+import { subscriptionGrantsAccess } from "@/lib/subscription/grants";
+import type { SubscriptionRow } from "@/lib/subscription/types";
 import type { createClient } from "@/lib/supabase/server";
 
+export {
+  getSubscriptionAccessLabel,
+  isSubscriptionStatus,
+  subscriptionGrantsAccess,
+  type SubscriptionAccessLabel,
+} from "@/lib/subscription/grants";
+
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
-
-/** Whether a subscription row grants product access (server-side). */
-export function subscriptionGrantsAccess(
-  subscription: Pick<SubscriptionRow, "status" | "renewal_date">,
-  today = new Date(),
-): boolean {
-  if (subscription.status === "active") {
-    return true;
-  }
-
-  if (subscription.status === "cancelled" && subscription.renewal_date) {
-    const end = new Date(`${subscription.renewal_date}T23:59:59.999Z`);
-    return end >= today;
-  }
-
-  return false;
-}
 
 /** Latest subscription row for a user (any status). */
 export async function getLatestSubscription(
@@ -66,7 +57,11 @@ export async function getSubscriptionAccess(
 
   const subscription = await getLatestSubscription(supabase, userId);
   const hasAccess = subscription
-    ? subscriptionGrantsAccess(subscription)
+    ? subscriptionGrantsAccess({
+        status: subscription.status,
+        renewal_date: subscription.renewal_date,
+        cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+      })
     : false;
 
   return { hasAccess, subscription, isAdmin: false };
@@ -87,8 +82,3 @@ export async function requireActiveSubscription() {
   return { supabase, user, subscription: access.subscription, isAdmin: access.isAdmin };
 }
 
-export function isSubscriptionStatus(
-  value: string,
-): value is SubscriptionStatus {
-  return value === "active" || value === "cancelled" || value === "lapsed";
-}

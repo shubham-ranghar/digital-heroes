@@ -12,6 +12,7 @@ import {
   markWinnerPaidAction,
   rejectWinnerAction,
 } from "@/lib/winners/admin-actions";
+import { formatCurrency } from "@/lib/money";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,7 +72,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
             header: "Prize",
             sortable: true,
             sortValue: (row) => row.prize_amount,
-            cell: (row) => `£${row.prize_amount.toFixed(2)}`,
+            cell: (row) => formatCurrency(row.prize_amount),
           },
           {
             id: "member",
@@ -112,6 +113,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
           {
             id: "actions",
             header: "Actions",
+            className: "!whitespace-normal",
             cell: (row) => (
               <div className="flex flex-wrap gap-1">
                 <Button

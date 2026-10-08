@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-/** One-off donation amount in major units (e.g. pounds). */
+/** One-off donation amount in major units (rupees). */
 export const donationAmountSchema = z.coerce
   .number()
-  .min(1, "Minimum donation is £1")
-  .max(10_000, "Maximum donation is £10,000");
+  .min(1, "Minimum donation is ₹1")
+  .max(10_000, "Maximum donation is ₹10,000");
 
 export const donationCheckoutSchema = z.object({
   charityId: z.string().uuid("Invalid charity"),

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { keepLatestScores } from "@/lib/scores/rolling";
-import { subscriptionGrantsAccess } from "@/lib/subscription/access";
+import { activeSubscriberUserIdsFromRows } from "@/lib/draw/db";
 
 /** First calendar day of the current UTC month (draw month key). */
 export function currentDrawMonthIso(date = new Date()): string {
@@ -115,24 +115,22 @@ export async function syncAllDrawEntriesForDraw(
 ): Promise<number> {
   const { data: subscriptions, error } = await supabase
     .from("subscriptions")
-    .select("user_id, status, renewal_date")
+    .select("user_id, status, renewal_date, cancel_at_period_end, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const activeUserIds = new Set<string>();
-  for (const row of subscriptions ?? []) {
-    if (
-      subscriptionGrantsAccess({
-        status: row.status as "active" | "cancelled" | "lapsed",
-        renewal_date: row.renewal_date as string | null,
-      })
-    ) {
-      activeUserIds.add(row.user_id as string);
-    }
-  }
+  const activeUserIds = activeSubscriberUserIdsFromRows(
+    (subscriptions ?? []) as {
+      user_id: string;
+      status: "active" | "cancelled" | "lapsed" | "past_due";
+      renewal_date: string | null;
+      cancel_at_period_end?: boolean | null;
+      created_at: string;
+    }[],
+  );
 
   let synced = 0;
   for (const userId of activeUserIds) {

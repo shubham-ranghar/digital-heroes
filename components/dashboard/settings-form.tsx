@@ -5,6 +5,9 @@ import { toast } from "sonner";
 
 import { FieldError, FormError } from "@/components/auth/form-message";
 import { CheckoutButtons } from "@/components/subscription/checkout-buttons";
+import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
+import { getSubscriptionAccessLabel } from "@/lib/subscription/grants";
+import type { SubscriptionStatus } from "@/lib/subscription/types";
 import { changePasswordAction } from "@/lib/auth/password-actions";
 import { requestAccountDeletionAction } from "@/lib/profile/deletion-actions";
 import {
@@ -31,7 +34,11 @@ type SettingsFormProps = {
   charityId: string | null;
   charityPercentage: number;
   charities: CharityOption[];
-  hasStripeCustomer: boolean;
+  hasBillingSubscription: boolean;
+  cancelAtPeriodEnd: boolean;
+  subscriptionStatus: SubscriptionStatus | null;
+  renewalDate: string | null;
+  hasSubscriptionAccess: boolean;
 };
 
 export function SettingsForm({
@@ -40,8 +47,22 @@ export function SettingsForm({
   charityId,
   charityPercentage,
   charities,
-  hasStripeCustomer,
+  hasBillingSubscription,
+  cancelAtPeriodEnd,
+  subscriptionStatus,
+  renewalDate,
+  hasSubscriptionAccess,
 }: SettingsFormProps) {
+  const membershipLabel = getSubscriptionAccessLabel(
+    subscriptionStatus
+      ? {
+          status: subscriptionStatus,
+          renewal_date: renewalDate,
+          cancel_at_period_end: cancelAtPeriodEnd,
+        }
+      : null,
+    hasSubscriptionAccess,
+  );
   const [name, setName] = useState(displayName ?? "");
   const [selectedCharityId, setSelectedCharityId] = useState(
     charityId ?? charities[0]?.id ?? "",
@@ -142,6 +163,7 @@ export function SettingsForm({
         <Button
           type="button"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={isNamePending || name === (displayName ?? "")}
           onClick={handleSaveName}
         >
@@ -198,6 +220,7 @@ export function SettingsForm({
             <Button
               type="button"
               size="sm"
+              className="w-full sm:w-auto"
               disabled={
                 isCharityPending ||
                 (selectedCharityId === (charityId ?? "") &&
@@ -211,14 +234,19 @@ export function SettingsForm({
         )}
       </section>
 
-      {hasStripeCustomer ? (
+      {hasBillingSubscription ? (
         <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6">
           <h2 className="font-sans text-lg font-semibold text-navy">Billing</h2>
+          <SubscriptionAccessPill label={membershipLabel} />
           <p className="text-sm text-muted-foreground">
-            Update payment method, view invoices, or cancel in the Stripe customer
-            portal.
+            {cancelAtPeriodEnd
+              ? "Your plan stays active until the cancellation date. Resume below to keep billing."
+              : "Cancel at the end of your current billing period. Access continues until then."}
           </p>
-          <CheckoutButtons showPortal />
+          <CheckoutButtons
+            showManage
+            cancelAtPeriodEnd={cancelAtPeriodEnd}
+          />
         </section>
       ) : null}
 
@@ -246,7 +274,12 @@ export function SettingsForm({
             />
           </div>
           <FieldError message={passwordError ?? undefined} />
-          <Button type="submit" size="sm" disabled={isPasswordPending}>
+          <Button
+            type="submit"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={isPasswordPending}
+          >
             {isPasswordPending ? "Updating…" : "Update password"}
           </Button>
         </form>
@@ -262,6 +295,7 @@ export function SettingsForm({
           type="button"
           variant="destructive"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={isDeletePending}
           onClick={handleDeletionRequest}
         >

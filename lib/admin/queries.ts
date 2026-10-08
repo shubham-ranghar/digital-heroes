@@ -7,7 +7,10 @@ import {
 import type { DrawSimulationPreview } from "@/lib/draw/admin-actions";
 import { previewDrawResult } from "@/lib/draw/simulate";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
-import { subscriptionGrantsAccess } from "@/lib/subscription/access";
+import {
+  getSubscriptionAccessLabel,
+  subscriptionGrantsAccess,
+} from "@/lib/subscription/access";
 
 export type AdminUserRow = {
   id: string;
@@ -17,7 +20,9 @@ export type AdminUserRow = {
   plan: SubscriptionPlan | null;
   subscriptionStatus: SubscriptionStatus | null;
   renewalDate: string | null;
+  cancelAtPeriodEnd: boolean;
   hasAccess: boolean;
+  accessLabel: string;
   scoreCount: number;
 };
 
@@ -37,6 +42,7 @@ export type AdminCharityRow = {
   slug: string;
   description: string | null;
   images: string[];
+  category: string | null;
   isFeatured: boolean;
   supporterCount: number;
 };
@@ -49,6 +55,7 @@ export type AdminReports = {
   estimatedPrizePool: number;
   charityCommittedInr: number;
   donationTotalInr: number;
+  totalCharityContribution: number;
   drawsByStatus: { status: string; count: number }[];
   entriesPerDraw: { month: string; count: number }[];
 };
@@ -71,7 +78,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
 
   const { data: subscriptions, error: subError } = await client
     .from("subscriptions")
-    .select("user_id, plan, status, renewal_date, created_at")
+    .select("user_id, plan, status, renewal_date, cancel_at_period_end, created_at")
     .order("created_at", { ascending: false });
 
   if (subError) {
@@ -84,6 +91,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       plan: SubscriptionPlan;
       status: SubscriptionStatus;
       renewal_date: string | null;
+      cancel_at_period_end: boolean;
     }
   >();
   for (const row of subscriptions ?? []) {
@@ -93,6 +101,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
         plan: row.plan as SubscriptionPlan,
         status: row.status as SubscriptionStatus,
         renewal_date: row.renewal_date as string | null,
+        cancel_at_period_end: Boolean(row.cancel_at_period_end),
       });
     }
   }
@@ -137,8 +146,20 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       ? subscriptionGrantsAccess({
           status: sub.status,
           renewal_date: sub.renewal_date,
+          cancel_at_period_end: sub.cancel_at_period_end,
         })
       : false;
+
+    const accessLabel = getSubscriptionAccessLabel(
+      sub
+        ? {
+            status: sub.status,
+            renewal_date: sub.renewal_date,
+            cancel_at_period_end: sub.cancel_at_period_end,
+          }
+        : null,
+      hasAccess,
+    ).label;
 
     return {
       id: profile.id,
@@ -148,7 +169,9 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       plan: sub?.plan ?? null,
       subscriptionStatus: sub?.status ?? null,
       renewalDate: sub?.renewal_date ?? null,
+      cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,
       hasAccess,
+      accessLabel,
       scoreCount: scoresByUser.get(profile.id) ?? 0,
     };
   });
@@ -278,7 +301,7 @@ export async function listAdminCharities(): Promise<AdminCharityRow[]> {
   const client = admin();
   const { data: charities, error } = await client
     .from("charities")
-    .select("id, name, slug, description, images, is_featured")
+    .select("id, name, slug, description, images, is_featured, category")
     .order("name", { ascending: true });
 
   if (error) {
@@ -307,6 +330,7 @@ export async function listAdminCharities(): Promise<AdminCharityRow[]> {
     images: Array.isArray(row.images)
       ? (row.images as string[]).map(String)
       : [],
+    category: row.category ? String(row.category) : null,
     isFeatured: Boolean(row.is_featured),
     supporterCount: countByCharity.get(row.id as string) ?? 0,
   }));
@@ -414,6 +438,8 @@ export async function getAdminReports(): Promise<AdminReports> {
     });
   }
 
+  const totalCharityContribution = charityCommittedInr + donationTotalInr;
+
   return {
     totalUsers: totalUsers ?? 0,
     activeSubscribers: activeCount,
@@ -422,6 +448,7 @@ export async function getAdminReports(): Promise<AdminReports> {
     estimatedPrizePool,
     charityCommittedInr,
     donationTotalInr,
+    totalCharityContribution,
     drawsByStatus: Array.from(statusCounts.entries()).map(([status, count]) => ({
       status,
       count,

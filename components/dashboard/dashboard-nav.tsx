@@ -38,7 +38,7 @@ export function DashboardNav({ isAdmin, variant }: DashboardNavProps) {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors",
+                    "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs transition-colors",
                     active
                       ? "text-coral"
                       : "text-slate hover:text-navy",

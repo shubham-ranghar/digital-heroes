@@ -17,6 +17,8 @@ type StatCardProps = {
   trend?: string;
   className?: string;
   animate?: boolean;
+  /** When set, shown instead of prefix + animated value (e.g. locale currency). */
+  valueLabel?: string;
 };
 
 /** Dashboard metric tile with optional count-up animation. */
@@ -30,6 +32,7 @@ export function StatCard({
   trend,
   className,
   animate = true,
+  valueLabel,
 }: StatCardProps) {
   const { formatted } = useCountUp(value, {
     decimals,
@@ -53,9 +56,13 @@ export function StatCard({
             tabularImpact,
           )}
         >
-          {prefix}
-          {formatted}
-          {suffix}
+          {valueLabel ?? (
+            <>
+              {prefix}
+              {formatted}
+              {suffix}
+            </>
+          )}
         </p>
         {trend ? (
           <p className="mt-1 text-xs text-status-active">{trend}</p>

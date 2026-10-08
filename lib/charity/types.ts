@@ -4,6 +4,7 @@ export type Charity = {
   slug: string;
   description: string | null;
   images: string[];
+  category: string | null;
   is_featured: boolean;
   created_at: string;
   updated_at: string;

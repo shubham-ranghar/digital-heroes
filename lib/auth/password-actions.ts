@@ -5,7 +5,7 @@ import type { ZodError } from "zod";
 import type { AuthActionResult } from "@/lib/auth/types";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { getSiteUrl } from "@/lib/stripe/env";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   changePasswordSchema,
   forgotPasswordSchema,

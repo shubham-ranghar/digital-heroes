@@ -39,7 +39,7 @@ export const faqItems: FaqItem[] = [
     id: "cancellation",
     question: "Can I cancel?",
     answer:
-      "You can cancel anytime through the Stripe customer portal from Settings. Access continues until the end of the paid period; charity allocations already processed are not reversed.",
+      "You can cancel anytime from Settings (end of billing period). Access continues until the paid period ends; charity allocations already processed are not reversed.",
   },
   {
     id: "verification",
@@ -57,7 +57,7 @@ export const faqItems: FaqItem[] = [
     id: "privacy",
     question: "What data do you store?",
     answer:
-      "Account email, display name, scores, charity preference, subscription status via Stripe, and draw entries. See our Privacy page for retention and your rights.",
+      "Account email, display name, scores, charity preference, subscription status via Razorpay, and draw entries. See our Privacy page for retention and your rights.",
   },
   {
     id: "eligibility",

@@ -24,12 +24,13 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
 
   const { data: subscriptions } = await admin
     .from("subscriptions")
-    .select("user_id, status, renewal_date");
+    .select("user_id, status, renewal_date, cancel_at_period_end");
 
   const activeSubscribers = (subscriptions ?? []).filter((row) =>
     subscriptionGrantsAccess({
       status: row.status as SubscriptionStatus,
       renewal_date: row.renewal_date as string | null,
+      cancel_at_period_end: Boolean(row.cancel_at_period_end),
     }),
   ).length;
 

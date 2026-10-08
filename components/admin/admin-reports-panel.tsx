@@ -2,6 +2,7 @@
 
 import { StatCard } from "@/components/ui/stat-card";
 import type { AdminReports } from "@/lib/admin/queries";
+import { formatCurrency } from "@/lib/money";
 import { Users, Trophy, Heart, BarChart3 } from "lucide-react";
 
 type AdminReportsPanelProps = {
@@ -60,18 +61,28 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
           trend="Server-verified access"
         />
         <StatCard
-          label="Est. prize pool"
+          label="Estimated prize pool (active subscribers × fee)"
           value={reports.estimatedPrizePool}
-          prefix="£"
-          decimals={2}
+          valueLabel={formatCurrency(reports.estimatedPrizePool)}
+          animate={false}
           icon={Trophy}
         />
         <StatCard
-          label="Charity committed / mo"
-          value={reports.charityCommittedInr}
-          prefix="₹"
-          decimals={0}
+          label="Total charity contribution"
+          value={reports.totalCharityContribution}
+          valueLabel={formatCurrency(reports.totalCharityContribution, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}
+          animate={false}
           icon={Heart}
+          trend={`${formatCurrency(reports.charityCommittedInr, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}/mo committed · ${formatCurrency(reports.donationTotalInr, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })} one-off`}
         />
       </div>
 
@@ -82,19 +93,16 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
             <div>
               <p className="text-slate">Paid out</p>
               <p className="font-sans text-2xl text-status-active">
-                £{reports.totalPrizePaid.toFixed(2)}
+                {formatCurrency(reports.totalPrizePaid)}
               </p>
             </div>
             <div>
               <p className="text-slate">Pending</p>
               <p className="font-sans text-2xl text-status-pending">
-                £{reports.totalPrizePending.toFixed(2)}
+                {formatCurrency(reports.totalPrizePending)}
               </p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            One-off donations (succeeded): ₹{reports.donationTotalInr.toFixed(0)}
-          </p>
         </div>
 
         <div className="rounded-[20px] border border-line bg-surface p-5">

@@ -211,8 +211,8 @@ export function ScoresPanel({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button type="submit" disabled={isPending}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
                 {isPending
                   ? "Saving…"
                   : isEditing
@@ -223,6 +223,7 @@ export function ScoresPanel({
                 <Button
                   type="button"
                   variant="ghost"
+                  className="w-full sm:w-auto"
                   disabled={isPending}
                   onClick={resetForm}
                 >

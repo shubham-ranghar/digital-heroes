@@ -15,6 +15,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CHARITY_CATEGORIES } from "@/lib/charity/categories";
 import type { AdminCharityRow } from "@/lib/admin/queries";
 import {
   deleteCharityAction,
@@ -31,6 +39,7 @@ const emptyForm = {
   slug: "",
   description: "",
   imageUrls: "",
+  category: "",
   isFeatured: false,
 };
 
@@ -53,6 +62,7 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
       slug: row.slug,
       description: row.description ?? "",
       imageUrls: row.images.join("\n"),
+      category: row.category ?? "",
       isFeatured: row.isFeatured,
     });
     setFormOpen(true);
@@ -93,7 +103,12 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
   return (
     <>
       <div className="mb-4">
-        <Button type="button" size="sm" onClick={openCreate}>
+        <Button
+          type="button"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={openCreate}
+        >
           Add charity
         </Button>
       </div>
@@ -109,6 +124,13 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
             sortable: true,
             sortValue: (row) => row.name,
             cell: (row) => row.name,
+          },
+          {
+            id: "category",
+            header: "Category",
+            sortable: true,
+            sortValue: (row) => row.category ?? "",
+            cell: (row) => row.category ?? "—",
           },
           {
             id: "slug",
@@ -143,8 +165,9 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
           {
             id: "actions",
             header: "",
+            className: "!whitespace-normal",
             cell: (row) => (
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 <Button type="button" size="sm" variant="secondary" onClick={() => openEdit(row)}>
                   Edit
                 </Button>
@@ -178,6 +201,27 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
               value={form.slug}
               onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
             />
+            <Select
+              value={form.category || "none"}
+              onValueChange={(value) =>
+                setForm((f) => ({
+                  ...f,
+                  category: value === "none" ? "" : value ?? "",
+                }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Category (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {CHARITY_CATEGORIES.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <textarea
               className="min-h-24 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-navy"
               placeholder="Description"

@@ -2,7 +2,7 @@
 
 Charity-first subscription platform: members log Stableford scores (latest five kept), enter monthly prize draws, and direct at least 10% of subscription fees to a chosen charity. Admins simulate and publish draws, verify winner proof, and manage partners.
 
-**Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Auth, Postgres, Storage, RLS), Stripe, Vitest.
+**Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Auth, Postgres, Storage, RLS), Razorpay (subscriptions), Vitest.
 
 ---
 
@@ -10,8 +10,7 @@ Charity-first subscription platform: members log Stableford scores (latest five 
 
 - Node.js 20+
 - [Supabase](https://supabase.com) project
-- [Stripe](https://stripe.com) account (test mode is fine for local dev)
-- Stripe CLI (for webhook forwarding locally)
+- [Razorpay](https://razorpay.com) test account (or use `PAYMENT_PROVIDER=mock` for demos)
 
 ---
 
@@ -37,10 +36,12 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key (client + RLS) |
 | `NEXT_PUBLIC_SITE_URL` | Yes | App origin, e.g. `http://localhost:3000` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin/reports | Bypasses RLS for admin lists, draw sync, homepage stats |
-| `STRIPE_SECRET_KEY` | Subscribe | Stripe API secret (`sk_test_…`) |
-| `STRIPE_WEBHOOK_SECRET` | Subscribe | From `stripe listen` or Dashboard webhook |
-| `STRIPE_PRICE_ID_MONTHLY` | Subscribe | Stripe Price ID for monthly plan |
-| `STRIPE_PRICE_ID_YEARLY` | Subscribe | Stripe Price ID for yearly plan |
+| `PAYMENT_PROVIDER` | Subscribe | `razorpay` (live test mode) or `mock` (instant activation, no gateway) |
+| `RAZORPAY_KEY_ID` | Razorpay | Dashboard → API keys (`rzp_test_…`) |
+| `RAZORPAY_KEY_SECRET` | Razorpay | Secret key paired with `RAZORPAY_KEY_ID` |
+| `RAZORPAY_WEBHOOK_SECRET` | Razorpay | Webhook signing secret from Dashboard |
+| `RAZORPAY_PLAN_ID_MONTHLY` | Razorpay | Subscription plan ID for monthly billing |
+| `RAZORPAY_PLAN_ID_YEARLY` | Razorpay | Subscription plan ID for yearly billing |
 | `DRAW_FEE_PER_SUBSCRIBER` | Draws | Fee unit per active subscriber (default `10`) |
 | `DRAW_PRIZE_POOL_PERCENTAGE` | Draws | % of fees into pool (default `100`) |
 | `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` | UI | Display-only monthly fee for charity ₹ slider (default `499`) |
@@ -62,6 +63,25 @@ supabase db push
 
 Or run SQL from `supabase/migrations/` in order in the Supabase SQL editor.
 
+**Sample charities** (optional, local/demo):
+
+```bash
+# Supabase SQL editor, or after linking: supabase db execute -f supabase/seed.sql
+```
+
+**Dev test users** (local only — requires `SUPABASE_SERVICE_ROLE_KEY`):
+
+```bash
+npx tsx scripts/seed.ts
+```
+
+| Account | Email | Password |
+|---------|-------|----------|
+| Admin | `admin@digital-heroes.test` | `TestAdmin!digital25` |
+| Active subscriber | `subscriber@digital-heroes.test` | `TestMember!digital25` |
+
+Run `supabase/seed.sql` first if you need sample charities for signup.
+
 **Seed charities (example):**
 
 ```sql
@@ -79,19 +99,18 @@ VALUES (date_trunc('month', CURRENT_DATE)::date, 'draft', 'random')
 ON CONFLICT (month) DO NOTHING;
 ```
 
-### 4. Stripe
+### 4. Payments (Razorpay)
 
-1. Create **Products** with recurring **Prices** for monthly and yearly billing.
-2. Put Price IDs in `STRIPE_PRICE_ID_MONTHLY` and `STRIPE_PRICE_ID_YEARLY`.
-3. Forward webhooks locally:
+**Demo without Razorpay:** set `PAYMENT_PROVIDER=mock` in `.env.local`. Checkout activates membership in the database immediately.
 
-```bash
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-```
+**Razorpay test mode:**
 
-Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+1. Create **Subscription plans** for monthly and yearly billing in the Razorpay Dashboard.
+2. Set `RAZORPAY_PLAN_ID_MONTHLY`, `RAZORPAY_PLAN_ID_YEARLY`, API keys, and `PAYMENT_PROVIDER=razorpay`.
+3. Add a webhook endpoint pointing to `https://your-domain/api/payments/webhook` (local: use a tunnel such as ngrok). Subscribe to subscription and payment events.
+4. Copy the webhook signing secret into `RAZORPAY_WEBHOOK_SECRET`.
 
-Checkout success redirects to `/dashboard?checkout=success`; cancel to `/subscribe?checkout=cancelled`.
+Checkout opens Razorpay Checkout on the client; success redirects to `/dashboard?checkout=success`. Webhooks update `subscriptions` (same table/columns as before; external IDs stored in `stripe_subscription_id` / `stripe_customer_id`).
 
 ### 5. Run the app
 
@@ -118,7 +137,7 @@ There are **no built-in default users**. Create accounts through the app:
 | **Member** | [Sign up](/signup) — pick charity + ≥10% share, confirm email if enabled |
 | **Admin** | Sign up, then in Supabase SQL: `UPDATE public.profiles SET role = 'admin' WHERE id = '<user-uuid>';` |
 
-**Stripe test card:** `4242 4242 4242 4242`, any future expiry, any CVC, any billing postcode.
+**Razorpay test mode:** use [Razorpay test cards and UPI](https://razorpay.com/docs/payments/payments/test-card-upi-details/) in Checkout.
 
 **Login:** `/login` — supports `?next=/path` redirect after sign-in.
 
@@ -131,7 +150,7 @@ There are **no built-in default users**. Create accounts through the app:
 | Area | Location | Notes |
 |------|----------|--------|
 | Sign up / login | `app/signup`, `app/login`, `lib/auth/actions.ts` | Charity + % on signup; auth callback route |
-| Monthly / yearly subscription | `lib/stripe/actions.ts`, webhook `app/api/stripe/webhook` | Checkout + portal; `subscriptions` table |
+| Monthly / yearly subscription | `lib/payments/*`, webhook `app/api/payments/webhook` | Razorpay Checkout + mock provider; `subscriptions` table |
 | 5-score rolling | DB trigger + `lib/scores/rolling.ts` | One score per calendar date; latest five kept |
 | Draw simulation / publish | `lib/draw/*`, `lib/draw/admin-actions.ts` | Random or algorithmic; publish after `simulated` |
 | Draw entries | `lib/draw/sync-entry.ts` | Synced on score save + before admin simulate/publish |
@@ -153,8 +172,8 @@ Server-side subscription checks use `requireActiveSubscription()` from `lib/subs
 | `/dashboard/settings` | Required | **Not** required — profile, charity %, billing portal |
 | `/dashboard/scores` | Required | Required (`app/dashboard/(member)/layout.tsx`) |
 | `/dashboard/prizes` | Required | **Not** required — winners may upload proof after lapse |
-| `/subscribe`, Stripe checkout / portal (`lib/stripe/actions.ts`) | Required | Not required (subscribe flow) |
-| One-off donations (`lib/stripe/donation-actions.ts`) | Required | Not required |
+| `/subscribe`, Razorpay checkout (`lib/payments/actions.ts`) | Required | Not required (subscribe flow) |
+| One-off donations (`lib/payments/donation-actions.ts`) | Required | Not required |
 | Score mutations + draw entry sync (`lib/scores/actions.ts`) | Required | Required |
 | Charity % updates (`lib/charity/actions.ts`, `lib/profile/actions.ts`) | Required | **Not** required (settings / overview display) |
 | `/admin/*` | Admin role | N/A (admins bypass subscription) |
@@ -166,7 +185,7 @@ Middleware (`lib/supabase/middleware.ts`) enforces login for `/dashboard`, `/sub
 
 ## Prize pool calculation
 
-Monthly draw prize pools are **not** read from Stripe prices in code. They are computed as:
+Monthly draw prize pools are **not** read from Razorpay plan amounts in code. They are computed as:
 
 `totalPool = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER × (DRAW_PRIZE_POOL_PERCENTAGE / 100)`
 
@@ -174,22 +193,22 @@ Defaults in `.env.example`: **`DRAW_FEE_PER_SUBSCRIBER=10`**, **`DRAW_PRIZE_POOL
 
 That total is split across tiers **40% / 35% / 25%** for 5-, 4-, and 3-match winners (`lib/draw/constants.ts`). Each tier pool is divided equally among winners in that tier. If there are **no 5-match winners**, the entire 5-match tier pool rolls into **`jackpot_carryover`** on the next month’s draw (`splitPrizes()` in `lib/draw/pools.ts`).
 
-Align **Stripe charge currency** with how you display fees and prizes (README assumption: draws often use **GBP (£)**; marketing charity sliders may use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR`).
+Align **Razorpay charge currency (INR)** with how you display fees and prizes (draw engine may still use **GBP (£)** for prize amounts; marketing sliders use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR`).
 
 ---
 
 ## Assumptions & limitations
 
-1. **Currency display:** Prize pools and draw fees use **GBP (£)** in draw engine and winner records; marketing/dashboard charity amounts often use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` for display — align Stripe currency with your production region.
+1. **Currency display:** Prize pools and draw fees use **GBP (£)** in draw engine and winner records; marketing/dashboard charity amounts often use **INR (₹)** via `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` for display — align Razorpay plan currency with your production region.
 2. **Draw entries** require a **draft/simulated draw row** for the current month; admins create it under **Admin → Draws**. Members sync entries when they save scores (if a draw exists).
-3. **Active subscription** is determined server-side from `subscriptions` (+ cancelled-until-renewal-date). Stripe webhook must run for checkout to grant access.
+3. **Active subscription** is determined server-side from `subscriptions` (+ cancelled-until-renewal-date). Razorpay webhooks (or `mock` checkout) must run for checkout to grant access.
 4. **Admin user list / reports** need `SUPABASE_SERVICE_ROLE_KEY`. Winner verification works with admin session + RLS alone.
 5. **Homepage “total raised”** uses donations + estimated subscription commitments when `SUPABASE_SERVICE_ROLE_KEY` is set; otherwise the hero stat is hidden (no fabricated number).
 6. **No automated emails** for draw results or winner status (in-app only).
 7. **Charity images** are URL strings in JSON (`charities.images`), not Supabase Storage uploads in admin.
 8. **Draw participation counts** depend on `draw_entries` rows; empty until members log scores and a draw exists.
 9. **Profile role** cannot be self-promoted to admin (DB trigger + RLS); only SQL or existing admin can set `role = 'admin'`.
-10. **Middleware** protects `/dashboard`, `/admin`, `/subscribe`; Stripe webhook is excluded from session refresh.
+10. **Middleware** protects `/dashboard`, `/admin`, `/subscribe`; payment webhook is excluded from session refresh.
 
 ---
 
@@ -198,7 +217,7 @@ Align **Stripe charge currency** with how you display fees and prizes (README as
 ```
 app/                 Routes (marketing, dashboard, admin, API)
 components/          UI, home, dashboard, admin, charity
-lib/                 Auth, scores, draw, stripe, winners, admin queries
+lib/                 Auth, scores, draw, payments, winners, admin queries
 supabase/migrations/ Schema, RLS, storage policies
 ```
 
@@ -207,7 +226,7 @@ supabase/migrations/ Schema, RLS, storage policies
 ## Production deploy
 
 - Set all env vars on the host (e.g. Vercel).
-- Point Stripe webhook to `https://your-domain/api/stripe/webhook`.
+- Point Razorpay webhook to `https://your-domain/api/payments/webhook`.
 - Run migrations on production Supabase.
 - Ensure Storage bucket `winner-proofs` exists (migration `20261007140000_winner_proof_storage.sql`).
 

@@ -21,13 +21,18 @@ export function FinalCtaSection() {
               Join members who fund real charity work, log their latest scores,
               and share in transparent monthly draws.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button size="lg" render={<Link href="/subscribe" />}>
+            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                render={<Link href="/subscribe" />}
+              >
                 Subscribe now
               </Button>
               <Button
                 size="lg"
                 variant="ghost"
+                className="w-full sm:w-auto"
                 render={<Link href="/signup" />}
               >
                 Create account

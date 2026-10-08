@@ -25,7 +25,7 @@ export default function PrivacyPage() {
                 <li>Account: email, display name, authentication identifiers (Supabase Auth).</li>
                 <li>Gameplay: Stableford scores, draw entries, and winner verification uploads.</li>
                 <li>Preferences: charity selection and contribution percentage.</li>
-                <li>Billing: subscription status and Stripe customer references (card data stays with Stripe).</li>
+                <li>Billing: subscription status and Razorpay customer references (card data stays with Razorpay).</li>
                 <li>Support: messages you send via the contact form.</li>
               </ul>
             </section>
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
             <section>
               <h2>Processors</h2>
               <p>
-                We use Supabase (database, authentication, storage) and Stripe
+                We use Supabase (database, authentication, storage) and Razorpay
                 (payments). Each processor acts under its own terms and security
                 certifications.
               </p>

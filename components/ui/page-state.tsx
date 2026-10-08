@@ -73,11 +73,14 @@ export function ErrorPageState({
 export function ConfigMissingState({
   missing,
 }: {
-  missing: ("supabase" | "stripe")[];
+  missing: ("supabase" | "payments")[];
 }) {
-  const labels = missing.map((key) =>
-    key === "supabase" ? "Supabase" : "Stripe",
-  );
+  const labels = missing.map((key) => {
+    if (key === "supabase") {
+      return "Supabase";
+    }
+    return "Payments (Razorpay or PAYMENT_PROVIDER=mock)";
+  });
 
   return (
     <PageStateShell

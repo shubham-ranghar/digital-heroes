@@ -6,6 +6,7 @@ import { MarketingSection } from "@/components/layout/marketing-section";
 import { EmptyPageState } from "@/components/ui/page-state";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { listPublicWinners } from "@/lib/winners/public-queries";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 export const metadata: Metadata = {
@@ -62,7 +63,7 @@ export default async function WinnersPage() {
                       {row.tier}-match
                     </td>
                     <td className={tabularImpact + " px-4 py-3 text-foreground"}>
-                      £{row.prizeAmount.toFixed(2)}
+                      {formatCurrency(row.prizeAmount)}
                     </td>
                   </tr>
                 ))}

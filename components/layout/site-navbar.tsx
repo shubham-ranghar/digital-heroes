@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Menu } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Container } from "@/components/layout/container";
@@ -21,7 +22,7 @@ type SiteNavbarProps = {
 
 /** Shared height and typography for header controls */
 const navControl =
-  "inline-flex h-9 min-h-9 max-w-full shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-medium leading-none whitespace-nowrap motion-transition-colors sm:px-3.5";
+  "inline-flex h-11 min-h-11 max-w-full shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-medium leading-none whitespace-nowrap motion-transition-colors sm:px-3.5";
 
 const navBtnSecondary = cn(
   navControl,
@@ -82,9 +83,19 @@ export function SiteNavbar({
               className="ml-auto flex min-w-0 items-center gap-1 sm:gap-1.5"
               aria-label="Site"
             >
+              {showSubscribe ? (
+                <motion.div
+                  className="min-w-0 shrink"
+                  {...buttonMotionProps(false)}
+                >
+                  <Link href="/subscribe" className={navBtnPrimary}>
+                    Subscribe
+                  </Link>
+                </motion.div>
+              ) : null}
               {showLoginLink ? (
                 <motion.div
-                  className="hidden min-w-0 min-[400px]:block"
+                  className="hidden min-w-0 md:block"
                   {...buttonMotionProps(false)}
                 >
                   <Link href={accountHref} className={navBtnSecondary}>
@@ -95,7 +106,7 @@ export function SiteNavbar({
               {showDashboardLink ? (
                 <>
                   <motion.div
-                    className="hidden min-w-0 min-[400px]:block"
+                    className="hidden min-w-0 md:block"
                     {...buttonMotionProps(false)}
                   >
                     <Link href="/dashboard" className={navBtnSecondary}>
@@ -103,7 +114,7 @@ export function SiteNavbar({
                     </Link>
                   </motion.div>
                   <motion.div
-                    className="hidden min-w-0 sm:block"
+                    className="hidden min-w-0 md:block"
                     {...buttonMotionProps(false)}
                   >
                     <SignOutButton className={navBtnSecondary} />
@@ -113,24 +124,16 @@ export function SiteNavbar({
               <motion.button
                 id="site-menu-button"
                 type="button"
-                className={navBtnSecondary}
+                className={cn(navBtnSecondary, "px-2.5 sm:px-3")}
                 onClick={() => setMenuOpen(true)}
                 aria-expanded={menuOpen}
                 aria-controls="site-menu"
+                aria-label="Open menu"
                 {...buttonMotionProps(false)}
               >
-                Menu
+                <Menu className="size-5 shrink-0" aria-hidden />
+                <span className="sr-only">Menu</span>
               </motion.button>
-              {showSubscribe ? (
-                <motion.div
-                  className="min-w-0"
-                  {...buttonMotionProps(false)}
-                >
-                  <Link href="/subscribe" className={navBtnPrimary}>
-                    Subscribe
-                  </Link>
-                </motion.div>
-              ) : null}
             </nav>
           </Container>
       </header>

@@ -54,7 +54,7 @@ function buildPrimaryMenuLinks(
     home,
     ...(isLoggedIn
       ? [{ href: "/dashboard", label: "Dashboard", key: "dashboard" }]
-      : []),
+      : [{ href: "/login", label: "Login", key: "login" }]),
     { href: "/subscribe", label: "Subscribe", key: "subscribe" },
     ...restBrowse,
   ];
@@ -77,6 +77,9 @@ function MenuSectionLabel({ children }: { children: string }) {
 
 function isBrowseLinkActive(href: string, pathname: string): boolean {
   const path = href.split("#")[0] || href;
+  if (path === "/login") {
+    return pathname === "/login";
+  }
   if (path === "/dashboard") {
     return pathname.startsWith("/dashboard");
   }
@@ -495,13 +498,36 @@ export function MenuOverlay({
             ) : null}
           </div>
 
-          {isLoggedIn ? (
-            <div
-              className="shrink-0 border-t border-navy bg-cream px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
-            >
-              <SignOutButton className="w-full bg-cream hover:bg-sand" />
-            </div>
-          ) : null}
+          <div
+            className="shrink-0 border-t border-navy bg-cream px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+          >
+            {isLoggedIn ? (
+              <SignOutButton className="w-full min-h-11 bg-cream hover:bg-sand" />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  onClick={onNavigate}
+                  className={cn(
+                    menuFocusRing,
+                    "inline-flex min-h-11 w-full items-center justify-center rounded-full border border-navy/25 bg-white text-sm font-medium text-navy hover:bg-sand/90",
+                  )}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={onNavigate}
+                  className={cn(
+                    menuFocusRing,
+                    "inline-flex min-h-11 w-full items-center justify-center rounded-full border border-transparent bg-coral text-sm font-medium text-navy hover:bg-coral-deep",
+                  )}
+                >
+                  Create account
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* Desktop menu body (unchanged layout) */}
           <div
@@ -538,15 +564,38 @@ export function MenuOverlay({
               </div>
 
               <div className="flex min-h-0 flex-col gap-8 lg:col-span-4 lg:col-start-9">
-                {isLoggedIn ? (
-                  <div>
-                    <MenuSectionLabel>Account</MenuSectionLabel>
-                    <div className="mt-2 border-t border-line" aria-hidden />
-                    <div className="mt-4">
-                      <SignOutButton className="bg-cream hover:bg-sand" />
-                    </div>
+                <div>
+                  <MenuSectionLabel>Account</MenuSectionLabel>
+                  <div className="mt-2 border-t border-line" aria-hidden />
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    {isLoggedIn ? (
+                      <SignOutButton className="min-h-11 bg-cream hover:bg-sand" />
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          onClick={onNavigate}
+                          className={cn(
+                            menuFocusRing,
+                            "inline-flex min-h-11 items-center justify-center rounded-full border border-navy/25 px-5 text-sm font-medium text-navy hover:bg-sand/90",
+                          )}
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          href="/signup"
+                          onClick={onNavigate}
+                          className={cn(
+                            menuFocusRing,
+                            "inline-flex min-h-11 items-center justify-center rounded-full bg-coral px-5 text-sm font-medium text-navy hover:bg-coral-deep",
+                          )}
+                        >
+                          Create account
+                        </Link>
+                      </>
+                    )}
                   </div>
-                ) : null}
+                </div>
                 {socialLinks.length > 0 ? (
                   <div>
                     <MenuSectionLabel>Follow us</MenuSectionLabel>

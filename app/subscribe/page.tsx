@@ -3,15 +3,17 @@ import { connection } from "next/server";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { CheckoutButtons } from "@/components/subscription/checkout-buttons";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
+import { SubscribePlanCheckout } from "@/components/subscription/subscribe-plan-checkout";
 import { ConfigMissingState } from "@/components/ui/page-state";
-import { hasStripeEnv } from "@/lib/config/env";
-import { getPlanPriceDisplay } from "@/lib/stripe/prices";
+import { hasPaymentsEnv } from "@/lib/payments/env";
+import { getPlanPriceDisplay } from "@/lib/payments/prices";
 import { requireUser } from "@/lib/auth/session";
-import { getSubscriptionAccess } from "@/lib/subscription/access";
+import {
+  getSubscriptionAccess,
+  getSubscriptionAccessLabel,
+} from "@/lib/subscription/access";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
-import { tabularImpact } from "@/lib/typography";
 
 export const metadata: Metadata = {
   title: "Subscribe",
@@ -42,7 +44,11 @@ export default async function SubscribePage({
   const access = await getSubscriptionAccess(supabase, user.id);
   const params = await searchParams;
   const cancelled = params.checkout === "cancelled";
-  const prices = await getPlanPriceDisplay();
+  const prices = getPlanPriceDisplay();
+  const membershipLabel = getSubscriptionAccessLabel(
+    access.subscription,
+    access.hasAccess,
+  );
 
   return (
     <AuthShell
@@ -59,50 +65,27 @@ export default async function SubscribePage({
 
         {access.hasAccess ? (
           <div className="space-y-4">
-            <Badge variant="outline">Active membership</Badge>
+            <SubscriptionAccessPill label={membershipLabel} />
             <p className="text-sm text-slate">
-              You&apos;re subscribed
+              {access.subscription?.cancel_at_period_end
+                ? "You keep full access until the date above. Resume billing below if you change your mind."
+                : "You're subscribed"}
               {access.subscription?.plan
                 ? ` (${access.subscription.plan})`
                 : ""}
-              . Manage payment method or cancel in the customer portal.
+              {!access.subscription?.cancel_at_period_end
+                ? ". Cancel at period end from billing below."
+                : null}
             </p>
-            <CheckoutButtons showPortal />
+            <CheckoutButtons
+              showManage={Boolean(access.subscription?.stripe_subscription_id)}
+              cancelAtPeriodEnd={access.subscription?.cancel_at_period_end ?? false}
+            />
           </div>
-        ) : !hasStripeEnv() ? (
-          <ConfigMissingState missing={["stripe"]} />
+        ) : !hasPaymentsEnv() ? (
+          <ConfigMissingState missing={["payments"]} />
         ) : (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Card interactive={false}>
-                <CardHeader>
-                  <CardTitle className="text-base">Monthly</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">{prices.monthlyLabel}</p>
-                  <p>Flexible billing. Full access to draws and score tracking.</p>
-                </CardContent>
-              </Card>
-              <Card interactive={false} className="border-coral/40">
-                <CardHeader className="flex flex-row items-center justify-between gap-2">
-                  <CardTitle className="text-base">Yearly</CardTitle>
-                  <Badge>Best value</Badge>
-                </CardHeader>
-                <CardContent className="space-y-1 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">{prices.yearlyLabel}</p>
-                  <p>
-                    Discounted annual plan.{" "}
-                    {prices.yearlySavingsHint ? (
-                      <span className={tabularImpact}>{prices.yearlySavingsHint}</span>
-                    ) : (
-                      <span className={tabularImpact}>Save vs 12× monthly</span>
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <CheckoutButtons />
-          </>
+          <SubscribePlanCheckout prices={prices} />
         )}
       </div>
     </AuthShell>

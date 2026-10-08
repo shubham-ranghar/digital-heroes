@@ -74,8 +74,8 @@ export function SortableDataTable<T>({
   }
 
   return (
-    <div className="rounded-[16px] border border-line bg-surface">
-      <Table>
+    <div className="min-w-0 overflow-x-auto rounded-[16px] border border-line bg-surface">
+      <Table className="min-w-[36rem]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {columns.map((column) => {

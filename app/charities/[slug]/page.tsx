@@ -73,7 +73,7 @@ export default async function CharityDetailPage({
         {query.donation === "success" ? (
           <p className="mb-6 rounded-xl border border-status-active/40 bg-status-active/15 px-3 py-2 text-sm text-navy">
             Thank you — your one-off donation is processing. You&apos;ll receive
-            a receipt from Stripe.
+            a receipt from Razorpay.
           </p>
         ) : null}
         {query.donation === "cancelled" ? (

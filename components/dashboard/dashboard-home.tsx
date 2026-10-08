@@ -10,9 +10,12 @@ import {
 } from "lucide-react";
 
 import { DashboardCharityCard } from "@/components/dashboard/dashboard-charity-card";
+import { formatCurrency } from "@/lib/money";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
-import { CheckoutButtons } from "@/components/subscription/checkout-buttons";
+import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
+import { BillingManageButtons } from "@/components/subscription/billing-manage-buttons";
+import { getSubscriptionAccessLabel } from "@/lib/subscription/grants";
 import { ScoresPanel } from "@/components/scores/scores-panel";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Badge } from "@/components/ui/badge";
@@ -35,26 +38,25 @@ export type DashboardHomeProps = {
   plan: SubscriptionPlan | null;
   status: SubscriptionStatus | "none";
   renewalDate: string | null;
+  cancelAtPeriodEnd: boolean;
+  hasBillingSubscription: boolean;
   charity: DashboardCharity;
   scores: ScoreRow[];
   participation: DashboardParticipation;
   winnings: DashboardWinnings;
 };
 
-function subscriptionStatusValue(
-  hasAccess: boolean,
-  status: SubscriptionStatus | "none",
-): string {
-  if (hasAccess) {
-    return "active";
-  }
-  if (status === "lapsed") {
-    return "lapsed";
-  }
-  return "inactive";
-}
-
 export function DashboardHome(props: DashboardHomeProps) {
+  const accessLabel = getSubscriptionAccessLabel(
+    props.status === "none"
+      ? null
+      : {
+          status: props.status,
+          renewal_date: props.renewalDate,
+          cancel_at_period_end: props.cancelAtPeriodEnd,
+        },
+    props.hasAccess,
+  );
   const reduceMotion = useReducedMotion();
   const motionProps = reduceMotion
     ? {}
@@ -97,9 +99,7 @@ export function DashboardHome(props: DashboardHomeProps) {
           <BentoCard title="Subscription">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusPill
-                  value={subscriptionStatusValue(props.hasAccess, props.status)}
-                />
+                <SubscriptionAccessPill label={accessLabel} />
                 {props.plan ? (
                   <Badge variant="outline" className="capitalize">
                     {props.plan}
@@ -124,7 +124,10 @@ export function DashboardHome(props: DashboardHomeProps) {
                 </p>
               )}
               {props.hasAccess ? (
-                <CheckoutButtons showPortal />
+                <BillingManageButtons
+                  showManage={props.hasBillingSubscription}
+                  cancelAtPeriodEnd={props.cancelAtPeriodEnd}
+                />
               ) : (
                 <Button
                   size="lg"
@@ -251,7 +254,7 @@ export function DashboardHome(props: DashboardHomeProps) {
                 <div>
                   <p className={tabularImpact}>
                     <span className="font-sans text-3xl text-navy">
-                      £{props.winnings.totalWon.toFixed(2)}
+                      {formatCurrency(props.winnings.totalWon)}
                     </span>
                   </p>
                   <p className="text-sm text-slate">

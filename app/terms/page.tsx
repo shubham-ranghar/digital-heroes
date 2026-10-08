@@ -38,7 +38,7 @@ export default function TermsPage() {
             <section>
               <h2>3. Subscriptions & billing</h2>
               <ul>
-                <li>Plans renew automatically until cancelled in the Stripe customer portal.</li>
+                <li>Plans renew automatically until cancelled from your account settings.</li>
                 <li>Prices are shown at checkout and may change for future periods with notice.</li>
                 <li>Failed payments may pause draw entry until the subscription is active again.</li>
                 <li>Refunds follow applicable consumer law; contact us if you believe a charge is incorrect.</li>

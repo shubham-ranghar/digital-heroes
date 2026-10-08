@@ -49,9 +49,9 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<"subscriber" | "admin">("subscriber");
   const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
-  const [subStatus, setSubStatus] = useState<"active" | "cancelled" | "lapsed">(
-    "active",
-  );
+  const [subStatus, setSubStatus] = useState<
+    "active" | "cancelled" | "lapsed" | "past_due"
+  >("active");
   const [renewalDate, setRenewalDate] = useState("");
 
   const [scoreValue, setScoreValue] = useState("");
@@ -210,7 +210,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
             sortable: true,
             sortValue: (row) => (row.hasAccess ? 1 : 0),
             cell: (row) => (
-              <StatusPill value={row.hasAccess ? "active" : "lapsed"} />
+              <span className="max-w-[14rem] text-sm text-navy">{row.accessLabel}</span>
             ),
           },
           {
@@ -230,6 +230,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
           {
             id: "actions",
             header: "",
+            className: "!whitespace-normal",
             cell: (row) => (
               <Button type="button" size="sm" variant="secondary" onClick={() => openUser(row)}>
                 Manage
@@ -342,7 +343,10 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                       <Select
                         value={subStatus}
                         onValueChange={(v) =>
-                          v && setSubStatus(v as "active" | "cancelled" | "lapsed")
+                          v &&
+                            setSubStatus(
+                              v as "active" | "cancelled" | "lapsed" | "past_due",
+                            )
                         }
                       >
                         <SelectTrigger className="w-full">
@@ -352,6 +356,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                           <SelectItem value="lapsed">Lapsed</SelectItem>
+                          <SelectItem value="past_due">Past due</SelectItem>
                         </SelectContent>
                       </Select>
                     </label>
@@ -425,7 +430,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                     </div>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-line">
+                  <div className="min-h-0 min-w-0 flex-1 overflow-x-auto rounded-xl border border-line">
                     {scores.length === 0 ? (
                       <p className="px-3 py-6 text-center text-sm text-muted-foreground">
                         No scores yet.

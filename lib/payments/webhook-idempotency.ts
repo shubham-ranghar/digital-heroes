@@ -5,8 +5,8 @@ export type WebhookIdempotencyResult = "processed" | "duplicate";
 const TABLE = "stripe_webhook_events";
 
 /**
- * Inserts the Stripe event id before handling. On duplicate (23505), skips processing.
- * On handler failure after insert, deletes the row so Stripe can retry.
+ * Inserts the payment webhook event id before handling. On duplicate (23505), skips processing.
+ * On handler failure after insert, deletes the row so the provider can retry.
  */
 export async function runWithWebhookIdempotency(
   admin: SupabaseClient,

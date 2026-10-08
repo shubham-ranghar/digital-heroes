@@ -10,6 +10,7 @@ import {
   markWinnerPaidAction,
   rejectWinnerAction,
 } from "@/lib/winners/admin-actions";
+import { formatCurrency } from "@/lib/money";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { StatusPill } from "@/components/admin/status-pill";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +65,7 @@ export function AdminWinnersPanel({ winners }: AdminWinnersPanelProps) {
                 </p>
                 <p className={tabularImpact}>
                   <span className="text-coral">
-                    £{winner.prize_amount.toFixed(2)}
+                    {formatCurrency(winner.prize_amount)}
                   </span>
                   <span className="text-slate text-sm">
                     {" "}

@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/money";
+
 /** Minimum share of subscription fee directed to charity (PRD). */
 export const MIN_CHARITY_PERCENTAGE = 10;
 
@@ -39,15 +41,7 @@ export function calculateCharityContribution(
   };
 }
 
-/** Format minor units for display (default GBP). */
-export function formatMoneyFromCents(
-  amountCents: number,
-  currency = "GBP",
-  locale = "en-GB",
-): string {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amountCents / 100);
+/** Format minor units (paise) for display. */
+export function formatMoneyFromCents(amountCents: number): string {
+  return formatCurrency(amountCents, { paise: true });
 }

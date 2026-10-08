@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TIER_PERCENTAGES } from "@/lib/draw/constants";
 import { calculatePrizePools } from "@/lib/draw/pools";
+import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 
 type PoolCalculatorProps = {
@@ -13,15 +14,6 @@ type PoolCalculatorProps = {
   poolPercentage: number;
   jackpotCarryover?: number;
 };
-
-function formatGbp(amount: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 export function PoolCalculator({
   feePerSubscriber,
@@ -46,7 +38,8 @@ export function PoolCalculator({
         Prize pool calculator
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Estimates use the draw fee (£{feePerSubscriber} per active subscriber) and
+        Estimates use the draw fee ({formatCurrency(feePerSubscriber)} per active
+        subscriber) and
         the {TIER_PERCENTAGES[5] * 100}% /{" "}
         {TIER_PERCENTAGES[4] * 100}% / {TIER_PERCENTAGES[3] * 100}% tier split.
         Jackpot rollover adds to the 5-match pool only.
@@ -66,25 +59,25 @@ export function PoolCalculator({
         <div className="rounded-xl bg-cream px-4 py-3">
           <dt className="text-xs text-muted-foreground">Total prize pool</dt>
           <dd className={tabularImpact + " text-xl font-semibold text-foreground"}>
-            {formatGbp(pools.totalPool)}
+            {formatCurrency(pools.totalPool)}
           </dd>
         </div>
         <div className="rounded-xl bg-cream px-4 py-3">
           <dt className="text-xs text-muted-foreground">5-match (40%)</dt>
           <dd className={tabularImpact + " text-xl font-semibold text-foreground"}>
-            {formatGbp(pools.tier5Pool)}
+            {formatCurrency(pools.tier5Pool)}
           </dd>
         </div>
         <div className="rounded-xl bg-cream px-4 py-3">
           <dt className="text-xs text-muted-foreground">4-match (35%)</dt>
           <dd className={tabularImpact + " text-xl font-semibold text-foreground"}>
-            {formatGbp(pools.tier4Pool)}
+            {formatCurrency(pools.tier4Pool)}
           </dd>
         </div>
         <div className="rounded-xl bg-cream px-4 py-3">
           <dt className="text-xs text-muted-foreground">3-match (25%)</dt>
           <dd className={tabularImpact + " text-xl font-semibold text-foreground"}>
-            {formatGbp(pools.tier3Pool)}
+            {formatCurrency(pools.tier3Pool)}
           </dd>
         </div>
       </dl>

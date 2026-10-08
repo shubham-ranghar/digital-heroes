@@ -53,6 +53,8 @@ export default async function DashboardPage({
         plan={access.subscription?.plan ?? null}
         status={statusLabel}
         renewalDate={access.subscription?.renewal_date ?? null}
+        cancelAtPeriodEnd={access.subscription?.cancel_at_period_end ?? false}
+        hasBillingSubscription={Boolean(access.subscription?.stripe_subscription_id)}
         charity={charity}
         scores={scores}
         participation={participation}
