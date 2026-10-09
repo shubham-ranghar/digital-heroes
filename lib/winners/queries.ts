@@ -91,5 +91,7 @@ function mapWinnerWithDraw(row: Record<string, unknown>): WinnerWithDraw {
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
     draw_month: month ? String(month) : "—",
+    member_name: row.member_name ? String(row.member_name) : null,
+    member_email: row.member_email ? String(row.member_email) : null,
   };
 }

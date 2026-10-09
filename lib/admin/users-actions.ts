@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { listAdminUserScores } from "@/lib/admin/queries";
+import { actionFailure } from "@/lib/actions/failure";
 import { requireAdmin } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapScoreWriteError, outsideLatestFiveError } from "@/lib/scores/errors";
@@ -42,10 +43,9 @@ export async function fetchAdminUserScoresAction(
   }
 }
 
-export async function updateAdminProfileAction(
+async function updateAdminProfile(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = adminProfileSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid profile data." };
@@ -69,10 +69,9 @@ export async function updateAdminProfileAction(
   return { ok: true, message: "Profile updated." };
 }
 
-export async function updateAdminSubscriptionAction(
+async function updateAdminSubscription(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = adminSubscriptionSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid subscription data." };
@@ -116,10 +115,9 @@ export async function updateAdminSubscriptionAction(
   return { ok: true, message: "Subscription updated." };
 }
 
-export async function saveAdminScoreAction(
+async function saveAdminScore(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = adminScoreSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid score data." };
@@ -186,10 +184,9 @@ export async function saveAdminScoreAction(
   return { ok: true, message: "Score saved." };
 }
 
-export async function deleteAdminScoreAction(
+async function deleteAdminScore(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = adminScoreDeleteSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid score reference." };
@@ -209,4 +206,51 @@ export async function deleteAdminScoreAction(
   revalidateAdminUsers();
   revalidatePath("/dashboard");
   return { ok: true, message: "Score deleted." };
+}
+
+// Exported actions: auth first (its redirect must not be caught), then the
+// work, with any unexpected error returned as { ok: false } instead of thrown.
+
+export async function updateAdminProfileAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await updateAdminProfile(input);
+  } catch (error) {
+    return actionFailure(error, "update the profile", { exposeMessage: true });
+  }
+}
+
+export async function updateAdminSubscriptionAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await updateAdminSubscription(input);
+  } catch (error) {
+    return actionFailure(error, "update the subscription", { exposeMessage: true });
+  }
+}
+
+export async function saveAdminScoreAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await saveAdminScore(input);
+  } catch (error) {
+    return actionFailure(error, "save the score", { exposeMessage: true });
+  }
+}
+
+export async function deleteAdminScoreAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await deleteAdminScore(input);
+  } catch (error) {
+    return actionFailure(error, "delete the score", { exposeMessage: true });
+  }
 }

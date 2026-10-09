@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actionFailure } from "@/lib/actions/failure";
 import { requireAdmin } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { charityDeleteSchema, charityFormSchema } from "@/lib/validations/admin";
@@ -26,10 +27,9 @@ function revalidateCharities() {
   revalidatePath("/");
 }
 
-export async function saveCharityAction(
+async function saveCharity(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = charityFormSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -69,10 +69,9 @@ export async function saveCharityAction(
   return { ok: true, message: parsed.data.id ? "Charity updated." : "Charity created." };
 }
 
-export async function deleteCharityAction(
+async function deleteCharity(
   input: unknown,
 ): Promise<AdminMutationResult> {
-  await requireAdmin();
   const parsed = charityDeleteSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: "Invalid charity reference." };
@@ -96,4 +95,29 @@ export async function deleteCharityAction(
 
   revalidateCharities();
   return { ok: true, message: "Charity deleted." };
+}
+
+// Exported actions: auth first (its redirect must not be caught), then the
+// work, with any unexpected error returned as { ok: false } instead of thrown.
+
+export async function saveCharityAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await saveCharity(input);
+  } catch (error) {
+    return actionFailure(error, "save the charity", { exposeMessage: true });
+  }
+}
+
+export async function deleteCharityAction(
+  input: unknown,
+): Promise<AdminMutationResult> {
+  await requireAdmin();
+  try {
+    return await deleteCharity(input);
+  } catch (error) {
+    return actionFailure(error, "delete the charity", { exposeMessage: true });
+  }
 }

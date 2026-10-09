@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actionFailure } from "@/lib/actions/failure";
+import { withMemberLabels } from "@/lib/admin/member-labels";
 import { requireAdmin } from "@/lib/auth/session";
 import {
   filterDrawEntriesToActiveSubscribers,
@@ -27,6 +29,9 @@ export type DrawSimulationPreview = {
     tier: number;
     prizeAmount: number;
     matchCount: number;
+    /** Filled by `withMemberLabels`; absent if the lookup failed. */
+    memberName?: string | null;
+    memberEmail?: string | null;
   }[];
 };
 
@@ -64,11 +69,10 @@ function nextMonthIso(monthIso: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-export async function runSimulationAction(input: {
+async function runSimulation(input: {
   drawId: string;
   mode: DrawMode;
 }): Promise<DrawAdminResult> {
-  await requireAdmin();
   const admin = createAdminClient();
 
   const { data: draw, error } = await admin
@@ -125,15 +129,13 @@ export async function runSimulationAction(input: {
   return {
     ok: true,
     message: `Simulation complete (${syncedCount} member entries synced). Winning numbers: ${simulation.winningNumbers.join(", ")}.`,
-    preview: toPreview(simulation),
+    preview: await withMemberLabels(admin, toPreview(simulation)),
   };
 }
 
-export async function createDraftDrawAction(input: {
+async function createDraftDraw(input: {
   month: string;
 }): Promise<DrawAdminResult> {
-  await requireAdmin();
-
   const parsed = drawCreateSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -159,10 +161,9 @@ export async function createDraftDrawAction(input: {
   return { ok: true, message: "Draft draw created." };
 }
 
-export async function publishDrawAction(input: {
+async function publishDraw(input: {
   drawId: string;
 }): Promise<DrawAdminResult> {
-  await requireAdmin();
   const admin = createAdminClient();
 
   const { data: draw, error } = await admin
@@ -279,4 +280,41 @@ export async function publishDrawAction(input: {
     ok: true,
     message: `Draw published with ${simulation.prizes.allocations.length} winner(s).`,
   };
+}
+
+// Exported actions: auth first (its redirect must not be caught), then the
+// work, with any unexpected error returned as { ok: false } instead of thrown.
+
+export async function runSimulationAction(input: {
+  drawId: string;
+  mode: DrawMode;
+}): Promise<DrawAdminResult> {
+  await requireAdmin();
+  try {
+    return await runSimulation(input);
+  } catch (error) {
+    return actionFailure(error, "run the simulation", { exposeMessage: true });
+  }
+}
+
+export async function createDraftDrawAction(input: {
+  month: string;
+}): Promise<DrawAdminResult> {
+  await requireAdmin();
+  try {
+    return await createDraftDraw(input);
+  } catch (error) {
+    return actionFailure(error, "create the draft draw", { exposeMessage: true });
+  }
+}
+
+export async function publishDrawAction(input: {
+  drawId: string;
+}): Promise<DrawAdminResult> {
+  await requireAdmin();
+  try {
+    return await publishDraw(input);
+  } catch (error) {
+    return actionFailure(error, "publish the draw", { exposeMessage: true });
+  }
 }

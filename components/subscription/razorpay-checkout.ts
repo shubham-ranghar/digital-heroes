@@ -31,6 +31,17 @@ function loadRazorpayScript(): Promise<void> {
   return scriptPromise;
 }
 
+/**
+ * Starts loading checkout.js ahead of the click, so opening the modal waits
+ * only on the server round-trip. Failures are ignored here; the open call
+ * retries the load and reports the error.
+ */
+export function preloadRazorpayCheckout(): void {
+  loadRazorpayScript().catch(() => {
+    scriptPromise = null;
+  });
+}
+
 export type OpenRazorpaySubscriptionInput = {
   keyId: string;
   subscriptionId: string;

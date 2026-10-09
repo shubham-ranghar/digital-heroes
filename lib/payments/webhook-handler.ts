@@ -76,6 +76,22 @@ async function processRazorpayEvent(body: RazorpayWebhookBody) {
     return;
   }
 
+  // All billing cycles charged: the last paid period still runs to current_end,
+  // so end like a period-end cancellation (lapsed once current_end has passed).
+  if (event === "subscription.completed") {
+    const entity = subscriptionEntity(body);
+    if (!entity) {
+      return;
+    }
+    await updateSubscriptionStatusByExternalId(
+      entity.id,
+      mapRazorpaySubscriptionStatus({ ...entity, status: "cancelled" }),
+      renewalDateFromUnix(entity.current_end ?? entity.ended_at),
+      { cancelAtPeriodEnd: false },
+    );
+    return;
+  }
+
   if (event === "subscription.cancelled") {
     const entity = subscriptionEntity(body);
     if (!entity) {

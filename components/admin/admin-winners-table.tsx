@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { MemberLabel } from "@/components/admin/member-label";
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
 import { StatusPill } from "@/components/admin/status-pill";
 import { TablePagination } from "@/components/admin/table-pagination";
@@ -76,8 +77,10 @@ export function AdminWinnersTable({ winners, table, total }: AdminWinnersTablePr
             Go to draws
           </Button>
         }
-        searchText={(row) => `${row.user_id} ${row.draw_month}`}
-        searchPlaceholder="Member ID or month (2026-09)"
+        searchText={(row) =>
+          `${row.member_name ?? ""} ${row.member_email ?? ""} ${row.user_id} ${row.draw_month}`
+        }
+        searchPlaceholder="Name, email or month (2026-09)"
         filterGroups={[
           {
             id: "verification",
@@ -125,8 +128,14 @@ export function AdminWinnersTable({ winners, table, total }: AdminWinnersTablePr
             id: "member",
             header: "Member",
             sortable: true,
-            sortValue: (row) => row.user_id,
-            cell: (row) => `${row.user_id.slice(0, 8)}…`,
+            sortValue: (row) => row.member_name ?? row.member_email ?? row.user_id,
+            cell: (row) => (
+              <MemberLabel
+                userId={row.user_id}
+                name={row.member_name}
+                email={row.member_email}
+              />
+            ),
           },
           {
             id: "verification",

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { MemberLabel } from "@/components/admin/member-label";
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
 import { StatusPill } from "@/components/admin/status-pill";
 import { CountUpCurrency } from "@/components/draw/count-up-currency";
@@ -305,8 +306,13 @@ export function AdminDrawsPanel({
                           winner.tier === 5 && "bg-coral/8",
                         )}
                       >
-                        <span className="text-slate">
-                          {winner.userId.slice(0, 8)}… · {winner.matchCount}-match
+                        <span className="flex min-w-0 items-center gap-2 text-slate">
+                          <MemberLabel
+                            userId={winner.userId}
+                            name={winner.memberName}
+                            email={winner.memberEmail}
+                          />
+                          <span className="shrink-0">· {winner.matchCount}-match</span>
                         </span>
                         <span className={tabularImpact}>
                           Tier {winner.tier} · {formatCurrency(winner.prizeAmount)}

@@ -14,6 +14,27 @@ function isOnOrBeforePeriodEnd(
   return renewalDate >= isoDateLocal(today);
 }
 
+/**
+ * Days an `active` row keeps access past its `renewal_date` while the renewal
+ * webhook is outstanding. After that it is treated as lapsed, so a missed or
+ * never-coming renewal (or a mock subscription) can't grant access forever.
+ * Mirrored in has_active_subscription() — change both together.
+ */
+export const RENEWAL_GRACE_DAYS = 3;
+
+function isWithinRenewalGrace(
+  renewalDate: string | null | undefined,
+  today: Date,
+): boolean {
+  // No renewal date (e.g. an admin-created row): nothing to lapse against.
+  if (!renewalDate) {
+    return true;
+  }
+  const cutoff = new Date(today);
+  cutoff.setUTCDate(cutoff.getUTCDate() - RENEWAL_GRACE_DAYS);
+  return renewalDate >= isoDateLocal(cutoff);
+}
+
 /** Whether a subscription row grants product access (mirrors has_active_subscription RLS). */
 export function subscriptionGrantsAccess(
   subscription: Pick<
@@ -28,7 +49,7 @@ export function subscriptionGrantsAccess(
     if (cancelAtEnd) {
       return isOnOrBeforePeriodEnd(subscription.renewal_date, today);
     }
-    return true;
+    return isWithinRenewalGrace(subscription.renewal_date, today);
   }
 
   if (subscription.status === "cancelled") {

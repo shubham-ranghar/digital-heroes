@@ -47,6 +47,33 @@ describe("subscriptionGrantsAccess", () => {
     ).toBe(false);
   });
 
+  it("keeps an active row's access up to 3 days past renewal_date", () => {
+    expect(
+      subscriptionGrantsAccess(
+        { status: "active", renewal_date: periodEnd, cancel_at_period_end: false },
+        new Date("2027-01-03"),
+      ),
+    ).toBe(true);
+  });
+
+  it("lapses an active row more than 3 days past renewal_date", () => {
+    expect(
+      subscriptionGrantsAccess(
+        { status: "active", renewal_date: periodEnd, cancel_at_period_end: false },
+        new Date("2027-01-04"),
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps access for an active row with no renewal_date", () => {
+    expect(
+      subscriptionGrantsAccess(
+        { status: "active", renewal_date: null, cancel_at_period_end: false },
+        new Date("2027-06-01"),
+      ),
+    ).toBe(true);
+  });
+
   it("supports legacy cancelled rows until renewal_date", () => {
     expect(
       subscriptionGrantsAccess(

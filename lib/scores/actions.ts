@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actionFailure } from "@/lib/actions/failure";
 import { syncUserDrawEntryForCurrentMonth } from "@/lib/draw/sync-entry";
 import { requireActiveSubscription } from "@/lib/subscription/access";
 import {
@@ -45,6 +46,26 @@ async function listUserScores(
   return (data ?? []) as ScoreRow[];
 }
 
+/**
+ * Fresh score list after a successful write. The write has already happened,
+ * so a failed read says so instead of reporting the save itself as failed.
+ */
+async function scoresAfterWrite(
+  supabase: Parameters<typeof listUserScores>[0],
+  userId: string,
+  done: "saved" | "deleted",
+): Promise<ScoreActionResult> {
+  try {
+    return { ok: true, scores: await listUserScores(supabase, userId) };
+  } catch (error) {
+    console.error(`Score ${done}, but re-reading scores failed:`, error);
+    return {
+      ok: false,
+      message: `Your score was ${done}, but the list could not refresh. Reload the page.`,
+    };
+  }
+}
+
 function failure(
   error: ScoreWriteError,
   duplicate?: ScoreRow,
@@ -74,7 +95,12 @@ export async function saveScoreAction(
   const { scoreId, score, playedOn } = parsed.data;
 
   // Pre-check for a specific message; the DB trigger (DH001) is the authority.
-  const existing = await listUserScores(supabase, user.id);
+  let existing: ScoreRow[];
+  try {
+    existing = await listUserScores(supabase, user.id);
+  } catch (error) {
+    return actionFailure(error, "save your score");
+  }
   const cutoff = findRetentionCutoff(existing, { id: scoreId, played_on: playedOn });
   if (cutoff) {
     return failure(outsideLatestFiveError("self", cutoff.played_on));
@@ -105,8 +131,7 @@ export async function saveScoreAction(
     } catch {
       /* draw row may not exist yet */
     }
-    const scores = await listUserScores(supabase, user.id);
-    return { ok: true, scores };
+    return scoresAfterWrite(supabase, user.id, "saved");
   }
 
   const { data: inserted, error } = await supabase
@@ -143,12 +168,12 @@ export async function saveScoreAction(
   } catch {
     /* draw row may not exist yet */
   }
-  const scores = await listUserScores(supabase, user.id);
+  const after = await scoresAfterWrite(supabase, user.id, "saved");
   // Never report success for a row the retention trim removed.
-  if (!scores.some((row) => row.id === inserted.id)) {
+  if (after.ok && !after.scores.some((row) => row.id === inserted.id)) {
     return { ok: false, message: "Your score could not be kept. Refresh and try again." };
   }
-  return { ok: true, scores };
+  return after;
 }
 
 export async function deleteScoreAction(
@@ -181,6 +206,5 @@ export async function deleteScoreAction(
   } catch {
     /* draw row may not exist yet */
   }
-  const scores = await listUserScores(supabase, user.id);
-  return { ok: true, scores };
+  return scoresAfterWrite(supabase, user.id, "deleted");
 }

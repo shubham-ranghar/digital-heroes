@@ -45,17 +45,17 @@ export async function getSubscriptionAccess(
   supabase: SupabaseServer,
   userId: string,
 ): Promise<SubscriptionAccess> {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .maybeSingle();
+  // Both reads in parallel: this sits on the critical path of /subscribe and
+  // the dashboard, and the subscription read is wasted only for admins.
+  const [{ data: profile }, subscription] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", userId).maybeSingle(),
+    getLatestSubscription(supabase, userId),
+  ]);
 
   if (profile?.role === "admin") {
     return { hasAccess: true, subscription: null, isAdmin: true };
   }
 
-  const subscription = await getLatestSubscription(supabase, userId);
   const hasAccess = subscription
     ? subscriptionGrantsAccess({
         status: subscription.status,

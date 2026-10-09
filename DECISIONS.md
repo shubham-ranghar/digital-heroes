@@ -80,36 +80,102 @@ We flagged this rather than assume it was unimportant, and made our own calls fo
 
 **Payments.** Webhooks are HMAC-verified (`verifyRazorpaySignature`) and processed idempotently: the event id is inserted into `payment_webhook_events` first, duplicates are skipped, and a handler failure releases the row so Razorpay's retry is processed (`lib/payments/webhook-idempotency.ts`). `PAYMENT_PROVIDER=mock` swaps in a provider with the same interface for demos.
 
-**Testing.** Vitest unit tests cover the pure logic where a mistake costs money or trust: draw generation, matching, prize pools and carryover, publish outcome, the latest-five rule, score validation, subscription access, Razorpay status mapping and signatures, webhook idempotency and redirect sanitising. 73 tests in 20 files, all passing as of 9 October 2026. Not covered by automated tests: RLS policies and triggers (there's no database test harness) and end-to-end browser flows. These were checked by hand against the seeded accounts in the README.
+**Testing.** Vitest unit tests cover the pure logic where a mistake costs money or trust: draw generation, matching, prize pools and carryover, publish outcome, the latest-five rule, score validation, subscription access, Razorpay status mapping and signatures, webhook idempotency, redirect sanitising, admin table URL state and batched reads. 89 tests in 22 files, all passing as of 9 October 2026. Not covered by automated tests: RLS policies and triggers (there's no database test harness in the repo; the admin list functions were checked once against all migrations in an in-memory Postgres) and end-to-end browser flows. These were checked by hand against the seeded accounts in the README.
 
 ### Scalability (our §14)
 
-The PRD gives no target load. We designed for a single-country launch, in the low thousands of members with one draw a month, and recorded below where the current code stops scaling and what the fix is.
+The PRD gives no target load. We sized the admin pages for 10,000 members and assessed the draw engine at 100,000 subscribers. Each area below says what we found, what we changed (migration `20261009120000_admin_pagination_and_indexes.sql`), and what is documented but not yet built.
 
-**Indexing.** Every foreign key used for lookups is indexed (`subscriptions`, `donations`, `draw_entries`, `winners`, `charity_events` on their `user_id` / `charity_id` / `draw_id`). The hottest path, a member's scores, uses a composite `scores (user_id, played_on DESC)` index that serves both the dashboard and the latest-five triggers. Unique constraints double as indexes where we look things up: `draws (month)`, `draw_entries (draw_id, user_id)` (the entry upsert target), `winners (draw_id, user_id, tier)` and `subscriptions (external_subscription_id)` (webhook lookups). Featured charities have a partial index, and charity category has its own index.
+**The limit that mattered most: 1,000 rows per request.** Supabase's API returns at most the project's "Max rows" setting (1,000 by default) per request, and it drops the rest **silently**. Every list, report and draw read that fetched a whole table was therefore *wrong*, not merely slow, once a table passed 1,000 rows. The worst case was the draw engine. With more than 1,000 entrants, simulate and publish loaded only the first 1,000 entries and subscription rows, so some members could never win and the prize pool was undercounted. This failure arrives at 1,000 members, long before 100,000, so we fixed it rather than only documenting it:
+- Draw loaders (`loadDrawEntries`, `loadSubscriptionAccessRows`, `loadActiveSubscriberScores` in `lib/draw/db.ts`) now read in batches through `fetchAllRows` (`lib/supabase/fetch-all.ts`). It keeps requesting until a batch comes back empty, so it stays correct even if "Max rows" is set lower.
+- The admin overview's active-subscriber count uses the same batched loader.
+- Report and homepage sums come from one SQL function, `platform_totals()`, instead of reading every donation, winner and charity row into Node.
+- Entry counts per draw and supporter counts per charity use PostgREST embedded counts (`draw_entries(count)`, `user_charity(count)`) instead of reading every row.
 
-**Bounded growth.** The latest-five rule caps `scores` at five rows per member, and there is one `draw_entries` row per member per draw. The large tables grow with members × months, not with how often people use the app.
+#### Indexes
 
-**Pagination — not yet implemented.** Admin lists (users, draws, charities, winners), admin reports and the public winners page fetch whole tables and aggregate in Node. That's fine at demo scale, but it has two hard limits that break correctness before they hurt speed:
-- Supabase's API returns at most 1,000 rows per request by default (the project's "Max rows" setting). Past that, counts and totals in reports would be silently wrong rather than just slow.
-- `listAdminUsers` (`lib/admin/queries.ts`) reads at most 2,000 auth emails (10 pages of 200).
+| Index asked about | Status |
+|---|---|
+| `scores (user_id, played_on)` | Present, as `scores_user_id_played_on_idx (user_id, played_on DESC)`. Serves the dashboard and the latest-five triggers. |
+| `draw_entries (draw_id)` | Present. Also the leading column of the unique `(draw_id, user_id)`, so the separate index is redundant. Left in place because it is harmless. |
+| `draw_entries (user_id)` | Present. |
+| `winners (draw_id)` | Present. Also redundant with the unique `(draw_id, user_id, tier)`. |
+| `subscriptions (user_id)` | Present. **Replaced** with `(user_id, created_at DESC)`, which matches how every "latest subscription" lookup reads, including `has_active_subscription()`. |
 
-*Fix:* range pagination (`.range()` with `count: "exact"`) on the admin tables, and report aggregates moved into SQL views or RPCs so the database returns one summed row instead of every row.
+**Added:**
+- `user_charity (charity_id)`: a foreign key that had no index, so supporter counts and `ON DELETE RESTRICT` checks scanned the table.
+- `contact_messages (created_at DESC)`, plus a partial index on unresolved messages for the filter and the unread badge.
 
-**Draw publish.** Two parts of simulate/publish grow linearly with members and run inside a single Server Action:
-- `syncAllDrawEntriesForDraw` re-syncs entries one member at a time: three sequential round trips per active subscriber. With several thousand members this risks hitting the host's function timeout.
-- `loadActiveSubscriberScores` passes every active member id in one `.in()` filter, which goes into the request URL and will fail once the list outgrows the gateway's URL length limit.
+**Full scans on tables that grow per member.**
+- Fixed: the Users page read all of `profiles`, `subscriptions`, `scores` and up to 2,000 auth emails per view (see Pagination). The draws, charities and reports pages are fixed as described above.
+- By design: the draw engine needs every entry, so it scans; see *Draw engine at scale*. `admin_list_users` still evaluates every member that matches the filters so it can sort them, but it returns 25 rows. That is about 20,000 index probes at 10,000 members, roughly tens of milliseconds.
+- Accepted: text search uses `ILIKE '%term%'`, which a B-tree index can't serve, so it scans `contact_messages` or members. That is fine at these sizes. A `pg_trgm` GIN index is the fix if search slows down.
+- Still open:
+  - The public winners page loads every winner of every published draw, and then looks up profiles with an `.in()` list.
+  - Homepage stats now read every `user_charity` and `subscriptions` row on each visit (batched, so correct). Both should become cached or SQL-aggregated before traffic grows.
 
-Publish is also a series of separate writes (delete winners, insert winners, mark published, roll carryover into next month's draft), so a failure partway through can leave a half-published draw. *Fix:* one Postgres function per step. For example, `publish_draw(draw_id)` would snapshot entries with a single `INSERT … SELECT … ON CONFLICT`, write winners and update both draws in one transaction, and keep the matching and prize logic in its current tested TypeScript or port it alongside.
+#### Pagination
 
-**RLS performance.** Policies call `auth.uid()` and `is_admin()` directly. Both are `STABLE`, but Postgres can still evaluate them once per row. Supabase recommends wrapping them as `(select auth.uid())` and `(select public.is_admin())` so each runs once per query. Member queries filter by `user_id` on an index, so this doesn't matter at current volumes. It's a single migration worth doing before admin queries scan large tables. `has_active_subscription()` finds a member's rows by `user_id` and then sorts them by `created_at`. A `(user_id, created_at DESC)` index would make that a single index lookup.
+The Users, Winners and Messages admin pages are paginated on the server at **25 rows per page**. Search, filters, sort and page number live in the URL (`?q=&role=&sort=email&dir=asc&page=3`). That means a view can be shared, the back button works, and a page number past the end redirects to the last page. Search waits for a 300 ms pause in typing before it queries.
+- **Users:** the `admin_list_users()` SQL function. It has to be SQL because emails live in `auth.users`, which PostgREST can't join. The function is service-role only.
+- **Winners:** the `admin_list_winners()` SQL function. Sorting by draw month and searching by member ID need SQL. It runs under the caller's RLS, so it still works with an admin session alone. A Payment filter (Unpaid / Paid) was added beside Verification.
+- **Messages:** a plain PostgREST query using `range()` and `count: "exact"`.
 
-**Extensibility.**
-- *Payments:* `PaymentProvider` (`lib/payments/types.ts`) has Razorpay and mock implementations, and the schema uses provider-neutral `external_*` columns. A second gateway is a new implementation plus an env value.
-- *Draw modes:* random and algorithmic are pure functions in `lib/draw/`. A new mode is a new generator plus a value in `draws_mode_check`.
-- *Prize rules:* tier splits are in `lib/draw/constants.ts`, and the fee and pool percentage are environment variables.
-- *Display:* charity categories are in `lib/charity/categories.ts`, and all money formatting goes through `lib/money.ts`.
-- *Roles:* adding a role (for example a charity-partner login) is a `profiles_role_check` migration plus policy updates. There's no role table to extend.
+Before this change, search, filters and sort ran in the browser over whatever had been loaded. With pagination that would have searched only the visible 25 rows, so all three now run on the server. The SQL functions were checked against every migration in a real Postgres instance: paging, the total past the last page, literal `%` and `_` in search, sort order with blanks last, and that members and anonymous callers are refused.
+
+#### Draw engine at scale
+
+At 100,000 subscribers the in-memory matching itself is not the problem. It handles 100,000 entries of five numbers each in milliseconds and a few MB. The problems are round trips, timeouts and atomicity:
+- **Entry sync** (`syncAllDrawEntriesForDraw`) makes three sequential database calls per active subscriber before each simulation. At 20–50 ms a call, that is about 1–4 hours at 100,000 members. It already exceeds a typical 60–300 s serverless timeout at a few thousand members. **This is the first thing to break.**
+- **Reads** are now complete but batched: about 100 requests for entries, 100 or more for subscription history, and up to 500 for scores. That adds roughly 15–35 s per simulate, and the admin Draws page repeats the reads for its preview.
+- **The algorithmic draw** transfers every score (up to 500,000 rows) just to build a 45-bucket frequency table.
+- **Publish isn't atomic.** It deletes winners, inserts winners, marks the draw published and rolls the carryover forward as separate requests. A failure partway through leaves a half-published draw.
+
+*Migration path* (SQL, not batching, because memory isn't the constraint):
+1. **First, cheap:** replace the per-member sync with one statement, `sync_draw_entries(draw_id)`, an `INSERT … SELECT` of each active member's latest five scores `ON CONFLICT DO UPDATE`. Replace the algorithmic draw's score read with `SELECT score, count(*) … GROUP BY score` (45 rows). Matching can stay in tested TypeScript, reading entries in batches.
+2. **Then:** move matching and publishing into one transactional `publish_draw(draw_id)`. Our greedy one-to-one match count equals the multiset intersection, `Σ over values of LEAST(count in entry, count in winning numbers)`, which is a straightforward `unnest … GROUP BY`. Tiering, the equal split, inserting winners and the carryover follow in the same transaction. The current TypeScript (`lib/draw/match.ts`, `pools.ts`) stays as the test oracle: run both on fixtures and compare.
+
+Chunked batch processing in Node would only cut memory use, which isn't the bottleneck, and would still leave publish non-atomic.
+
+#### RLS performance
+
+- **`has_active_subscription(uid)`** is `LANGUAGE sql STABLE SECURITY DEFINER`.
+  - Usage: it appears only in the INSERT and UPDATE policies on `scores` and `draw_entries`, always as `has_active_subscription(auth.uid())`. It is in no SELECT policy, so it never runs per row on reads. Members write one row at a time, so it costs one index lookup per write, now a single probe on the new `(user_id, created_at DESC)` index.
+  - Caching: none. `STABLE` lets the planner assume the result is constant within a statement, but Postgres doesn't memoize function results, and `SECURITY DEFINER` SQL functions are never inlined.
+  - Fix if needed: wrapping it as `(select public.has_active_subscription(auth.uid()))` turns it into an init-plan, evaluated once per statement. This matters only for bulk writes, which members don't do.
+  - New use: `admin_list_users()` calls it once per member in order to filter and sort by access. See Indexes for the cost.
+- **The real per-row function is `is_admin()`**, which every SELECT policy calls as `user_id = auth.uid() OR public.is_admin()`. When an admin reads through their session, it runs for every row scanned. Most admin reads use the service role, which bypasses RLS. The Winners page doesn't, but `winners` and `draws` are small. *Recommended (not done):* one migration rewriting the policies to `(select auth.uid())` and `(select public.is_admin())`, as Supabase advises.
+
+#### Extensibility
+
+All three changes below touch more than two files. Plans and prize tiers are hard-coded as literal unions and named fields rather than driven by one config.
+
+- **A third plan tier (e.g. quarterly): about 12 files.**
+  - Database: a `subscriptions_plan_check` migration.
+  - Types and validation: `SubscriptionPlan` (`lib/subscription/types.ts`), `checkoutPlanSchema` (`lib/validations/subscription.ts`) and `adminSubscriptionSchema` (`lib/validations/admin.ts`).
+  - Payments: the Razorpay plan-ID env lookup (`lib/payments/env.ts`), billing cycle and period mapping (`razorpay-provider.ts`), mock renewal months (`mock-provider.ts`).
+  - Pricing: `lib/subscription/fees.ts` and `lib/payments/prices.ts`.
+  - UI: plan pickers in `subscribe-plan-checkout.tsx`, `editorial-pricing.tsx` and `admin-users-panel.tsx`.
+  - Docs: `.env.example` and the README.
+  - *Better:* one `PLANS` record (id, months, env key for the Razorpay plan, fee) that the type, schemas, providers and UI all read from.
+- **A new draw mode: 4 files.**
+  - A `draws_mode_check` migration.
+  - The `DrawMode` type and dispatch in `lib/draw/simulate.ts`.
+  - A new generator module beside `random.ts` and `algorithmic.ts`.
+  - The mode picker in `admin-draws-panel.tsx`.
+  - *Better:* a generator registry keyed by mode, so the type and the picker derive from it. That would leave the migration plus the new module.
+- **A new prize tier (e.g. 2-match): about 10 files.**
+  - Database: a `winners_tier_check` migration.
+  - Draw engine: `TIER_PERCENTAGES` (`lib/draw/constants.ts`, rebalanced to total 100%), `tierFromMatchCount` (`match.ts`), the named `tier5Pool`/`tier4Pool`/`tier3Pool` fields (`types.ts`) and the per-tier code in `pools.ts`.
+  - Winners: the `3 | 4 | 5` union (`lib/winners/types.ts`).
+  - Admin: the draw preview mapping (`lib/admin/queries.ts`) and the pool tiles (`admin-draws-panel.tsx`).
+  - Public: the pool calculator and the How it works copy.
+  - *Better:* make pools a `Record<PrizeTier, number>` built from `TIER_PERCENTAGES`. A new tier would then be the constant plus the migration.
+- **Already one place each:**
+  - Payment providers: the `PaymentProvider` interface plus provider-neutral `external_*` columns.
+  - Charity categories: `lib/charity/categories.ts`.
+  - Money formatting: `lib/money.ts`.
+  - The fee and pool percentage: environment variables.
 
 **Out of scope by design:** multiple currencies, multiple regions, scheduled draws (see *Draws are admin-triggered by design*) and email notifications (see below).
 

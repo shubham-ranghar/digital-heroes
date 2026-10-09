@@ -44,14 +44,12 @@ export function AdminMessagesPanel({ messages, table, total }: AdminMessagesPane
 
   function handleResolve(id: string) {
     startTransition(async () => {
-      try {
-        await markContactMessageResolvedAction(id);
-        toast.success("Marked resolved");
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Could not update message",
-        );
+      const result = await markContactMessageResolvedAction(id);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
       }
+      toast.success("Marked resolved");
     });
   }
 

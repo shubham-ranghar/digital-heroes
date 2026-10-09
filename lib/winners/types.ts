@@ -16,4 +16,7 @@ export type WinnerRow = {
 
 export type WinnerWithDraw = WinnerRow & {
   draw_month: string;
+  /** Filled by the admin list only (`admin_list_winners`); null elsewhere. */
+  member_name: string | null;
+  member_email: string | null;
 };

@@ -1,11 +1,12 @@
 "use client";
 
-import { type ReactNode, useState, useTransition } from "react";
+import { type ReactNode, useEffect, useState, useTransition } from "react";
 import { m, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 
 import {
   openRazorpaySubscriptionCheckout,
+  preloadRazorpayCheckout,
 } from "@/components/subscription/razorpay-checkout";
 import { FormError } from "@/components/auth/form-message";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +24,31 @@ type Plan = "monthly" | "yearly";
 
 type SubscribePlanCheckoutProps = {
   prices: PlanPriceDisplay;
+  /**
+   * Static-shell placeholder while the server confirms the member's account:
+   * same layout, checkout disabled.
+   */
+  checking?: boolean;
 };
 
-export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
+export function SubscribePlanCheckout({
+  prices,
+  checking = false,
+}: SubscribePlanCheckoutProps) {
   const [plan, setPlan] = useState<Plan>("yearly");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const reduceMotion = useReducedMotion();
+  // The static-shell placeholder plays the entrance; the streamed picker that
+  // replaces it renders in place, so the swap doesn't animate twice.
+  const Group = checking ? RevealStagger : StaticGroup;
+  const Item = checking ? RevealStaggerItem : StaticItem;
+
+  useEffect(() => {
+    if (!checking) {
+      preloadRazorpayCheckout();
+    }
+  }, [checking]);
 
   function startCheckout() {
     setError(null);
@@ -69,13 +88,14 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
 
   return (
     <div className="space-y-6">
-      <RevealStagger trigger="mount" stagger={0.06}>
+      <Group trigger="mount" stagger={0.06}>
       <div
         className="grid gap-4 sm:grid-cols-2"
         role="radiogroup"
         aria-label="Billing plan"
+        inert={checking}
       >
-        <RevealStaggerItem fast className="grid">
+        <Item fast className="grid">
         <PlanCard
           plan="monthly"
           selected={plan === "monthly"}
@@ -86,8 +106,8 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
           onSelect={() => setPlan("monthly")}
           reduceMotion={reduceMotion}
         />
-        </RevealStaggerItem>
-        <RevealStaggerItem fast className="grid">
+        </Item>
+        <Item fast className="grid">
         <PlanCard
           plan="yearly"
           selected={plan === "yearly"}
@@ -109,9 +129,9 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
           className="border-coral/40"
           reduceMotion={reduceMotion}
         />
-        </RevealStaggerItem>
+        </Item>
       </div>
-      </RevealStagger>
+      </Group>
 
       <FormError message={error} />
       <Button
@@ -119,12 +139,29 @@ export function SubscribePlanCheckout({ prices }: SubscribePlanCheckoutProps) {
         size="lg"
         className="w-full"
         loading={isPending}
+        disabled={checking}
         onClick={startCheckout}
       >
-        {isPending ? "Starting checkout…" : "Subscribe"}
+        {isPending ? "Opening checkout…" : "Subscribe"}
       </Button>
     </div>
   );
+}
+
+/** Same props as the reveal wrappers, without the entrance animation. */
+function StaticGroup({ children }: { children: ReactNode; trigger?: string; stagger?: number }) {
+  return <div>{children}</div>;
+}
+
+function StaticItem({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+  fast?: boolean;
+}) {
+  return <div className={className}>{children}</div>;
 }
 
 type PlanCardProps = {

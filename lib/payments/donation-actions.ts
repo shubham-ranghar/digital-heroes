@@ -2,6 +2,7 @@
 
 import type { ZodError } from "zod";
 
+import { actionFailure } from "@/lib/actions/failure";
 import { requireUser } from "@/lib/auth/session";
 import { getPaymentProviderName, hasRazorpayEnv } from "@/lib/payments/env";
 import { razorpayFetch } from "@/lib/payments/razorpay-client";
@@ -88,7 +89,11 @@ export async function createDonationCheckoutAction(
   }
 
   if (getPaymentProviderName() === "mock") {
-    await markDonationSucceeded(donation.id);
+    try {
+      await markDonationSucceeded(donation.id);
+    } catch (error) {
+      return actionFailure(error, "complete the donation");
+    }
     return {
       ok: true,
       mode: "mock",

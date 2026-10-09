@@ -12,9 +12,11 @@ import {
   loadActiveSubscriberScores,
   loadDrawEntries,
 } from "@/lib/draw/db";
+import { withMemberLabels } from "@/lib/admin/member-labels";
 import type { DrawSimulationPreview } from "@/lib/draw/admin-actions";
 import { previewDrawResult } from "@/lib/draw/simulate";
 import { loadPlatformTotals } from "@/lib/platform-totals";
+import { getMonthlySubscriptionFeeInr } from "@/lib/subscription/fees";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
 import { getSubscriptionAccessLabel } from "@/lib/subscription/access";
 
@@ -53,15 +55,26 @@ export type AdminCharityRow = {
   supporterCount: number;
 };
 
+export type AdminCharityBreakdownRow = {
+  charityId: string;
+  name: string;
+  slug: string;
+  activeSupporters: number;
+  commitmentPerMonthInr: number;
+  donationTotalInr: number;
+};
+
 export type AdminReports = {
   totalUsers: number;
   activeSubscribers: number;
   totalPrizePaid: number;
   totalPrizePending: number;
   estimatedPrizePool: number;
-  charityCommittedInr: number;
+  /** Rate, not a total: active subscribers' charity share of one month's fee. */
+  charityCommitmentPerMonthInr: number;
+  /** Cumulative succeeded INR one-off donations. Never add to the monthly rate. */
   donationTotalInr: number;
-  totalCharityContribution: number;
+  charityBreakdown: AdminCharityBreakdownRow[];
   drawsByStatus: { status: string; count: number }[];
   entriesPerDraw: { month: string; count: number }[];
 };
@@ -231,15 +244,18 @@ export async function getDrawSimulationPreview(
   const { activeCount, scores } = await loadActiveSubscriberScores(client);
   const { feePerSubscriber, poolPercentage } = getDrawFeeConfig();
 
-  return toDrawPreview(
-    previewDrawResult(winningNumbers, {
-      entries,
-      subscriberScores: scores,
-      activeSubscribers: activeCount,
-      feePerSubscriber,
-      poolPercentage,
-      carryover: Number(draw.jackpot_carryover ?? 0),
-    }),
+  return withMemberLabels(
+    client,
+    toDrawPreview(
+      previewDrawResult(winningNumbers, {
+        entries,
+        subscriberScores: scores,
+        activeSubscribers: activeCount,
+        feePerSubscriber,
+        poolPercentage,
+        carryover: Number(draw.jackpot_carryover ?? 0),
+      }),
+    ),
   );
 }
 
@@ -270,6 +286,37 @@ export async function listAdminCharities(): Promise<AdminCharityRow[]> {
   }));
 }
 
+/**
+ * Per-charity monthly commitment (active subscribers only) and cumulative
+ * donations, from `admin_charity_breakdown()`. Sorted by monthly commitment.
+ */
+async function loadCharityBreakdown(
+  client: ReturnType<typeof admin>,
+): Promise<AdminCharityBreakdownRow[]> {
+  const { data, error } = await client.rpc("admin_charity_breakdown");
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const monthlyFeeInr = getMonthlySubscriptionFeeInr();
+  return ((data ?? []) as Record<string, unknown>[])
+    .map((row) => ({
+      charityId: String(row.charity_id),
+      name: String(row.name),
+      slug: String(row.slug),
+      activeSupporters: Number(row.active_supporters ?? 0),
+      commitmentPerMonthInr:
+        monthlyFeeInr * (Number(row.active_percentage_sum ?? 0) / 100),
+      donationTotalInr: Number(row.donation_paise ?? 0) / 100,
+    }))
+    .sort(
+      (a, b) =>
+        b.commitmentPerMonthInr - a.commitmentPerMonthInr ||
+        b.donationTotalInr - a.donationTotalInr ||
+        a.name.localeCompare(b.name),
+    );
+}
+
 export async function getAdminReports(): Promise<AdminReports> {
   const client = admin();
 
@@ -290,9 +337,15 @@ export async function getAdminReports(): Promise<AdminReports> {
   const totalPrizePaid = totals.prizePaid;
   const totalPrizePending = totals.prizePending;
 
-  const monthlyFeeInr = Number(process.env.NEXT_PUBLIC_SUBSCRIPTION_FEE_INR ?? "499");
-  const charityCommittedInr = monthlyFeeInr * (totals.charityPercentageSum / 100);
-  const donationTotalInr = totals.donationTotalInr;
+  const charityBreakdown = await loadCharityBreakdown(client);
+  const charityCommitmentPerMonthInr = charityBreakdown.reduce(
+    (sum, row) => sum + row.commitmentPerMonthInr,
+    0,
+  );
+  const donationTotalInr = charityBreakdown.reduce(
+    (sum, row) => sum + row.donationTotalInr,
+    0,
+  );
 
   const { data: draws, error: drawError } = await client
     .from("draws")
@@ -331,17 +384,15 @@ export async function getAdminReports(): Promise<AdminReports> {
     });
   }
 
-  const totalCharityContribution = charityCommittedInr + donationTotalInr;
-
   return {
     totalUsers: totalUsers ?? 0,
     activeSubscribers: activeCount,
     totalPrizePaid,
     totalPrizePending,
     estimatedPrizePool,
-    charityCommittedInr,
+    charityCommitmentPerMonthInr,
     donationTotalInr,
-    totalCharityContribution,
+    charityBreakdown,
     drawsByStatus: Array.from(statusCounts.entries()).map(([status, count]) => ({
       status,
       count,
