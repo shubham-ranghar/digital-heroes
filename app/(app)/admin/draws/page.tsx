@@ -7,6 +7,7 @@ import {
   getDrawSimulationPreview,
   listAdminDraws,
 } from "@/lib/admin/queries";
+import { requireAdmin } from "@/lib/auth/session";
 import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default async function AdminDrawsPage({
   searchParams: Promise<{ draw?: string }>;
 }) {
   await connection();
+  await requireAdmin();
   const params = await searchParams;
   const draws = await listAdminDraws();
   const selectedDrawId = params.draw ?? draws[0]?.id ?? null;

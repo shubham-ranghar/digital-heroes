@@ -1,6 +1,9 @@
+import { loadActiveSubscriberIds } from "@/lib/draw/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { CURRENCY_SYMBOL } from "@/lib/money";
+import { loadPlatformTotals } from "@/lib/platform-totals";
 import { getMonthlySubscriptionFeeInr } from "@/lib/subscription/fees";
 
 export type HomeStats = {
@@ -33,29 +36,27 @@ export async function getHomeStats(): Promise<HomeStats> {
     try {
       const admin = createAdminClient();
 
-      const { data: donations } = await admin
-        .from("donations")
-        .select("amount_cents")
-        .eq("status", "succeeded")
-        .eq("currency", "inr");
+      const [totals, activeIds, charityRows] = await Promise.all([
+        loadPlatformTotals(admin),
+        loadActiveSubscriberIds(admin),
+        fetchAllRows<{ user_id: string; percentage: number }>((from, to) =>
+          admin
+            .from("user_charity")
+            .select("user_id, percentage")
+            .order("user_id")
+            .range(from, to),
+        ),
+      ]);
 
-      const donationTotal =
-        (donations ?? []).reduce(
-          (sum, row) => sum + Number(row.amount_cents ?? 0),
-          0,
-        ) / 100;
+      // Only members whose subscription currently grants access are paying in;
+      // lapsed and never-subscribed members' percentages are not money raised.
+      const activePercentageSum = charityRows
+        .filter((row) => activeIds.has(row.user_id))
+        .reduce((sum, row) => sum + Number(row.percentage ?? 0), 0);
+      const committedMonthly =
+        getMonthlySubscriptionFeeInr() * (activePercentageSum / 100);
 
-      const monthlyFee = getMonthlySubscriptionFeeInr();
-      const { data: userCharity } = await admin
-        .from("user_charity")
-        .select("percentage");
-
-      const committedMonthly = (userCharity ?? []).reduce(
-        (sum, row) => sum + monthlyFee * (Number(row.percentage ?? 10) / 100),
-        0,
-      );
-
-      totalRaised = Math.round(donationTotal + committedMonthly * 6);
+      totalRaised = Math.round(totals.donationTotalInr + committedMonthly);
 
       const monthIso = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
       const { data: currentDraw } = await admin

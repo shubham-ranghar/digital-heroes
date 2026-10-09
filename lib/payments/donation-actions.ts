@@ -33,7 +33,7 @@ async function markDonationSucceeded(donationId: string) {
   const admin = createAdminClient();
   const { error } = await admin
     .from("donations")
-    .update({ status: "succeeded", updated_at: new Date().toISOString() })
+    .update({ status: "succeeded" })
     .eq("id", donationId);
   if (error) {
     throw new Error(error.message);
@@ -100,18 +100,27 @@ export async function createDonationCheckoutAction(
     return { ok: false, message: "Payments are not configured." };
   }
 
-  const order = await razorpayFetch<{ id: string }>("/orders", {
-    body: {
-      amount: amountPaise,
-      currency: "INR",
-      notes: {
-        kind: "donation",
-        donation_id: donation.id,
-        charity_id: charityId,
-        user_id: user.id,
+  let order: { id: string };
+  try {
+    order = await razorpayFetch<{ id: string }>("/orders", {
+      body: {
+        amount: amountPaise,
+        currency: "INR",
+        notes: {
+          kind: "donation",
+          donation_id: donation.id,
+          charity_id: charityId,
+          user_id: user.id,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Payment provider error while creating donation order:", error);
+    return {
+      ok: false,
+      message: "We could not start the donation right now. Please try again in a moment.",
+    };
+  }
 
   const keyId = process.env.RAZORPAY_KEY_ID;
   if (!keyId) {

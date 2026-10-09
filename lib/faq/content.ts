@@ -33,7 +33,7 @@ export const faqItems: FaqItem[] = [
     id: "payouts",
     question: "How are prizes paid?",
     answer:
-      "Winners upload scorecard proof in the dashboard. After admin verification, prizes move from pending to paid. Tier pools split equally among winners at the same match level.",
+      "Winners upload a score screenshot in the dashboard. After admin verification, prizes move from pending to paid. Tier pools split equally among winners at the same match level.",
   },
   {
     id: "cancellation",
@@ -45,7 +45,7 @@ export const faqItems: FaqItem[] = [
     id: "verification",
     question: "Why do you verify winners?",
     answer:
-      "Verification keeps the draw fair for every member. We compare submitted scorecards against your saved scores and draw rules before releasing funds.",
+      "Verification keeps the draw fair for every member. We compare submitted score screenshots against your saved scores and draw rules before releasing funds.",
   },
   {
     id: "random-vs-algo",

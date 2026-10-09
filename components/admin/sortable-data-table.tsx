@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 
+import { useDebouncedSearch } from "@/components/admin/use-admin-table-url";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -34,8 +35,20 @@ export type TableFilterGroup<T> = {
   id: string;
   label: string;
   options: { value: string; label: string }[];
-  /** Does `row` match the chosen option? */
-  predicate: (row: T, value: string) => boolean;
+  /** Does `row` match the chosen option? Unused in server mode. */
+  predicate?: (row: T, value: string) => boolean;
+};
+
+/** Controls for a table whose rows are one page already filtered and sorted by the server. */
+export type ServerTableControls = {
+  query: string;
+  filters: Record<string, string>;
+  sortId: string | null;
+  sortDir: "asc" | "desc";
+  pending?: boolean;
+  onQueryChange: (query: string) => void;
+  onFiltersChange: (filters: Record<string, string>) => void;
+  onSortChange: (sortId: string, sortDir: "asc" | "desc") => void;
 };
 
 type SortableDataTableProps<T> = {
@@ -53,6 +66,10 @@ type SortableDataTableProps<T> = {
   searchPlaceholder?: string;
   /** Chip groups above the table; one active option per group ("all" = off). */
   filterGroups?: TableFilterGroup<T>[];
+  /** Server mode: search, filters and sort are reported here, not applied locally. */
+  server?: ServerTableControls;
+  /** Replaces the row count line (e.g. with pagination). */
+  footer?: React.ReactNode;
 };
 
 export function SortableDataTable<T>({
@@ -66,14 +83,27 @@ export function SortableDataTable<T>({
   searchText,
   searchPlaceholder = "Search…",
   filterGroups,
+  server,
+  footer,
 }: SortableDataTableProps<T>) {
   const navyHeader = headerTone === "navy";
-  const [sortId, setSortId] = useState<string | null>(columns[0]?.id ?? null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [query, setQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [localSortId, setLocalSortId] = useState<string | null>(
+    columns[0]?.id ?? null,
+  );
+  const [localSortDir, setLocalSortDir] = useState<"asc" | "desc">("asc");
+  const [localFilters, setLocalFilters] = useState<Record<string, string>>({});
+  const [query, setQuery] = useDebouncedSearch(server?.query ?? "", (value) =>
+    server?.onQueryChange(value),
+  );
+
+  const sortId = server ? server.sortId : localSortId;
+  const sortDir = server ? server.sortDir : localSortDir;
+  const activeFilters = server ? server.filters : localFilters;
 
   const filteredRows = useMemo(() => {
+    if (server) {
+      return rows;
+    }
     let next = rows;
     const needle = query.trim().toLowerCase();
     if (searchText && needle) {
@@ -83,15 +113,16 @@ export function SortableDataTable<T>({
     }
     for (const group of filterGroups ?? []) {
       const value = activeFilters[group.id];
-      if (value) {
-        next = next.filter((row) => group.predicate(row, value));
+      const predicate = group.predicate;
+      if (value && predicate) {
+        next = next.filter((row) => predicate(row, value));
       }
     }
     return next;
-  }, [rows, query, searchText, filterGroups, activeFilters]);
+  }, [server, rows, query, searchText, filterGroups, activeFilters]);
 
   const sortedRows = useMemo(() => {
-    if (!sortId) {
+    if (server || !sortId) {
       return filteredRows;
     }
     const column = columns.find((col) => col.id === sortId);
@@ -109,35 +140,40 @@ export function SortableDataTable<T>({
         ? String(av).localeCompare(String(bv))
         : String(bv).localeCompare(String(av));
     });
-  }, [filteredRows, columns, sortId, sortDir]);
+  }, [server, filteredRows, columns, sortId, sortDir]);
 
   function toggleSort(columnId: string, sortable?: boolean) {
     if (!sortable) {
       return;
     }
-    if (sortId === columnId) {
-      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    const nextDir =
+      sortId === columnId ? (sortDir === "asc" ? "desc" : "asc") : "asc";
+    if (server) {
+      server.onSortChange(columnId, nextDir);
       return;
     }
-    setSortId(columnId);
-    setSortDir("asc");
+    setLocalSortId(columnId);
+    setLocalSortDir(nextDir);
   }
 
   function toggleFilter(groupId: string, value: string) {
-    setActiveFilters((prev) => {
-      const next = { ...prev };
-      if (next[groupId] === value) {
-        delete next[groupId];
-      } else {
-        next[groupId] = value;
-      }
-      return next;
-    });
+    const next = { ...activeFilters };
+    if (next[groupId] === value) {
+      delete next[groupId];
+    } else {
+      next[groupId] = value;
+    }
+    if (server) {
+      server.onFiltersChange(next);
+      return;
+    }
+    setLocalFilters(next);
   }
 
   const hasControls = Boolean(searchText || filterGroups?.length);
+  const appliedQuery = server ? server.query : query.trim();
   const isFiltered =
-    query.trim().length > 0 || Object.keys(activeFilters).length > 0;
+    appliedQuery.length > 0 || Object.keys(activeFilters).length > 0;
 
   return (
     <div className="space-y-3">
@@ -198,9 +234,11 @@ export function SortableDataTable<T>({
       ) : null}
 
       <div
+        aria-busy={server?.pending || undefined}
         className={cn(
-          "min-w-0 overflow-x-auto rounded-[20px] border bg-surface",
+          "min-w-0 overflow-x-auto rounded-[20px] border bg-surface transition-opacity",
           navyHeader ? "border-navy" : "border-line",
+          server?.pending && "opacity-60",
         )}
       >
         <Table className="min-w-[36rem]">
@@ -287,14 +325,16 @@ export function SortableDataTable<T>({
         </Table>
       </div>
 
-      <p
-        className={cn("text-xs text-muted-foreground", tabularImpact)}
-        aria-live="polite"
-      >
-        {isFiltered
-          ? `${sortedRows.length} of ${rows.length} ${rows.length === 1 ? "row" : "rows"}`
-          : `${rows.length} ${rows.length === 1 ? "row" : "rows"}`}
-      </p>
+      {footer ?? (
+        <p
+          className={cn("text-xs text-muted-foreground", tabularImpact)}
+          aria-live="polite"
+        >
+          {isFiltered
+            ? `${sortedRows.length} of ${rows.length} ${rows.length === 1 ? "row" : "rows"}`
+            : `${rows.length} ${rows.length === 1 ? "row" : "rows"}`}
+        </p>
+      )}
     </div>
   );
 }

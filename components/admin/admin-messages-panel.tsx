@@ -1,51 +1,46 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useTransition } from "react";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSection } from "@/components/admin/admin-section";
+import { TablePagination } from "@/components/admin/table-pagination";
+import {
+  useAdminTableUrl,
+  useDebouncedSearch,
+} from "@/components/admin/use-admin-table-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ADMIN_PAGE_SIZE, type AdminTableState } from "@/lib/admin/pagination";
 import { markContactMessageResolvedAction } from "@/lib/contact/admin-actions";
 import type { AdminContactMessage } from "@/lib/contact/admin-queries";
 import { Reveal } from "@/components/motion/reveal";
 import { formatDateTimeLabel } from "@/lib/dates";
-import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 type AdminMessagesPanelProps = {
+  /** One page of messages, already searched and filtered by the server. */
   messages: AdminContactMessage[];
+  table: AdminTableState;
+  total: number;
 };
 
-type StatusFilter = "all" | "unresolved" | "resolved";
-
-export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
+export function AdminMessagesPanel({ messages, table, total }: AdminMessagesPanelProps) {
   const [isPending, startTransition] = useTransition();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  // The newest message still waiting on a reply is the page's navy surface.
+  const url = useAdminTableUrl(table);
+  const [query, setQuery] = useDebouncedSearch(table.q, (q) => url.navigate({ q }));
+  const status = table.filters.status ?? "all";
+  // The newest message on this page still waiting on a reply is the navy surface.
   const focusId = messages.find((message) => !message.resolved)?.id;
 
-  const visibleMessages = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return messages.filter((message) => {
-      if (status === "unresolved" && message.resolved) {
-        return false;
-      }
-      if (status === "resolved" && !message.resolved) {
-        return false;
-      }
-      if (!needle) {
-        return true;
-      }
-      return `${message.name} ${message.email} ${message.message}`
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [messages, query, status]);
+  const isFiltered = table.q.length > 0 || status !== "all";
 
-  const isFiltered = query.trim().length > 0 || status !== "all";
+  function setStatus(value: string) {
+    url.navigate({
+      filters: value === "all" ? {} : { status: value },
+    });
+  }
 
   function handleResolve(id: string) {
     startTransition(async () => {
@@ -115,15 +110,18 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
           </div>
         </div>
 
-      {visibleMessages.length === 0 ? (
+      {messages.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           {isFiltered
             ? "Nothing matches your search or filters."
             : "No messages yet. Inbound contact-form messages land here."}
         </p>
       ) : (
-        <ul className="space-y-4">
-          {visibleMessages.map((message) => {
+        <ul
+          aria-busy={url.isPending || undefined}
+          className={cn("space-y-4 transition-opacity", url.isPending && "opacity-60")}
+        >
+          {messages.map((message) => {
             const navy = message.id === focusId;
             return (
             <li
@@ -174,14 +172,13 @@ export function AdminMessagesPanel({ messages }: AdminMessagesPanelProps) {
         </ul>
       )}
 
-        <p
-          className={cn("text-xs text-muted-foreground", tabularImpact)}
-          aria-live="polite"
-        >
-          {isFiltered
-            ? `${visibleMessages.length} of ${messages.length} ${messages.length === 1 ? "message" : "messages"}`
-            : `${messages.length} ${messages.length === 1 ? "message" : "messages"}`}
-        </p>
+        <TablePagination
+          page={table.page}
+          pageSize={ADMIN_PAGE_SIZE}
+          total={total}
+          noun={{ singular: "message", plural: "messages" }}
+          hrefForPage={(page) => url.hrefFor({ page })}
+        />
       </div>
       </Reveal>
     </div>

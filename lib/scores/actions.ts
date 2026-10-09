@@ -101,7 +101,7 @@ export async function saveScoreAction(
     revalidatePath("/dashboard/scores");
     revalidatePath("/dashboard");
     try {
-      await syncUserDrawEntryForCurrentMonth(supabase, user.id);
+      await syncUserDrawEntryForCurrentMonth(user.id);
     } catch {
       /* draw row may not exist yet */
     }
@@ -139,7 +139,7 @@ export async function saveScoreAction(
   revalidatePath("/dashboard/scores");
   revalidatePath("/dashboard");
   try {
-    await syncUserDrawEntryForCurrentMonth(supabase, user.id);
+    await syncUserDrawEntryForCurrentMonth(user.id);
   } catch {
     /* draw row may not exist yet */
   }
@@ -177,7 +177,7 @@ export async function deleteScoreAction(
   revalidatePath("/dashboard/scores");
   revalidatePath("/dashboard");
   try {
-    await syncUserDrawEntryForCurrentMonth(supabase, user.id);
+    await syncUserDrawEntryForCurrentMonth(user.id);
   } catch {
     /* draw row may not exist yet */
   }

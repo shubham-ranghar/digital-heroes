@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { AdminCharitiesPanel } from "@/components/admin/admin-charities-panel";
 import { AdminSection } from "@/components/admin/admin-section";
 import { listAdminCharities } from "@/lib/admin/queries";
+import { requireAdmin } from "@/lib/auth/session";
 import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export const instant = false;
 
 export default async function AdminCharitiesPage() {
   await connection();
+  await requireAdmin();
   const charities = await listAdminCharities();
 
   return (

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ScoreRow } from "@/lib/scores/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type DashboardCharity = {
   charityId: string;
@@ -95,8 +96,10 @@ export async function getDashboardParticipation(
     throw new Error(countError.message);
   }
 
+  // Service-role read: RLS hides draft/simulated draws from members. Only
+  // month and status are selected, so winning_numbers never reaches members.
   const monthStart = firstDayOfMonthIso(new Date());
-  const { data: upcoming, error: drawError } = await supabase
+  const { data: upcoming, error: drawError } = await createAdminClient()
     .from("draws")
     .select("month, status")
     .gte("month", monthStart)

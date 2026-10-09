@@ -12,7 +12,7 @@ export function Footer() {
           </p>
           <p className="text-sm leading-relaxed text-slate">
             Play with purpose. Every round fuels charity impact and monthly
-            community prize draws — without the cliché fairway aesthetic.
+            community prize draws.
           </p>
         </div>
 

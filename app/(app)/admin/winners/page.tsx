@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { AdminSection } from "@/components/admin/admin-section";
 import { AdminWinnersTable } from "@/components/admin/admin-winners-table";
+import {
+  isPageOutOfRange,
+  lastPage,
+  parseTableState,
+  tableStateToSearch,
+  type SearchParamsRecord,
+} from "@/lib/admin/pagination";
 import { requireAdmin } from "@/lib/auth/session";
-import { listWinnersForAdmin } from "@/lib/winners/queries";
+import { ADMIN_WINNERS_TABLE, listWinnersForAdminPage } from "@/lib/winners/queries";
 import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
@@ -13,10 +21,19 @@ export const metadata: Metadata = {
 
 export const instant = false;
 
-export default async function AdminWinnersPage() {
+export default async function AdminWinnersPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParamsRecord>;
+}) {
   await connection();
   const { supabase } = await requireAdmin();
-  const winners = await listWinnersForAdmin(supabase);
+  const table = parseTableState(await searchParams, ADMIN_WINNERS_TABLE);
+  const { rows, total } = await listWinnersForAdminPage(supabase, table);
+
+  if (isPageOutOfRange(table.page, total)) {
+    redirect(`/admin/winners${tableStateToSearch({ ...table, page: lastPage(total) })}`);
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -27,7 +44,7 @@ export default async function AdminWinnersPage() {
         />
       </Reveal>
       <Reveal trigger="mount" fast>
-        <AdminWinnersTable winners={winners} />
+        <AdminWinnersTable winners={rows} table={table} total={total} />
       </Reveal>
     </div>
   );

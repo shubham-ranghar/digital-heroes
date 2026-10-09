@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { AdminMessagesPanel } from "@/components/admin/admin-messages-panel";
+import {
+  isPageOutOfRange,
+  lastPage,
+  parseTableState,
+  tableStateToSearch,
+  type PageResult,
+  type SearchParamsRecord,
+} from "@/lib/admin/pagination";
 import { requireAdmin } from "@/lib/auth/session";
-import { listContactMessagesAdmin } from "@/lib/contact/admin-queries";
+import {
+  ADMIN_MESSAGES_TABLE,
+  listContactMessagesAdminPage,
+  type AdminContactMessage,
+} from "@/lib/contact/admin-queries";
 
 export const metadata: Metadata = {
   title: "Contact messages",
@@ -11,16 +24,29 @@ export const metadata: Metadata = {
 
 export const instant = false;
 
-export default async function AdminMessagesPage() {
+export default async function AdminMessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParamsRecord>;
+}) {
   await connection();
   await requireAdmin();
+  const table = parseTableState(await searchParams, ADMIN_MESSAGES_TABLE);
 
-  let messages: Awaited<ReturnType<typeof listContactMessagesAdmin>> = [];
+  let result: PageResult<AdminContactMessage> = { rows: [], total: 0 };
   try {
-    messages = await listContactMessagesAdmin();
+    result = await listContactMessagesAdminPage(table);
   } catch {
-    messages = [];
+    result = { rows: [], total: 0 };
   }
 
-  return <AdminMessagesPanel messages={messages} />;
+  if (isPageOutOfRange(table.page, result.total)) {
+    redirect(
+      `/admin/messages${tableStateToSearch({ ...table, page: lastPage(result.total) })}`,
+    );
+  }
+
+  return (
+    <AdminMessagesPanel messages={result.rows} table={table} total={result.total} />
+  );
 }

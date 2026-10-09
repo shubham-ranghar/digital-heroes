@@ -113,6 +113,16 @@ export async function signUpAction(
     };
   }
 
+  // With email confirmation on, Supabase answers a signup for an existing
+  // email with a success that has no identities, rather than an error.
+  if (data.user?.identities?.length === 0) {
+    return {
+      ok: false,
+      message: "An account with this email already exists. Log in instead, or reset your password.",
+      fieldErrors: { email: "Email already registered" },
+    };
+  }
+
   if (data.session && data.user) {
     const { error: charityLinkError } = await supabase.from("user_charity").upsert(
       {

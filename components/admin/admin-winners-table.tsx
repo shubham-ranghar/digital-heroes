@@ -7,6 +7,9 @@ import { toast } from "sonner";
 
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
 import { StatusPill } from "@/components/admin/status-pill";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { useServerTable } from "@/components/admin/use-admin-table-url";
+import { ADMIN_PAGE_SIZE, type AdminTableState } from "@/lib/admin/pagination";
 import { WinnerProofPreview } from "@/components/winners/winner-proof-preview";
 import {
   approveWinnerAction,
@@ -25,11 +28,15 @@ import {
 } from "@/components/ui/dialog";
 
 type AdminWinnersTableProps = {
+  /** One page of winners, already searched, filtered and sorted by the server. */
   winners: WinnerWithDraw[];
+  table: AdminTableState;
+  total: number;
 };
 
-export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
+export function AdminWinnersTable({ winners, table, total }: AdminWinnersTableProps) {
   const router = useRouter();
+  const { controls, hrefFor } = useServerTable(table);
   const [isPending, startTransition] = useTransition();
   const [previewWinner, setPreviewWinner] = useState<WinnerWithDraw | null>(null);
 
@@ -53,6 +60,16 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
       <SortableDataTable
         rows={winners}
         getRowId={(row) => row.id}
+        server={controls}
+        footer={
+          <TablePagination
+            page={table.page}
+            pageSize={ADMIN_PAGE_SIZE}
+            total={total}
+            noun={{ singular: "winner", plural: "winners" }}
+            hrefForPage={(page) => hrefFor({ page })}
+          />
+        }
         emptyMessage="No winners yet. Publish a draw to create prize records."
         emptyAction={
           <Button size="sm" variant="secondary" render={<Link href="/admin/draws" />}>
@@ -60,7 +77,7 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
           </Button>
         }
         searchText={(row) => `${row.user_id} ${row.draw_month}`}
-        searchPlaceholder="Search by member or draw"
+        searchPlaceholder="Member ID or month (2026-09)"
         filterGroups={[
           {
             id: "verification",
@@ -70,7 +87,14 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
               { value: "approved", label: "Approved" },
               { value: "rejected", label: "Rejected" },
             ],
-            predicate: (row, value) => row.verification === value,
+          },
+          {
+            id: "payment",
+            label: "Payment",
+            options: [
+              { value: "pending", label: "Unpaid" },
+              { value: "paid", label: "Paid" },
+            ],
           },
         ]}
         columns={[

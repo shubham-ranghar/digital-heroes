@@ -1,5 +1,7 @@
 # digital.HEROES
 
+**Live:** https://digital-heroes-silk.vercel.app
+
 Charity-first subscription platform: members log Stableford scores (latest five kept), enter monthly prize draws, and direct at least 10% of subscription fees to a chosen charity. Admins simulate and publish draws, verify winner proof, and manage partners.
 
 **Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Auth, Postgres, Storage, RLS), Razorpay (subscriptions), Vitest.

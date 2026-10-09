@@ -103,7 +103,6 @@ async function processRazorpayEvent(body: RazorpayWebhookBody) {
       .update({
         status: "succeeded",
         payment_intent_id: payment.id,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", donationId);
     if (error) {

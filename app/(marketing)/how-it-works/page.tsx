@@ -113,7 +113,7 @@ export default async function HowItWorksPage() {
             <li>Random mode: numbers drawn independently. Algorithmic mode: derived from anonymised subscriber score data</li>
             <li>Monthly cadence aligned to calendar months</li>
             <li>Admins simulate outcomes, review winners, and publish when verified</li>
-            <li>Winners upload scorecard proof; admins verify before payment is marked paid</li>
+            <li>Winners upload a score screenshot; admins verify before payment is marked paid</li>
             <li>Published results appear on the public Winners page with privacy-safe names</li>
           </ul>
         </Reveal>

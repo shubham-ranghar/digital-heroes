@@ -6,6 +6,9 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { SortableDataTable } from "@/components/admin/sortable-data-table";
+import { TablePagination } from "@/components/admin/table-pagination";
+import { useServerTable } from "@/components/admin/use-admin-table-url";
+import { ADMIN_PAGE_SIZE, type AdminTableState } from "@/lib/admin/pagination";
 import {
   editorialTableHead,
   editorialTableNumber,
@@ -41,11 +44,15 @@ import { formatDateLabel } from "@/lib/dates";
 import { todayIsoDate } from "@/lib/scores/dates";
 
 type AdminUsersPanelProps = {
+  /** One page of users, already searched, filtered and sorted by the server. */
   users: AdminUserRow[];
+  table: AdminTableState;
+  total: number;
 };
 
-export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
+export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
   const router = useRouter();
+  const { controls, hrefFor } = useServerTable(table);
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<AdminUserRow | null>(null);
   const [scores, setScores] = useState<ScoreRow[]>([]);
@@ -182,6 +189,16 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
       <SortableDataTable
         rows={users}
         getRowId={(row) => row.id}
+        server={controls}
+        footer={
+          <TablePagination
+            page={table.page}
+            pageSize={ADMIN_PAGE_SIZE}
+            total={total}
+            noun={{ singular: "user", plural: "users" }}
+            hrefForPage={(page) => hrefFor({ page })}
+          />
+        }
         emptyMessage="No users yet. Members appear here as soon as they sign up."
         searchText={(row) => `${row.email ?? ""} ${row.displayName ?? ""}`}
         searchPlaceholder="Search by email or name"
@@ -193,7 +210,6 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
               { value: "subscriber", label: "Subscribers" },
               { value: "admin", label: "Admins" },
             ],
-            predicate: (row, value) => row.role === value,
           },
           {
             id: "access",
@@ -202,8 +218,6 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
               { value: "active", label: "Active" },
               { value: "inactive", label: "Inactive" },
             ],
-            predicate: (row, value) =>
-              value === "active" ? row.hasAccess : !row.hasAccess,
           },
         ]}
         columns={[

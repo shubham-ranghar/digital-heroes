@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { keepLatestScores } from "@/lib/scores/rolling";
-import { activeSubscriberUserIdsFromRows } from "@/lib/draw/db";
+import { loadActiveSubscriberIds } from "@/lib/draw/db";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /** First calendar day of the current UTC month (draw month key). */
 export function currentDrawMonthIso(date = new Date()): string {
@@ -38,7 +39,8 @@ async function loadUserScoreSnapshot(
 
 /**
  * Upsert this member's draw entry for the given draw (latest five scores).
- * Skips published draws. No-op if snapshot is empty.
+ * Skips published draws. Removes the entry when the member has no scores left,
+ * so a stale snapshot can't be matched at publish.
  */
 export async function syncUserDrawEntry(
   supabase: SupabaseClient,
@@ -61,6 +63,14 @@ export async function syncUserDrawEntry(
 
   const snapshot = await loadUserScoreSnapshot(supabase, userId);
   if (snapshot.length === 0) {
+    const { error: deleteError } = await supabase
+      .from("draw_entries")
+      .delete()
+      .eq("draw_id", drawId)
+      .eq("user_id", userId);
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
     return;
   }
 
@@ -96,16 +106,22 @@ export async function getDrawIdForMonth(
   return data?.id ? String(data.id) : null;
 }
 
-/** Sync entry for the current month's draw when one exists. */
+/**
+ * Sync entry for the current month's draw when one exists.
+ *
+ * Uses the service-role client: RLS hides unpublished draws from members, so
+ * the member's own client can never find the draft draw to enter. `userId`
+ * must come from the server session, never from client input.
+ */
 export async function syncUserDrawEntryForCurrentMonth(
-  supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
-  const drawId = await getDrawIdForMonth(supabase, currentDrawMonthIso());
+  const admin = createAdminClient();
+  const drawId = await getDrawIdForMonth(admin, currentDrawMonthIso());
   if (!drawId) {
     return;
   }
-  await syncUserDrawEntry(supabase, userId, drawId);
+  await syncUserDrawEntry(admin, userId, drawId);
 }
 
 /** Admin: refresh all active subscribers' entries for a draw before simulation. */
@@ -113,24 +129,7 @@ export async function syncAllDrawEntriesForDraw(
   supabase: SupabaseClient,
   drawId: string,
 ): Promise<number> {
-  const { data: subscriptions, error } = await supabase
-    .from("subscriptions")
-    .select("user_id, status, renewal_date, cancel_at_period_end, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const activeUserIds = activeSubscriberUserIdsFromRows(
-    (subscriptions ?? []) as {
-      user_id: string;
-      status: "active" | "cancelled" | "lapsed" | "past_due";
-      renewal_date: string | null;
-      cancel_at_period_end?: boolean | null;
-      created_at: string;
-    }[],
-  );
+  const activeUserIds = await loadActiveSubscriberIds(supabase);
 
   let synced = 0;
   for (const userId of activeUserIds) {

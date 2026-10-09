@@ -49,7 +49,7 @@ export default function TermsPage() {
               <ul>
                 <li>Entries use your five latest Stableford scores saved in the dashboard.</li>
                 <li>Draw rules, tier splits, and rollover are described on the How it works page.</li>
-                <li>Winners must verify scorecard proof before prizes are marked paid.</li>
+                <li>Winners must submit a score screenshot for verification before prizes are marked paid.</li>
                 <li>We may void entries that violate score integrity or duplicate accounts.</li>
               </ul>
             </section>
@@ -65,7 +65,7 @@ export default function TermsPage() {
               <h2>6. Acceptable use</h2>
               <p>
                 Do not attempt to manipulate draws, share accounts, upload fraudulent
-                scorecards, or interfere with platform security. We may remove content
+                score screenshots, or interfere with platform security. We may remove content
                 and close accounts for abuse.
               </p>
             </section>

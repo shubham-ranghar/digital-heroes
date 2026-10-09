@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { DrawEntryInput } from "@/lib/draw/types";
 import { subscriptionGrantsAccess } from "@/lib/subscription/grants";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export function parseScoreSnapshot(snapshot: unknown): number[] {
   if (!Array.isArray(snapshot)) {
@@ -16,16 +17,17 @@ export async function loadDrawEntries(
   supabase: SupabaseClient,
   drawId: string,
 ): Promise<DrawEntryInput[]> {
-  const { data, error } = await supabase
-    .from("draw_entries")
-    .select("user_id, score_snapshot")
-    .eq("draw_id", drawId);
+  const data = await fetchAllRows<{ user_id: string; score_snapshot: unknown }>(
+    (from, to) =>
+      supabase
+        .from("draw_entries")
+        .select("user_id, score_snapshot")
+        .eq("draw_id", drawId)
+        .order("user_id")
+        .range(from, to),
+  );
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? []).map((row) => ({
+  return data.map((row) => ({
     userId: row.user_id as string,
     scores: parseScoreSnapshot(row.score_snapshot),
   }));
@@ -76,37 +78,46 @@ export function activeSubscriberUserIdsFromRows(
   return activeUserIds;
 }
 
+/** Every subscription row's access fields (all members, all history). */
+export async function loadSubscriptionAccessRows(
+  supabase: SupabaseClient,
+): Promise<SubscriptionAccessRow[]> {
+  return fetchAllRows<SubscriptionAccessRow>((from, to) =>
+    supabase
+      .from("subscriptions")
+      .select("user_id, status, renewal_date, cancel_at_period_end, created_at")
+      .order("id")
+      .range(from, to),
+  );
+}
+
+/** User IDs whose latest subscription currently grants access. */
+export async function loadActiveSubscriberIds(
+  supabase: SupabaseClient,
+): Promise<Set<string>> {
+  return activeSubscriberUserIdsFromRows(await loadSubscriptionAccessRows(supabase));
+}
+
 /** Latest scores for all users with an active subscription (for algorithmic draws). */
 export async function loadActiveSubscriberScores(
   supabase: SupabaseClient,
 ): Promise<{ activeCount: number; scores: number[]; activeUserIds: Set<string> }> {
-  const { data: subscriptions, error } = await supabase
-    .from("subscriptions")
-    .select("user_id, status, renewal_date, cancel_at_period_end, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const activeUserIds = activeSubscriberUserIdsFromRows(
-    (subscriptions ?? []) as SubscriptionAccessRow[],
-  );
+  const activeUserIds = await loadActiveSubscriberIds(supabase);
 
   if (activeUserIds.size === 0) {
     return { activeCount: 0, scores: [], activeUserIds };
   }
 
-  const { data: scoreRows, error: scoresError } = await supabase
-    .from("scores")
-    .select("user_id, score")
-    .in("user_id", Array.from(activeUserIds));
+  // Read all scores and filter here: an `.in()` list of every active member
+  // goes into the request URL and outgrows the gateway's length limit.
+  const scoreRows = await fetchAllRows<{ user_id: string; score: number }>(
+    (from, to) =>
+      supabase.from("scores").select("user_id, score").order("id").range(from, to),
+  );
 
-  if (scoresError) {
-    throw new Error(scoresError.message);
-  }
-
-  const scores = (scoreRows ?? []).map((row) => Number(row.score));
+  const scores = scoreRows
+    .filter((row) => activeUserIds.has(row.user_id))
+    .map((row) => Number(row.score));
   return { activeCount: activeUserIds.size, scores, activeUserIds };
 }
 

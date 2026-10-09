@@ -62,6 +62,57 @@ Interpretation calls made where the requirements were silent or ambiguous. Each 
 **Reasoning:** Cancelling shouldn't take away a period that's already paid for. A failed payment shouldn't keep access open indefinitely.
 **Trade-off:** `past_due` locks a member out immediately, with no grace period while Razorpay retries the payment.
 
+## Missing PRD sections
+
+§13 (Technical requirements) and §14 (Scalability considerations) are listed in the contents at page 11, but the page is absent from the issued PDF — §12 is followed directly by §15.
+
+We flagged this rather than assume it was unimportant, and made our own calls for both areas. Those decisions are documented below so they can be checked against the intended spec.
+
+### Technical choices (our §13)
+
+**Stack.** Next.js 16 (App Router) with React 19 and TypeScript, Tailwind 4, Supabase (Auth, Postgres, Storage), Razorpay (see *Razorpay instead of Stripe*), Vitest. Server Components read data. Every mutation is a Server Action in a `lib/**/actions.ts` file, so no browser code writes to the database directly. The only API route is the Razorpay webhook (`app/api/payments/webhook`).
+
+**Authentication.** Supabase Auth with email and password, plus email confirmation and password reset. Sessions are cookies managed by `@supabase/ssr`. `middleware.ts` refreshes the session on each request, sends signed-out visitors from `/dashboard`, `/subscribe` and `/admin` to `/login?next=…` (sanitised by `lib/auth/safe-redirect.ts` to block open redirects), and turns non-admins away from `/admin`. Middleware is a convenience, not the security boundary: pages and actions re-check with `requireUser()`, `requireActiveSubscription()` and `requireAdmin()`, and the database enforces RLS regardless.
+
+**Authorisation (RLS).** Row-level security is enabled on every `public` table. Policies follow "own row, or admin" through two `SECURITY DEFINER` helpers, `is_admin()` and `has_active_subscription(uid)`. Score and draw-entry writes also require an active subscription in the policy itself, so the subscription gate holds even if the UI is bypassed. Draws are publicly readable only once published. Rules that must hold whoever the caller is are triggers: `profiles_guard_role` (no self-promotion to admin), `winners_guard_member_update` (members can attach proof but can't touch verification, payment, amount or tier) and the latest-five score triggers. Winner proofs sit in a private `winner-proofs` bucket with per-owner storage policies. The service-role key is used only on the server (`lib/supabase/admin.ts`), for admin lists and reports, draw sync and webhooks.
+
+**Validation.** Zod 4 schemas in `lib/validations/` validate every Server Action input on the server. The score and donation forms reuse the same schemas in the browser for inline errors. The database repeats the rules that matter most as constraints: score `BETWEEN 1 AND 45`, one score per member per day, charity percentage `>= 10`, positive donation amounts, and enumerated role, status, mode and tier values. Bad data is rejected even if application code is skipped.
+
+**Payments.** Webhooks are HMAC-verified (`verifyRazorpaySignature`) and processed idempotently: the event id is inserted into `payment_webhook_events` first, duplicates are skipped, and a handler failure releases the row so Razorpay's retry is processed (`lib/payments/webhook-idempotency.ts`). `PAYMENT_PROVIDER=mock` swaps in a provider with the same interface for demos.
+
+**Testing.** Vitest unit tests cover the pure logic where a mistake costs money or trust: draw generation, matching, prize pools and carryover, publish outcome, the latest-five rule, score validation, subscription access, Razorpay status mapping and signatures, webhook idempotency and redirect sanitising. 73 tests in 20 files, all passing as of 9 October 2026. Not covered by automated tests: RLS policies and triggers (there's no database test harness) and end-to-end browser flows. These were checked by hand against the seeded accounts in the README.
+
+### Scalability (our §14)
+
+The PRD gives no target load. We designed for a single-country launch, in the low thousands of members with one draw a month, and recorded below where the current code stops scaling and what the fix is.
+
+**Indexing.** Every foreign key used for lookups is indexed (`subscriptions`, `donations`, `draw_entries`, `winners`, `charity_events` on their `user_id` / `charity_id` / `draw_id`). The hottest path, a member's scores, uses a composite `scores (user_id, played_on DESC)` index that serves both the dashboard and the latest-five triggers. Unique constraints double as indexes where we look things up: `draws (month)`, `draw_entries (draw_id, user_id)` (the entry upsert target), `winners (draw_id, user_id, tier)` and `subscriptions (external_subscription_id)` (webhook lookups). Featured charities have a partial index, and charity category has its own index.
+
+**Bounded growth.** The latest-five rule caps `scores` at five rows per member, and there is one `draw_entries` row per member per draw. The large tables grow with members × months, not with how often people use the app.
+
+**Pagination — not yet implemented.** Admin lists (users, draws, charities, winners), admin reports and the public winners page fetch whole tables and aggregate in Node. That's fine at demo scale, but it has two hard limits that break correctness before they hurt speed:
+- Supabase's API returns at most 1,000 rows per request by default (the project's "Max rows" setting). Past that, counts and totals in reports would be silently wrong rather than just slow.
+- `listAdminUsers` (`lib/admin/queries.ts`) reads at most 2,000 auth emails (10 pages of 200).
+
+*Fix:* range pagination (`.range()` with `count: "exact"`) on the admin tables, and report aggregates moved into SQL views or RPCs so the database returns one summed row instead of every row.
+
+**Draw publish.** Two parts of simulate/publish grow linearly with members and run inside a single Server Action:
+- `syncAllDrawEntriesForDraw` re-syncs entries one member at a time: three sequential round trips per active subscriber. With several thousand members this risks hitting the host's function timeout.
+- `loadActiveSubscriberScores` passes every active member id in one `.in()` filter, which goes into the request URL and will fail once the list outgrows the gateway's URL length limit.
+
+Publish is also a series of separate writes (delete winners, insert winners, mark published, roll carryover into next month's draft), so a failure partway through can leave a half-published draw. *Fix:* one Postgres function per step. For example, `publish_draw(draw_id)` would snapshot entries with a single `INSERT … SELECT … ON CONFLICT`, write winners and update both draws in one transaction, and keep the matching and prize logic in its current tested TypeScript or port it alongside.
+
+**RLS performance.** Policies call `auth.uid()` and `is_admin()` directly. Both are `STABLE`, but Postgres can still evaluate them once per row. Supabase recommends wrapping them as `(select auth.uid())` and `(select public.is_admin())` so each runs once per query. Member queries filter by `user_id` on an index, so this doesn't matter at current volumes. It's a single migration worth doing before admin queries scan large tables. `has_active_subscription()` finds a member's rows by `user_id` and then sorts them by `created_at`. A `(user_id, created_at DESC)` index would make that a single index lookup.
+
+**Extensibility.**
+- *Payments:* `PaymentProvider` (`lib/payments/types.ts`) has Razorpay and mock implementations, and the schema uses provider-neutral `external_*` columns. A second gateway is a new implementation plus an env value.
+- *Draw modes:* random and algorithmic are pure functions in `lib/draw/`. A new mode is a new generator plus a value in `draws_mode_check`.
+- *Prize rules:* tier splits are in `lib/draw/constants.ts`, and the fee and pool percentage are environment variables.
+- *Display:* charity categories are in `lib/charity/categories.ts`, and all money formatting goes through `lib/money.ts`.
+- *Roles:* adding a role (for example a charity-partner login) is a `profiles_role_check` migration plus policy updates. There's no role table to extend.
+
+**Out of scope by design:** multiple currencies, multiple regions, scheduled draws (see *Draws are admin-triggered by design*) and email notifications (see below).
+
 ## Known limitations (scoped out)
 
 - **Email notifications.** Only Supabase Auth emails (confirmation, password reset) are sent. Draw results and winner status are in-app only. *Would need:* a provider such as Resend, plus triggers on publish and on `winners` status changes.

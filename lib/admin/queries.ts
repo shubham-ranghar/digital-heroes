@@ -1,16 +1,22 @@
+import {
+  ADMIN_PAGE_SIZE,
+  pageOffset,
+  parsePageJson,
+  type AdminTableState,
+  type PageResult,
+} from "@/lib/admin/pagination";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getDrawFeeConfig,
+  loadActiveSubscriberIds,
   loadActiveSubscriberScores,
   loadDrawEntries,
 } from "@/lib/draw/db";
 import type { DrawSimulationPreview } from "@/lib/draw/admin-actions";
 import { previewDrawResult } from "@/lib/draw/simulate";
+import { loadPlatformTotals } from "@/lib/platform-totals";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
-import {
-  getSubscriptionAccessLabel,
-  subscriptionGrantsAccess,
-} from "@/lib/subscription/access";
+import { getSubscriptionAccessLabel } from "@/lib/subscription/access";
 
 export type AdminUserRow = {
   id: string;
@@ -64,117 +70,69 @@ function admin() {
   return createAdminClient();
 }
 
-export async function listAdminUsers(): Promise<AdminUserRow[]> {
-  const client = admin();
+/** URL params the admin Users table accepts (see `admin_list_users`). */
+export const ADMIN_USERS_TABLE = {
+  filters: { role: ["subscriber", "admin"], access: ["active", "inactive"] },
+  sorts: ["email", "name", "role", "access", "plan", "scores", "joined"],
+} as const;
 
-  const { data: profiles, error: profileError } = await client
-    .from("profiles")
-    .select("id, role, display_name")
-    .order("created_at", { ascending: false });
+/** Count from a PostgREST embedded `relation(count)` select. */
+function embeddedCount(value: unknown): number {
+  return Array.isArray(value) ? Number(value[0]?.count ?? 0) : 0;
+}
 
-  if (profileError) {
-    throw new Error(profileError.message);
-  }
+function mapAdminUserRow(row: Record<string, unknown>): AdminUserRow {
+  const status = (row.status as SubscriptionStatus | null) ?? null;
+  const renewalDate = row.renewal_date ? String(row.renewal_date) : null;
+  const cancelAtPeriodEnd = Boolean(row.cancel_at_period_end);
+  // Access comes from has_active_subscription(), the same rule RLS enforces,
+  // so the label always agrees with the Access filter.
+  const hasAccess = Boolean(row.has_access);
 
-  const { data: subscriptions, error: subError } = await client
-    .from("subscriptions")
-    .select("user_id, plan, status, renewal_date, cancel_at_period_end, created_at")
-    .order("created_at", { ascending: false });
-
-  if (subError) {
-    throw new Error(subError.message);
-  }
-
-  const latestSubByUser = new Map<
-    string,
-    {
-      plan: SubscriptionPlan;
-      status: SubscriptionStatus;
-      renewal_date: string | null;
-      cancel_at_period_end: boolean;
-    }
-  >();
-  for (const row of subscriptions ?? []) {
-    const userId = row.user_id as string;
-    if (!latestSubByUser.has(userId)) {
-      latestSubByUser.set(userId, {
-        plan: row.plan as SubscriptionPlan,
-        status: row.status as SubscriptionStatus,
-        renewal_date: row.renewal_date as string | null,
-        cancel_at_period_end: Boolean(row.cancel_at_period_end),
-      });
-    }
-  }
-
-  const { data: scoreCounts, error: scoreError } = await client
-    .from("scores")
-    .select("user_id");
-
-  if (scoreError) {
-    throw new Error(scoreError.message);
-  }
-
-  const scoresByUser = new Map<string, number>();
-  for (const row of scoreCounts ?? []) {
-    const id = row.user_id as string;
-    scoresByUser.set(id, (scoresByUser.get(id) ?? 0) + 1);
-  }
-
-  const emailById = new Map<string, string>();
-  let page = 1;
-  const perPage = 200;
-  while (page <= 10) {
-    const { data: authPage, error: authError } = await client.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-    if (authError) {
-      break;
-    }
-    for (const user of authPage.users) {
-      emailById.set(user.id, user.email ?? "");
-    }
-    if (authPage.users.length < perPage) {
-      break;
-    }
-    page += 1;
-  }
-
-  return (profiles ?? []).map((profile) => {
-    const sub = latestSubByUser.get(profile.id);
-    const hasAccess = sub
-      ? subscriptionGrantsAccess({
-          status: sub.status,
-          renewal_date: sub.renewal_date,
-          cancel_at_period_end: sub.cancel_at_period_end,
-        })
-      : false;
-
-    const accessLabel = getSubscriptionAccessLabel(
-      sub
+  return {
+    id: String(row.id),
+    email: row.email == null ? null : String(row.email),
+    displayName: row.display_name == null ? null : String(row.display_name),
+    role: row.role as "subscriber" | "admin",
+    plan: (row.plan as SubscriptionPlan | null) ?? null,
+    subscriptionStatus: status,
+    renewalDate,
+    cancelAtPeriodEnd,
+    hasAccess,
+    accessLabel: getSubscriptionAccessLabel(
+      status
         ? {
-            status: sub.status,
-            renewal_date: sub.renewal_date,
-            cancel_at_period_end: sub.cancel_at_period_end,
+            status,
+            renewal_date: renewalDate,
+            cancel_at_period_end: cancelAtPeriodEnd,
           }
         : null,
       hasAccess,
-    ).label;
+    ).label,
+    scoreCount: Number(row.score_count ?? 0),
+  };
+}
 
-    return {
-      id: profile.id,
-      email: emailById.get(profile.id) ?? null,
-      displayName: profile.display_name,
-      role: profile.role as "subscriber" | "admin",
-      plan: sub?.plan ?? null,
-      subscriptionStatus: sub?.status ?? null,
-      renewalDate: sub?.renewal_date ?? null,
-      cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,
-      hasAccess,
-      accessLabel,
-      scoreCount: scoresByUser.get(profile.id) ?? 0,
-    };
+/** One page of the admin Users table; search, filters and sort run in SQL. */
+export async function listAdminUsersPage(
+  state: AdminTableState,
+): Promise<PageResult<AdminUserRow>> {
+  const { data, error } = await admin().rpc("admin_list_users", {
+    p_search: state.q || null,
+    p_role: state.filters.role ?? null,
+    p_access: state.filters.access ?? null,
+    p_sort: state.sort ?? "joined",
+    p_dir: state.sort ? state.dir : "desc",
+    p_limit: ADMIN_PAGE_SIZE,
+    p_offset: pageOffset(state.page),
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { total, rows } = parsePageJson(data);
+  return { total, rows: rows.map(mapAdminUserRow) };
 }
 
 export async function listAdminUserScores(userId: string) {
@@ -196,25 +154,13 @@ export async function listAdminDraws(): Promise<AdminDrawRow[]> {
   const client = admin();
   const { data: draws, error } = await client
     .from("draws")
-    .select("id, month, status, mode, winning_numbers, jackpot_carryover")
+    .select(
+      "id, month, status, mode, winning_numbers, jackpot_carryover, draw_entries(count)",
+    )
     .order("month", { ascending: false });
 
   if (error) {
     throw new Error(error.message);
-  }
-
-  const { data: entryRows, error: entryError } = await client
-    .from("draw_entries")
-    .select("draw_id");
-
-  if (entryError) {
-    throw new Error(entryError.message);
-  }
-
-  const entryCount = new Map<string, number>();
-  for (const row of entryRows ?? []) {
-    const id = row.draw_id as string;
-    entryCount.set(id, (entryCount.get(id) ?? 0) + 1);
   }
 
   return (draws ?? []).map((draw) => {
@@ -228,7 +174,7 @@ export async function listAdminDraws(): Promise<AdminDrawRow[]> {
       mode: String(draw.mode),
       winningNumbers: numbers,
       jackpotCarryover: Number(draw.jackpot_carryover ?? 0),
-      entryCount: entryCount.get(draw.id as string) ?? 0,
+      entryCount: embeddedCount(draw.draw_entries),
     };
   });
 }
@@ -301,25 +247,13 @@ export async function listAdminCharities(): Promise<AdminCharityRow[]> {
   const client = admin();
   const { data: charities, error } = await client
     .from("charities")
-    .select("id, name, slug, description, images, is_featured, category")
+    .select(
+      "id, name, slug, description, images, is_featured, category, user_charity(count)",
+    )
     .order("name", { ascending: true });
 
   if (error) {
     throw new Error(error.message);
-  }
-
-  const { data: supporters, error: supError } = await client
-    .from("user_charity")
-    .select("charity_id");
-
-  if (supError) {
-    throw new Error(supError.message);
-  }
-
-  const countByCharity = new Map<string, number>();
-  for (const row of supporters ?? []) {
-    const id = row.charity_id as string;
-    countByCharity.set(id, (countByCharity.get(id) ?? 0) + 1);
   }
 
   return (charities ?? []).map((row) => ({
@@ -332,7 +266,7 @@ export async function listAdminCharities(): Promise<AdminCharityRow[]> {
       : [],
     category: row.category ? String(row.category) : null,
     isFeatured: Boolean(row.is_featured),
-    supporterCount: countByCharity.get(row.id as string) ?? 0,
+    supporterCount: embeddedCount(row.user_charity),
   }));
 }
 
@@ -347,60 +281,18 @@ export async function getAdminReports(): Promise<AdminReports> {
     throw new Error(userError.message);
   }
 
-  const { activeCount } = await loadActiveSubscriberScores(client);
+  const activeCount = (await loadActiveSubscriberIds(client)).size;
   const { feePerSubscriber, poolPercentage } = getDrawFeeConfig();
   const estimatedPrizePool =
     activeCount * feePerSubscriber * (poolPercentage / 100);
 
-  const { data: winners, error: winnerError } = await client
-    .from("winners")
-    .select("prize_amount, payment");
-
-  if (winnerError) {
-    throw new Error(winnerError.message);
-  }
-
-  let totalPrizePaid = 0;
-  let totalPrizePending = 0;
-  for (const row of winners ?? []) {
-    const amount = Number(row.prize_amount ?? 0);
-    if (row.payment === "paid") {
-      totalPrizePaid += amount;
-    } else {
-      totalPrizePending += amount;
-    }
-  }
+  const totals = await loadPlatformTotals(client);
+  const totalPrizePaid = totals.prizePaid;
+  const totalPrizePending = totals.prizePending;
 
   const monthlyFeeInr = Number(process.env.NEXT_PUBLIC_SUBSCRIPTION_FEE_INR ?? "499");
-  const { data: userCharityRows, error: ucError } = await client
-    .from("user_charity")
-    .select("percentage");
-
-  if (ucError) {
-    throw new Error(ucError.message);
-  }
-
-  let charityCommittedInr = 0;
-  for (const row of userCharityRows ?? []) {
-    charityCommittedInr +=
-      monthlyFeeInr * (Number(row.percentage ?? 10) / 100);
-  }
-
-  const { data: donations, error: donError } = await client
-    .from("donations")
-    .select("amount_cents")
-    .eq("status", "succeeded")
-    .eq("currency", "inr");
-
-  if (donError) {
-    throw new Error(donError.message);
-  }
-
-  const donationTotalInr =
-    (donations ?? []).reduce(
-      (sum, row) => sum + Number(row.amount_cents ?? 0),
-      0,
-    ) / 100;
+  const charityCommittedInr = monthlyFeeInr * (totals.charityPercentageSum / 100);
+  const donationTotalInr = totals.donationTotalInr;
 
   const { data: draws, error: drawError } = await client
     .from("draws")
