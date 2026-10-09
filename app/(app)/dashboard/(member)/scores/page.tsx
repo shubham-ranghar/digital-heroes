@@ -29,7 +29,7 @@ export default async function ScoresPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <Reveal effect="clip" fast>
+      <Reveal trigger="mount" fast>
         <AppPageHeading
           label="Gameplay"
           title={<>Your <em>scores</em></>}

@@ -24,7 +24,7 @@ export default async function PrizesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <Reveal effect="clip" fast>
+      <Reveal trigger="mount" fast>
         <AppPageHeading
           label="Prizes"
           title={<>Prize <em>claims</em></>}

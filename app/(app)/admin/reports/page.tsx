@@ -18,7 +18,7 @@ export default async function AdminReportsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Reveal effect="clip" fast>
+      <Reveal trigger="mount" fast>
         <AdminSection
           title={<em>Reports</em>}
           description="Platform totals for users, prize pools, charity impact, and draw participation."

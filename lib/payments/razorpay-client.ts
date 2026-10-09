@@ -27,11 +27,24 @@ export async function razorpayFetch<T>(
 
   const data = (await response.json()) as T & { error?: { description?: string } };
   if (!response.ok) {
-    const message =
-      data.error?.description ??
-      `Razorpay API error (${response.status}) on ${path}`;
-    throw new Error(message);
+    throw new RazorpayApiError(path, response.status, data.error?.description);
   }
 
   return data;
+}
+
+/**
+ * Razorpay error descriptions are written for end users ("Exceeds the
+ * maximum total_count…"), so callers may surface `message` directly.
+ */
+export class RazorpayApiError extends Error {
+  readonly status: number;
+  readonly path: string;
+
+  constructor(path: string, status: number, description?: string) {
+    super(description ?? `Razorpay API error (${status}) on ${path}`);
+    this.name = "RazorpayApiError";
+    this.path = path;
+    this.status = status;
+  }
 }

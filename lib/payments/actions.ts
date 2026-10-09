@@ -2,6 +2,7 @@
 
 import { requireUser } from "@/lib/auth/session";
 import { getPaymentProvider, hasPaymentsEnv } from "@/lib/payments";
+import { RazorpayApiError } from "@/lib/payments/razorpay-client";
 import { getLatestSubscription } from "@/lib/subscription/access";
 import { checkoutPlanSchema } from "@/lib/validations/subscription";
 
@@ -37,17 +38,38 @@ export async function createSubscriptionCheckoutAction(
 
   const { user } = await requireUser();
   const provider = getPaymentProvider();
-  const result = await provider.createSubscription({
-    userId: user.id,
-    email: user.email,
-    plan: parsed.data,
-  });
+  try {
+    const result = await provider.createSubscription({
+      userId: user.id,
+      email: user.email,
+      plan: parsed.data,
+    });
 
-  if (result.mode === "mock") {
-    return { ok: true, mode: "mock", redirectUrl: result.redirectUrl };
+    if (result.mode === "mock") {
+      return { ok: true, mode: "mock", redirectUrl: result.redirectUrl };
+    }
+
+    return { ok: true, mode: "razorpay", checkout: result.checkout };
+  } catch (error) {
+    return { ok: false, message: paymentErrorMessage(error, "start checkout") };
   }
+}
 
-  return { ok: true, mode: "razorpay", checkout: result.checkout };
+/**
+ * Provider failures become `{ ok: false }` results, never throws that would
+ * blow up the page. `RazorpayApiError` descriptions are already written for
+ * people, so they pass through; anything else gets a generic line.
+ */
+function paymentErrorMessage(error: unknown, doing: string): string {
+  console.error(`Payment provider error while trying to ${doing}:`, error);
+  if (error instanceof RazorpayApiError) {
+    return `Payment provider error: ${error.message}`;
+  }
+  if (error instanceof Error && error.message.includes("Razorpay plan")) {
+    // Plan misconfiguration raised by our own validation — actionable as-is.
+    return error.message;
+  }
+  return `We could not ${doing} right now. Please try again in a moment.`;
 }
 
 export type CancelSubscriptionResult =
@@ -73,7 +95,11 @@ export async function cancelSubscriptionAction(): Promise<CancelSubscriptionResu
   }
 
   const provider = getPaymentProvider();
-  await provider.cancelSubscription(subscription.external_subscription_id);
+  try {
+    await provider.cancelSubscription(subscription.external_subscription_id);
+  } catch (error) {
+    return { ok: false, message: paymentErrorMessage(error, "schedule the cancellation") };
+  }
 
   return {
     ok: true,
@@ -102,7 +128,11 @@ export async function resumeSubscriptionAction(): Promise<ResumeSubscriptionResu
   }
 
   const provider = getPaymentProvider();
-  await provider.resumeSubscription(subscription.external_subscription_id);
+  try {
+    await provider.resumeSubscription(subscription.external_subscription_id);
+  } catch (error) {
+    return { ok: false, message: paymentErrorMessage(error, "resume the subscription") };
+  }
 
   return {
     ok: true,

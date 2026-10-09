@@ -60,6 +60,7 @@ export function ScrollFade({ children, className, measureRef }: ScrollFadeProps)
   return (
     <m.div
       ref={ownRef}
+      data-scroll-fade
       className={cn("data-scrubbing:will-change-[opacity]", className)}
       style={reduceMotion ? undefined : { opacity, y }}
     >
