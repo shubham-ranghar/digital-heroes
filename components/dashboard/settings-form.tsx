@@ -146,11 +146,11 @@ export function SettingsForm({
       <RevealStaggerItem fast>
       <section className="space-y-4 rounded-[20px] border border-line bg-surface p-6 shadow-[var(--shadow-resting)]">
         <h2 className="font-sans text-lg font-semibold text-navy">Profile</h2>
-        <div className="space-y-2">
-          <label className="text-sm text-slate" htmlFor="settings-email">
-            Email
-          </label>
-          <Input id="settings-email" value={email} readOnly disabled />
+        {/* The email can't be edited here, so it renders as a plain value —
+            input chrome would promise editability it doesn't have. */}
+        <div className="space-y-1">
+          <p className="text-sm text-slate">Email</p>
+          <p className="break-all text-sm font-medium text-navy">{email}</p>
         </div>
         <div className="space-y-2">
           <label className="text-sm text-slate" htmlFor="settings-display-name">
@@ -190,6 +190,11 @@ export function SettingsForm({
               <Select
                 value={selectedCharityId}
                 onValueChange={(value) => setSelectedCharityId(value ?? "")}
+                // Without an id→name map the trigger renders the raw UUID.
+                items={charities.map((charity) => ({
+                  value: charity.id,
+                  label: charity.name,
+                }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose a cause" />

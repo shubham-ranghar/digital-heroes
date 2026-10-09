@@ -19,13 +19,14 @@ function isAdminNavActive(pathname: string, href: string) {
 
 type AdminChromeProps = {
   children: React.ReactNode;
-  adminEmail?: string | null;
+  /** Display name, falling back to the email's local part upstream. */
+  adminName?: string | null;
   showServiceRoleWarning?: boolean;
 };
 
 export function AdminChrome({
   children,
-  adminEmail,
+  adminName,
   showServiceRoleWarning,
 }: AdminChromeProps) {
   const pathname = usePathname();
@@ -40,15 +41,18 @@ export function AdminChrome({
       >
         <div className="border-b border-line px-5 py-6">
           <Link
+            href="/"
+            className="font-sans text-sm font-semibold tracking-tight text-navy motion-interactive hover:opacity-80"
+          >
+            digital<span className="text-coral">.HEROES</span>
+          </Link>
+          <p className="mt-1 text-xs text-slate">Admin console</p>
+          <Link
             href="/dashboard"
-            className="motion-link-arrow text-xs text-slate motion-interactive hover:text-navy"
+            className="motion-link-arrow mt-3 block text-xs text-slate motion-interactive hover:text-navy"
           >
             ← Member dashboard
           </Link>
-          <p className="mt-3 font-sans text-lg text-navy">Admin console</p>
-          {adminEmail ? (
-            <p className="mt-1 truncate text-xs text-muted-foreground">{adminEmail}</p>
-          ) : null}
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {adminNavItems.map((item) => {
@@ -88,14 +92,33 @@ export function AdminChrome({
             );
           })}
         </nav>
-        <div className="border-t border-line p-4">
-          <SignOutButton className="w-full" />
+        <div className="space-y-3 border-t border-line p-4">
+          {adminName ? (
+            <div className="px-3">
+              <p className="truncate text-sm font-medium text-navy">{adminName}</p>
+              <p className="text-xs text-slate">Admin</p>
+            </div>
+          ) : null}
+          <SignOutButton
+            variant="ghost"
+            size="sm"
+            withIcon
+            className="w-full justify-start gap-3 px-3 text-slate hover:text-navy"
+          />
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 lg:hidden">
-          <p className="font-sans text-sm text-navy">Admin</p>
+          <div className="min-w-0">
+            <Link
+              href="/"
+              className="font-sans text-sm font-semibold tracking-tight text-navy"
+            >
+              digital<span className="text-coral">.HEROES</span>
+            </Link>
+            <p className="text-[0.6875rem] text-slate">Admin console</p>
+          </div>
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"

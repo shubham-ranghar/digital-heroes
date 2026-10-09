@@ -26,23 +26,26 @@ export function DashboardChrome({
           <header
             className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 md:hidden"
           >
-            <Link
-              href="/dashboard"
-              className="font-sans text-sm font-semibold tracking-tight text-navy"
-            >
-              Member hub
-            </Link>
+            <div className="min-w-0">
+              <Link
+                href="/dashboard"
+                className="font-sans text-sm font-semibold tracking-tight text-navy"
+              >
+                digital<span className="text-coral">.HEROES</span>
+              </Link>
+              <p className="text-[0.6875rem] text-slate">Member hub</p>
+            </div>
             <div className="flex items-center gap-2">
               {isAdmin ? (
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
                   render={<Link href="/admin" />}
                 >
                   Admin
                 </Button>
               ) : null}
-              <SignOutButton className="min-w-[5.5rem]" />
+              <SignOutButton size="sm" variant="ghost" className="text-slate" />
             </div>
           </header>
           <div id="dashboard-content" data-route-content className="flex-1 px-4 py-8 sm:px-6 md:px-10">{children}</div>

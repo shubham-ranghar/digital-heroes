@@ -7,7 +7,7 @@ export default function CharitiesLoading() {
     // Same shell as the page (header offset), so content doesn't drop 72px
     // when it streams in.
     <MarketingPageShell>
-      <MarketingSection variant="cream" className="py-12 sm:py-16">
+      <MarketingSection fade={false} variant="cream" className="py-12 sm:py-16">
         <Skeleton className="mb-4 h-4 w-24" />
         <Skeleton className="mb-8 h-10 w-72 max-w-full" />
         <Skeleton className="mb-8 h-10 w-full max-w-md" />

@@ -19,6 +19,9 @@ type SiteNavbarProps = {
   isAdmin?: boolean;
 };
 
+/** Past this, the header takes its own blurred surface (see `[data-site-navbar]`). */
+const SCROLL_SURFACE_PX = 40;
+
 /** Shared height and typography for header controls */
 const navControl =
   "motion-tone motion-press motion-nudge inline-flex h-11 min-h-11 max-w-full shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-medium leading-none whitespace-nowrap sm:px-3.5";
@@ -51,7 +54,7 @@ export function SiteNavbar({
     let frame = 0;
     const update = () => {
       frame = 0;
-      setScrolled(window.scrollY > 24);
+      setScrolled(window.scrollY > SCROLL_SURFACE_PX);
     };
     const onScroll = () => {
       if (!frame) {
@@ -93,7 +96,7 @@ export function SiteNavbar({
         data-surface-tone={surfaceTone}
         className={cn(
           "group/header",
-          "pointer-events-none fixed inset-x-0 top-0 z-50 bg-transparent motion-transition-opacity",
+          "site-header-surface pointer-events-none fixed inset-x-0 top-0 z-50",
           menuOpen ? "opacity-0" : "opacity-100",
         )}
         aria-hidden={menuOpen}
@@ -102,7 +105,7 @@ export function SiteNavbar({
             className="pointer-events-auto flex h-[var(--header-height)] min-w-0 items-center gap-3 sm:gap-4"
           >
             <SiteLogo
-              className="motion-tone min-w-0 text-(color:--nav-fg) [&_span]:h-9 [&_span]:text-base sm:[&_span]:text-lg"
+              className="motion-tone min-w-0 text-(--nav-fg) [&_span]:h-9 [&_span]:text-base sm:[&_span]:text-lg"
             />
 
             <nav

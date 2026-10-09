@@ -1,3 +1,9 @@
+/** The one dramatic seam on a page: a taller, wider ziggurat (1–4 units). */
+export const STEPPED_EDGE_COLUMNS_SEVEN = [1, 2, 3, 4, 3, 2, 1] as const;
+
+/** Middle-out reveal order for 7 columns. */
+export const STEPPED_EDGE_ORDER_SEVEN = [3, 2, 4, 1, 5, 0, 6] as const;
+
 /** Ziggurat column step counts (1–3 units tall). */
 export const STEPPED_EDGE_COLUMNS_FIVE = [1, 2, 3, 2, 1] as const;
 

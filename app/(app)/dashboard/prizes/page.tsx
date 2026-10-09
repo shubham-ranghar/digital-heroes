@@ -26,8 +26,8 @@ export default async function PrizesPage() {
     <div className="mx-auto w-full max-w-6xl">
       <Reveal effect="clip" fast>
         <AppPageHeading
-          label="Draws"
-          title={<>Prize <em>verification</em></>}
+          label="Prizes"
+          title={<>Prize <em>claims</em></>}
           description="Upload a screenshot as proof for each winning draw. Our team reviews verification only — payment is tracked separately."
           className="mb-10"
         />

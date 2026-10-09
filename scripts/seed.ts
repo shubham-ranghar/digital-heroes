@@ -318,24 +318,28 @@ const SAMPLE_CHARITIES = [
   {
     name: "Riverside Youth Sports",
     slug: "sample-riverside-youth",
-    description: "After-school coaching and kit for teens in East London.",
+    images: ["/charities/youth-sports.webp"],
+    description: "After-school coaching and kit for teens in Mumbai.",
     is_featured: true,
   },
   {
     name: "Greenfield Food Bank",
     slug: "sample-greenfield-food-bank",
+    images: ["/charities/community-kitchen.webp"],
     description: "Weekly groceries and dignity packs for families in crisis.",
     is_featured: true,
   },
   {
     name: "Harbour Mental Health",
     slug: "sample-harbour-mental-health",
-    description: "Counselling slots funded for coastal communities.",
+    images: ["/charities/community-health.webp"],
+    description: "Counselling and clinic hours funded for coastal communities in Kerala.",
     is_featured: false,
   },
   {
     name: "Hillside Literacy Trust",
     slug: "sample-hillside-literacy",
+    images: ["/charities/literacy.webp"],
     description: "Reading mentors and library hours for primary pupils.",
     is_featured: false,
   },
@@ -344,7 +348,7 @@ const SAMPLE_CHARITIES = [
 async function ensureSampleCharities(admin: SupabaseClient) {
   check(
     await admin.from("charities").upsert(
-      SAMPLE_CHARITIES.map((charity) => ({ ...charity, images: ["/hero.webp"] })),
+      SAMPLE_CHARITIES,
       { onConflict: "slug", ignoreDuplicates: true },
     ),
     "insert sample charities",

@@ -116,8 +116,35 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
       <SortableDataTable
         rows={charities}
         getRowId={(row) => row.id}
-        emptyMessage="No charities yet."
-        headerTone="navy"
+        emptyMessage="No charities yet. Add your first partner cause."
+        emptyAction={
+          <Button type="button" size="sm" onClick={openCreate}>
+            Add charity
+          </Button>
+        }
+        searchText={(row) => `${row.name} ${row.slug} ${row.category ?? ""}`}
+        searchPlaceholder="Search by name or slug"
+        filterGroups={[
+          {
+            id: "category",
+            label: "Category",
+            options: CHARITY_CATEGORIES.map((category) => ({
+              value: category,
+              label: category,
+            })),
+            predicate: (row, value) => row.category === value,
+          },
+          {
+            id: "featured",
+            label: "Featured",
+            options: [
+              { value: "featured", label: "Featured" },
+              { value: "not-featured", label: "Not featured" },
+            ],
+            predicate: (row, value) =>
+              value === "featured" ? row.isFeatured : !row.isFeatured,
+          },
+        ]}
         columns={[
           {
             id: "name",

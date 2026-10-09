@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ScrollFade } from "@/components/motion/scroll-fade";
 import { cn } from "@/lib/utils";
 
 type MarketingSectionProps = {
@@ -7,6 +8,12 @@ type MarketingSectionProps = {
   className?: string;
   children: ReactNode;
   id?: string;
+  /**
+   * Scroll-linked opacity on the section's content (one unit per section).
+   * Switch off for a page's lead/hero section (LCP) and for sections whose
+   * job is a form.
+   */
+  fade?: boolean;
 };
 
 /** Alternating marketing surface with scoped CSS variables. */
@@ -15,7 +22,10 @@ export function MarketingSection({
   className,
   children,
   id,
+  fade = true,
 }: MarketingSectionProps) {
+  const content = <div className="mx-auto w-full max-w-6xl">{children}</div>;
+
   return (
     <section
       id={id}
@@ -27,7 +37,7 @@ export function MarketingSection({
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-6xl">{children}</div>
+      {fade ? <ScrollFade>{content}</ScrollFade> : content}
     </section>
   );
 }

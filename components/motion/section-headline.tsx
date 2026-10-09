@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { ParenLabel } from "@/components/editorial/paren-label";
 import { LineReveal } from "@/components/motion/line-reveal";
-import { StepMark } from "@/components/motion/step-mark";
 import { cn } from "@/lib/utils";
 
 type SectionHeadlineProps = {
@@ -30,11 +29,10 @@ export function SectionHeadline({
     >
       <div
         className={cn(
-          "flex flex-col items-center gap-3",
+          "flex flex-col items-center",
           align === "left" && "items-start",
         )}
       >
-        <StepMark />
         <ParenLabel className={labelClassName}>{label}</ParenLabel>
       </div>
       <LineReveal

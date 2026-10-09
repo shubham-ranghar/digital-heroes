@@ -31,8 +31,8 @@ BEGIN
       (
         'Riverside Youth Sports',
         'sample-riverside-youth',
-        'After-school coaching and kit for teens in East London.',
-        '["/hero.webp"]'::jsonb,
+        'After-school coaching and kit for teens in Mumbai.',
+        '["/charities/youth-sports.webp"]'::jsonb,
         true,
         'Youth & Sports'
       ),
@@ -40,15 +40,15 @@ BEGIN
         'Greenfield Food Bank',
         'sample-greenfield-food-bank',
         'Weekly groceries and dignity packs for families in crisis.',
-        '["/hero.webp"]'::jsonb,
+        '["/charities/community-kitchen.webp"]'::jsonb,
         true,
         'Hunger & Food'
       ),
       (
         'Harbour Mental Health',
         'sample-harbour-mental-health',
-        'Counselling slots funded for coastal communities.',
-        '["/hero.webp"]'::jsonb,
+        'Counselling and clinic hours funded for coastal communities in Kerala.',
+        '["/charities/community-health.webp"]'::jsonb,
         false,
         'Health'
       ),
@@ -56,7 +56,7 @@ BEGIN
         'Hillside Literacy Trust',
         'sample-hillside-literacy',
         'Reading mentors and library hours for primary pupils.',
-        '["/hero.webp"]'::jsonb,
+        '["/charities/literacy.webp"]'::jsonb,
         false,
         'Education'
       )
@@ -72,29 +72,29 @@ BEGIN
       (
         'Riverside Youth Sports',
         'sample-riverside-youth',
-        'After-school coaching and kit for teens in East London.',
-        '["/hero.webp"]'::jsonb,
+        'After-school coaching and kit for teens in Mumbai.',
+        '["/charities/youth-sports.webp"]'::jsonb,
         true
       ),
       (
         'Greenfield Food Bank',
         'sample-greenfield-food-bank',
         'Weekly groceries and dignity packs for families in crisis.',
-        '["/hero.webp"]'::jsonb,
+        '["/charities/community-kitchen.webp"]'::jsonb,
         true
       ),
       (
         'Harbour Mental Health',
         'sample-harbour-mental-health',
-        'Counselling slots funded for coastal communities.',
-        '["/hero.webp"]'::jsonb,
+        'Counselling and clinic hours funded for coastal communities in Kerala.',
+        '["/charities/community-health.webp"]'::jsonb,
         false
       ),
       (
         'Hillside Literacy Trust',
         'sample-hillside-literacy',
         'Reading mentors and library hours for primary pupils.',
-        '["/hero.webp"]'::jsonb,
+        '["/charities/literacy.webp"]'::jsonb,
         false
       )
     ON CONFLICT (slug) DO UPDATE SET

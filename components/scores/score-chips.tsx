@@ -17,15 +17,12 @@ type ScoreChipsProps = {
   highlightId?: string | null;
   /** Stagger the chips in on mount (full scores page only). */
   staggerIn?: boolean;
-  /** Set the latest chip on navy — the scores page's emphasis surface. */
-  emphasizeLatest?: boolean;
 };
 
 export function ScoreChips({
   scores,
   highlightId,
   staggerIn = false,
-  emphasizeLatest = false,
 }: ScoreChipsProps) {
   const reduceMotion = useReducedMotion();
   const slots = Array.from({ length: SCORE_SLOT_COUNT }, (_, index) => {
@@ -50,23 +47,17 @@ export function ScoreChips({
             {score ? (
               <div
                 className={cn(
+                  // The LATEST chip is navy on every surface (overview and
+                  // scores page), so the same component never has two looks.
                   "flex h-full flex-col items-center justify-center rounded-[20px] border border-line bg-surface px-3 py-4 text-center shadow-[var(--shadow-resting)] motion-interactive",
-                  index === 0 &&
-                    (emphasizeLatest
-                      ? "section-navy border-navy bg-navy"
-                      : "border-coral/30"),
+                  index === 0 && "section-navy border-navy bg-navy",
                   score.id === highlightId &&
                     "motion-pop-in border-coral ring-4 ring-coral/15",
                   tabularImpact,
                 )}
               >
                 {index === 0 ? (
-                  <span
-                    className={cn(
-                      "mb-1 text-[0.625rem] font-medium uppercase tracking-[0.12em]",
-                      emphasizeLatest ? "text-cream/75" : "text-slate",
-                    )}
-                  >
+                  <span className="mb-1 text-[0.625rem] font-medium uppercase tracking-[0.12em] text-cream/75">
                     Latest
                   </span>
                 ) : null}
@@ -76,18 +67,25 @@ export function ScoreChips({
                 <span
                   className={cn(
                     "mt-1 text-xs",
-                    index === 0 && emphasizeLatest ? "text-cream/75" : "text-slate",
+                    index === 0 ? "text-cream/75" : "text-slate",
                   )}
                 >
                   {formatPlayedOnLabel(score.played_on)}
                 </span>
               </div>
             ) : (
+              // Empty slots name their round so a fresh dashboard still
+              // teaches the five-round mechanic.
               <div
                 className="flex h-full flex-col items-center justify-center rounded-[20px] border border-dashed border-slate/35 bg-sand/30 px-3 py-4 text-center"
                 aria-hidden
               >
-                <span className="text-xs text-slate/70">Empty slot</span>
+                <span className="text-xs font-medium text-slate/80">
+                  Round {index + 1}
+                </span>
+                <span className="mt-1 text-[0.625rem] text-slate/60">
+                  Not logged yet
+                </span>
               </div>
             )}
             </ChipEntry>

@@ -166,7 +166,6 @@ export function ScoresPanel({
           scores={sortedScores}
           highlightId={highlightId}
           staggerIn={!isDashboard}
-          emphasizeLatest={!isDashboard}
         />
       </div>
 

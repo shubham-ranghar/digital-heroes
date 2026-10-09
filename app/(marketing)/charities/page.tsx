@@ -23,7 +23,7 @@ export default async function CharitiesPage() {
   if (!hasSupabaseEnv()) {
     return (
       <MarketingPageShell>
-        <MarketingSection variant="cream" className="py-12 sm:py-16">
+        <MarketingSection fade={false} variant="cream" className="py-12 sm:py-16">
           <ConfigMissingState missing={["supabase"]} />
         </MarketingSection>
       </MarketingPageShell>
@@ -35,7 +35,7 @@ export default async function CharitiesPage() {
 
   return (
     <MarketingPageShell>
-      <MarketingSection variant="cream" className="py-12 sm:py-16">
+      <MarketingSection fade={false} variant="cream" className="py-12 sm:py-16">
         <Reveal>
           <SectionHeading
             eyebrow="Partners"

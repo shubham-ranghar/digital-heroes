@@ -1,10 +1,17 @@
 "use client";
 
 import { m, useReducedMotion } from "framer-motion";
-import { useRef, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import { useClipReveal, useRevealGate } from "@/components/motion/clip-reveal";
-import { DURATION, EASE_OUT, revealTransition } from "@/lib/motion";
+import { DURATION, EASE_OUT, REVEAL, revealTransition } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,7 +27,7 @@ export type RevealTrigger = "inView" | "mount";
  * settling under the route wipe (`RouteWipe`) rather than a second transition.
  */
 const FAST_TRANSITION = { duration: DURATION.base, ease: EASE_OUT };
-const MARKETING_OFFSET_Y = 24;
+const MARKETING_OFFSET_Y = REVEAL.rise;
 
 function offsetFor(fast: boolean) {
   return fast ? 0 : MARKETING_OFFSET_Y;
@@ -71,7 +78,7 @@ function ClipReveal({
   const ref = useRef<HTMLDivElement>(null);
   const clip = useClipReveal(ref, {
     from: "bottom",
-    duration: fast ? DURATION.base : DURATION.slow,
+    duration: fast ? DURATION.base : REVEAL.duration,
   });
   return (
     <m.div ref={ref} className={cn(className)} {...clip}>
@@ -165,15 +172,21 @@ function InViewFade({
 type RevealStaggerProps = {
   children: ReactNode;
   className?: string;
+  /** Seconds between siblings (default 60ms). */
   stagger?: number;
   as?: "ul" | "ol" | "div";
   trigger?: RevealTrigger;
 };
 
+/**
+ * Children reveal in a chain, `stagger` apart, capped at five links: the
+ * sixth item onward lands with the fifth, so long lists never trail off.
+ * Each `RevealStaggerItem` child is handed its own delay.
+ */
 export function RevealStagger({
   children,
   className,
-  stagger = 0.08,
+  stagger = REVEAL.stagger,
   as = "div",
   trigger = "inView",
 }: RevealStaggerProps) {
@@ -181,12 +194,20 @@ export function RevealStagger({
   const { startHidden, visible } = useRevealGate(ref);
 
   const Component = m[as];
-  const variants = {
-    hidden: {},
-    visible: {
-      transition: { staggerChildren: stagger, delayChildren: 0 },
-    },
-  };
+  const variants = { hidden: {}, visible: {} };
+  const items = Children.toArray(children);
+  const isItem = (child: ReactNode): child is ReactElement<RevealStaggerItemProps> =>
+    isValidElement(child) && child.type === RevealStaggerItem;
+  const step = Math.min(stagger, REVEAL.stagger);
+  const chained = items.map((child, index) => {
+    if (!isItem(child)) {
+      return child;
+    }
+    const link = items.slice(0, index).filter(isItem).length;
+    return cloneElement(child, {
+      revealDelaySec: Math.min(link, REVEAL.maxChain - 1) * step,
+    });
+  });
 
   if (trigger === "mount") {
     return (
@@ -196,7 +217,7 @@ export function RevealStagger({
         animate="visible"
         variants={variants}
       >
-        {children}
+        {chained}
       </Component>
     );
   }
@@ -209,7 +230,7 @@ export function RevealStagger({
         animate={visible ? "visible" : "hidden"}
         variants={variants}
       >
-        {children}
+        {chained}
       </Component>
     </div>
   );
@@ -221,6 +242,8 @@ type RevealStaggerItemProps = {
   as?: "div" | "li";
   offsetY?: number;
   fast?: boolean;
+  /** Set by `RevealStagger`: this item's place in the chain. */
+  revealDelaySec?: number;
 };
 
 export function RevealStaggerItem({
@@ -229,6 +252,7 @@ export function RevealStaggerItem({
   as = "div",
   offsetY,
   fast = false,
+  revealDelaySec = 0,
 }: RevealStaggerItemProps) {
   const reduceMotion = useReducedMotion();
   const MotionTag = m[as];
@@ -252,9 +276,10 @@ export function RevealStaggerItem({
               visible: {
                 opacity: 1,
                 y: 0,
-                transition: fast
-                  ? FAST_TRANSITION
-                  : { duration: DURATION.slow, ease: EASE_OUT },
+                transition: {
+                  ...(fast ? FAST_TRANSITION : revealTransition),
+                  delay: revealDelaySec,
+                },
               },
             }
       }

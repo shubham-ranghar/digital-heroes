@@ -1,46 +1,45 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 type EditorialCardProps = {
   children: ReactNode;
   className?: string;
-  notch?: "top" | "bottom" | "none";
+  /**
+   * `stepped` cuts a two-step notch from the top-right corner — the same
+   * rectilinear grammar as the section stepped edges. `none` is a plain box.
+   */
+  corner?: "stepped" | "none";
+  /** Step size in px (each of the two steps). */
+  step?: number;
+  /** Background of the 1px frame (the visible border). */
   borderClassName?: string;
 };
-
-const NOTCH_CLIP_TOP =
-  "polygon(0 0, calc(50% - 16px) 0, 50% 16px, calc(50% + 16px) 0, 100% 0, 100% 100%, 0 100%)";
-
-const NOTCH_CLIP_BOTTOM =
-  "polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(50% + 16px) 100%, 50% calc(100% - 16px), calc(50% - 16px) 100%, 0 calc(100% - 16px))";
 
 export function EditorialCard({
   children,
   className,
-  notch = "top",
+  corner = "stepped",
+  step,
   borderClassName = "bg-navy",
 }: EditorialCardProps) {
-  const clip =
-    notch === "top"
-      ? NOTCH_CLIP_TOP
-      : notch === "bottom"
-        ? NOTCH_CLIP_BOTTOM
-        : undefined;
-
-  if (!clip) {
+  if (corner === "none") {
     return <div className={cn("relative", className)}>{children}</div>;
   }
 
+  const style = step
+    ? ({ "--corner-step": `${step}px` } as CSSProperties)
+    : undefined;
+
+  // Frame and content share one clip: inside the 1px padding the same
+  // polygon lands exactly 1px in on every edge and step, so the border
+  // follows the corner.
   return (
     <div
-      className={cn("relative p-px", borderClassName)}
-      style={{ clipPath: clip, WebkitClipPath: clip }}
+      className={cn("clip-stepped-corner relative p-px", borderClassName)}
+      style={style}
     >
-      <div
-        className={cn("relative h-full min-h-0", className)}
-        style={{ clipPath: clip, WebkitClipPath: clip }}
-      >
+      <div className={cn("clip-stepped-corner relative h-full min-h-0", className)}>
         {children}
       </div>
     </div>

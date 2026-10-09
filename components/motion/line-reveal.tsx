@@ -3,7 +3,7 @@
 import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 
-import { DURATION, EASE_OUT } from "@/lib/motion";
+import { REVEAL, revealDelay } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type LineRevealProps = {
@@ -21,7 +21,7 @@ export function LineReveal({
   lineClassName,
   playOnMount = false,
   delay = 0,
-  duration = DURATION.slow,
+  duration = REVEAL.duration,
 }: LineRevealProps) {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
@@ -41,15 +41,20 @@ export function LineReveal({
   return (
     <div ref={ref} className={cn(className)}>
       {lines.map((line, index) => (
-        <span key={index} className="block overflow-hidden">
+        // The mask bleeds past the line box (padding, cancelled by negative
+        // margin) so italic overhangs and descenders aren't cropped.
+        <span
+          key={index}
+          className="mx-[-0.08em] mb-[-0.16em] block overflow-hidden px-[0.08em] pb-[0.16em]"
+        >
           <m.span
             className={cn("block", lineClassName)}
-            initial={{ y: "110%" }}
-            animate={shouldPlay ? { y: 0 } : { y: "110%" }}
+            initial={{ y: "130%" }}
+            animate={shouldPlay ? { y: 0 } : { y: "130%" }}
             transition={{
               duration,
-              ease: EASE_OUT,
-              delay: delay + index * 0.08,
+              ease: REVEAL.ease,
+              delay: revealDelay(index, delay),
             }}
           >
             {line}

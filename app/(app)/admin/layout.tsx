@@ -13,12 +13,23 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   await connection();
-  const { user } = await requireAdmin();
+  const { supabase, user } = await requireAdmin();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // Identity in chrome is the display name (or the email's local part) plus a
+  // role label; the full email lives in Settings only.
+  const adminName =
+    profile?.display_name?.trim() || user.email?.split("@")[0] || null;
 
   return (
     <LayoutMotionFeatures>
       <AdminChrome
-        adminEmail={user.email}
+        adminName={adminName}
         showServiceRoleWarning={!hasAdminServiceRole()}
       >
         {children}

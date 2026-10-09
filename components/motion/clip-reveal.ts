@@ -4,7 +4,7 @@ import { useInView, useReducedMotion, type Transition } from "framer-motion";
 import { useLayoutEffect, useState, type RefObject } from "react";
 
 import { useClientMounted } from "@/hooks/use-client-mounted";
-import { DURATION, EASE_OUT } from "@/lib/motion";
+import { REVEAL } from "@/lib/motion";
 
 export const CLIP_OPEN = "inset(0% 0% 0% 0%)";
 /** Wipe origin: `right` reveals left→right (images), `bottom` top→down (headings). */
@@ -70,7 +70,7 @@ type ClipRevealOptions = {
 /** Clip-path wipe on scroll entry; degrades open (see `useRevealGate`). */
 export function useClipReveal(
   ref: RefObject<Element | null>,
-  { from, duration = DURATION.slow }: ClipRevealOptions,
+  { from, duration = REVEAL.duration }: ClipRevealOptions,
 ) {
   const { reduceMotion, startHidden, visible } = useRevealGate(ref, "-8% 0px");
 
@@ -80,7 +80,7 @@ export function useClipReveal(
 
   const closed = CLIP_CLOSED[from];
   const transition: Transition = visible
-    ? { duration, ease: EASE_OUT }
+    ? { duration, ease: REVEAL.ease }
     : { duration: 0 };
 
   return {

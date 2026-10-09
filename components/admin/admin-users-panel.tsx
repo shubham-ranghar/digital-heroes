@@ -37,6 +37,7 @@ import {
   updateAdminSubscriptionAction,
 } from "@/lib/admin/users-actions";
 import type { ScoreRow } from "@/lib/scores/types";
+import { formatDateLabel } from "@/lib/dates";
 import { todayIsoDate } from "@/lib/scores/dates";
 
 type AdminUsersPanelProps = {
@@ -181,8 +182,30 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
       <SortableDataTable
         rows={users}
         getRowId={(row) => row.id}
-        emptyMessage="No users found."
-        headerTone="navy"
+        emptyMessage="No users yet. Members appear here as soon as they sign up."
+        searchText={(row) => `${row.email ?? ""} ${row.displayName ?? ""}`}
+        searchPlaceholder="Search by email or name"
+        filterGroups={[
+          {
+            id: "role",
+            label: "Role",
+            options: [
+              { value: "subscriber", label: "Subscribers" },
+              { value: "admin", label: "Admins" },
+            ],
+            predicate: (row, value) => row.role === value,
+          },
+          {
+            id: "access",
+            label: "Access",
+            options: [
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ],
+            predicate: (row, value) =>
+              value === "active" ? row.hasAccess : !row.hasAccess,
+          },
+        ]}
         columns={[
           {
             id: "email",
@@ -237,8 +260,10 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
             id: "actions",
             header: "",
             className: "!whitespace-normal",
+            // A text link per row keeps the table quiet; solid/bordered
+            // buttons are reserved for the page's primary actions.
             cell: (row) => (
-              <Button type="button" size="sm" variant="secondary" onClick={() => openUser(row)}>
+              <Button type="button" size="sm" variant="link" onClick={() => openUser(row)}>
                 Manage
               </Button>
             ),
@@ -460,7 +485,7 @@ export function AdminUsersPanel({ users }: AdminUsersPanelProps) {
                                 className="border-b border-line/60 last:border-0"
                               >
                                 <td className="px-3 py-2 whitespace-nowrap text-navy">
-                                  {score.played_on}
+                                  {formatDateLabel(score.played_on)}
                                 </td>
                                 <td className={`px-3 py-2 ${editorialTableNumber}`}>
                                   {score.score}

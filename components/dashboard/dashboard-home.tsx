@@ -19,7 +19,7 @@ import { DashboardCharityCard } from "@/components/dashboard/dashboard-charity-c
 import { CountUpCurrency } from "@/components/draw/count-up-currency";
 import { DashboardEmptyState } from "@/components/dashboard/empty-state";
 import { BentoCard } from "@/components/dashboard/bento-card";
-import { ParenLabel } from "@/components/editorial/paren-label";
+import { AppPageHeading } from "@/components/layout/app-page-heading";
 import { SubscriptionAccessPill } from "@/components/subscription/subscription-access-pill";
 import { BillingManageButtons } from "@/components/subscription/billing-manage-buttons";
 import { getSubscriptionAccessLabel } from "@/lib/subscription/grants";
@@ -42,10 +42,8 @@ import type { ScoreRow } from "@/lib/scores/types";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/lib/subscription/types";
 import type { PlanPriceDisplay } from "@/lib/payments/prices";
 import { tabularImpact } from "@/lib/typography";
-import {
-  editorialAppTitleVoice,
-  editorialKeyNumber,
-} from "@/lib/typography-editorial";
+import { editorialKeyNumber } from "@/lib/typography-editorial";
+import { formatDateLabel } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export type DashboardHomeProps = {
@@ -91,35 +89,32 @@ export function DashboardHome(props: DashboardHomeProps) {
     <div className="mx-auto w-full max-w-6xl">
       <Reveal trigger="mount" fast className="mb-8">
       <header>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <ParenLabel className="text-navy/70">Member</ParenLabel>
-              <SubscriptionAccessPill label={accessLabel} />
-            </div>
-            <h1 className={cn("mt-2 text-3xl sm:text-4xl", editorialAppTitleVoice)}>
-              {title}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {props.hasAccess
-                ? "Your scores, draws, and charity impact — all in one place."
-                : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."}
-            </p>
-          </div>
-          <Button
-            size="lg"
-            className="w-full sm:w-auto"
-            render={
-              <Link href={props.hasAccess ? "/dashboard/scores" : "/subscribe"} />
-            }
-          >
-            {props.hasAccess ? "Log a round" : "Subscribe now"}
-            <ArrowRight
-              className="transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/button:translate-x-0.5 motion-reduce:transform-none"
-              aria-hidden
-            />
-          </Button>
-        </div>
+        <AppPageHeading
+          as="h1"
+          label="Member"
+          title={title}
+          pill={<SubscriptionAccessPill label={accessLabel} />}
+          description={
+            props.hasAccess
+              ? "Your scores, draws, and charity impact — all in one place."
+              : "Your charity and winnings stay visible here. Subscribe to log scores and enter draws."
+          }
+          actions={
+            <Button
+              size="lg"
+              className="w-full sm:w-auto"
+              render={
+                <Link href={props.hasAccess ? "/dashboard/scores" : "/subscribe"} />
+              }
+            >
+              {props.hasAccess ? "Log a round" : "Subscribe now"}
+              <ArrowRight
+                className="transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/button:translate-x-0.5 motion-reduce:transform-none"
+                aria-hidden
+              />
+            </Button>
+          }
+        />
       </header>
       </Reveal>
 
@@ -399,11 +394,7 @@ function SubscriptionSummary({
           <span className="text-slate">
             {cancelAtPeriodEnd ? "Access until " : "Renews "}
           </span>
-          <span className="text-navy">
-            {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(
-              new Date(`${renewalDate}T12:00:00`),
-            )}
-          </span>
+          <span className="text-navy">{formatDateLabel(renewalDate)}</span>
         </p>
       ) : null}
       <BenefitList />

@@ -82,8 +82,33 @@ export type FooterContactBlock =
   | { kind: "emailOnly"; email: string }
   | { kind: "fallback" };
 
+/**
+ * Free webmail domains. A payments product must not present a personal
+ * inbox as its contact, so these fall back to the contact page instead.
+ */
+const PERSONAL_MAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "yahoo.co.in",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "icloud.com",
+  "rediffmail.com",
+  "proton.me",
+  "protonmail.com",
+]);
+
+export function isPersonalMailbox(email: string): boolean {
+  const domain = email.split("@").pop()?.toLowerCase() ?? "";
+  return PERSONAL_MAIL_DOMAINS.has(domain);
+}
+
 export function getFooterContactBlock(): FooterContactBlock {
-  const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+  const configured = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+  const email =
+    configured && !isPersonalMailbox(configured) ? configured : undefined;
   const address = process.env.NEXT_PUBLIC_CONTACT_ADDRESS?.trim();
 
   const addressLines = address

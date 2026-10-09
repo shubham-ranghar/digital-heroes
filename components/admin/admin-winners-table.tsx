@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import {
   markWinnerPaidAction,
   rejectWinnerAction,
 } from "@/lib/winners/admin-actions";
+import { formatMonthLabel } from "@/lib/dates";
 import { formatCurrency } from "@/lib/money";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { Button } from "@/components/ui/button";
@@ -52,14 +54,32 @@ export function AdminWinnersTable({ winners }: AdminWinnersTableProps) {
         rows={winners}
         getRowId={(row) => row.id}
         emptyMessage="No winners yet. Publish a draw to create prize records."
-        headerTone="navy"
+        emptyAction={
+          <Button size="sm" variant="secondary" render={<Link href="/admin/draws" />}>
+            Go to draws
+          </Button>
+        }
+        searchText={(row) => `${row.user_id} ${row.draw_month}`}
+        searchPlaceholder="Search by member or draw"
+        filterGroups={[
+          {
+            id: "verification",
+            label: "Verification",
+            options: [
+              { value: "pending", label: "Pending" },
+              { value: "approved", label: "Approved" },
+              { value: "rejected", label: "Rejected" },
+            ],
+            predicate: (row, value) => row.verification === value,
+          },
+        ]}
         columns={[
           {
             id: "draw",
             header: "Draw",
             sortable: true,
             sortValue: (row) => row.draw_month,
-            cell: (row) => row.draw_month,
+            cell: (row) => formatMonthLabel(row.draw_month),
           },
           {
             id: "tier",

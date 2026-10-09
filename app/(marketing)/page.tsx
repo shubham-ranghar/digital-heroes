@@ -14,18 +14,23 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 export const instant = false;
 
-async function CharitySpotlightLoader() {
+async function CharitySpotlightLoader({
+  totalRaised,
+}: {
+  totalRaised: number | null;
+}) {
   if (!hasSupabaseEnv()) {
     return (
       <EditorialCharitySpotlight
         data={{ featured: null, others: [], featuredEvents: [] }}
+        totalRaised={totalRaised}
       />
     );
   }
 
   const supabase = await createClient();
   const data = await getHomepageCharities(supabase);
-  return <EditorialCharitySpotlight data={data} />;
+  return <EditorialCharitySpotlight data={data} totalRaised={totalRaised} />;
 }
 
 export default async function Home() {
@@ -36,9 +41,10 @@ export default async function Home() {
     <>
       <EditorialHero stats={stats} />
       <HomepageCurtain
+        totalRaised={stats.totalRaisedDisplay}
         charitySlot={
           <HomepageCharitySlot>
-            <CharitySpotlightLoader />
+            <CharitySpotlightLoader totalRaised={stats.totalRaisedDisplay} />
           </HomepageCharitySlot>
         }
       />

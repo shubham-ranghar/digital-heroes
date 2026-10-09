@@ -29,7 +29,7 @@ export function BentoCard({
   const navy = tone === "navy";
 
   return (
-    // The notch clip-path would cut a box-shadow, so the shadow lives on this
+    // The corner clip-path would cut a box-shadow, so the shadow lives on this
     // wrapper as a drop-shadow, matching the prize tier cards.
     <div
       className={cn(
@@ -40,7 +40,6 @@ export function BentoCard({
       )}
     >
       <EditorialCard
-        notch="top"
         borderClassName={cn("h-full rounded-[20px]", navy ? "bg-navy" : "bg-line")}
         className="rounded-[19px]"
       >

@@ -14,12 +14,22 @@ const AUTH_PATHS = new Set([
   "/reset-password",
 ]);
 
+/** Marketing pages that render without the site footer. */
+const FOOTERLESS_PATHS = new Set([
+  "/charities",
+  "/how-it-works",
+  "/winners",
+  "/faq",
+  "/contact",
+]);
+
 export function SiteFooterShell({ children }: SiteFooterShellProps) {
   const pathname = usePathname();
   if (
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/admin") ||
-    AUTH_PATHS.has(pathname)
+    AUTH_PATHS.has(pathname) ||
+    FOOTERLESS_PATHS.has(pathname)
   ) {
     return null;
   }

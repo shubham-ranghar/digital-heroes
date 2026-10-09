@@ -21,7 +21,11 @@ import {
   type RefObject,
 } from "react";
 
-import { SteppedEdge } from "@/components/editorial/stepped-edge";
+import {
+  SteppedEdge,
+  type SteppedEdgeScale,
+} from "@/components/editorial/stepped-edge";
+import { ScrollFade } from "@/components/motion/scroll-fade";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useScrubFlag } from "@/hooks/use-scrub-flag";
 import { cn } from "@/lib/utils";
@@ -35,6 +39,11 @@ export type CurtainSectionProps = {
   className?: string;
   /** Hold this section while the next one slides over it (md+, if it fits). */
   pin?: boolean;
+  /**
+   * Stepped edge at this section's top seam. Ration it: a page carries at
+   * most a few, one of them `dramatic`; every other seam is flat (`none`).
+   */
+  edge?: SteppedEdgeScale | "none";
 };
 
 type CurtainStackProps = {
@@ -80,6 +89,7 @@ function CurtainSectionInner({
   children,
   className,
   pin = false,
+  edge = "standard",
   sectionRef,
   nextSectionRef,
   previousColor,
@@ -96,7 +106,8 @@ function CurtainSectionInner({
   const innerRef = useRef<HTMLDivElement>(null);
   const [tall, setTall] = useState(false);
   const cover = useMotionValue(0);
-  const overlayOpacity = useTransform(cover, [0.12, 1], [0, 0.45]);
+  // A depth cue, not a blackout: cream dimmed further turns muddy grey.
+  const overlayOpacity = useTransform(cover, [0.12, 1], [0, 0.18]);
   const contentY = useTransform(cover, (value) => `${-4 * value}vh`);
   // Layers are promoted only while the next section is sliding over.
   useScrubFlag(cover, sectionRef);
@@ -144,21 +155,27 @@ function CurtainSectionInner({
       {pinActive && nextSectionRef ? (
         <PinCoverDriver nextSectionRef={nextSectionRef} cover={cover} />
       ) : null}
-      <SteppedEdge
-        position="top"
-        color={edgeColor}
-        bandColor={previousColor}
-        scrollTargetRef={sectionRef}
-      />
+      {edge !== "none" ? (
+        <SteppedEdge
+          position="top"
+          color={edgeColor}
+          bandColor={previousColor}
+          scrollTargetRef={sectionRef}
+          scale={edge}
+        />
+      ) : null}
       <div
         className={cn(
           pinActive && "sticky top-0 min-h-svh overflow-hidden",
         )}
       >
         <div ref={innerRef} className="relative">
+          {/* Above the content (z-20), so the whole pinned frame dims as the
+              next section slides over; beneath it, only the strip uncovered
+              by the content's parallax dimmed, which read as a grey seam. */}
           {pinActive ? (
             <m.div
-              className="pointer-events-none absolute inset-0 z-0 bg-navy group-data-scrubbing/curtain:will-change-[opacity]"
+              className="pointer-events-none absolute inset-0 z-20 bg-navy group-data-scrubbing/curtain:will-change-[opacity]"
               style={{ opacity: overlayOpacity }}
               aria-hidden
             />
@@ -167,7 +184,9 @@ function CurtainSectionInner({
             className="relative z-10 group-data-scrubbing/curtain:will-change-transform"
             style={pinActive ? { y: contentY } : undefined}
           >
-            {children}
+            {/* Content fades as one unit against the full section's travel
+                (the outer div spans the pin spacer; the sticky frame doesn't). */}
+            <ScrollFade measureRef={sectionRef}>{children}</ScrollFade>
           </m.div>
         </div>
       </div>

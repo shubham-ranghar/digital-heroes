@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { m, useReducedMotion } from "framer-motion";
 
+import { ShieldCheck } from "lucide-react";
+
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { dashboardNavItems } from "@/lib/dashboard/nav";
 import { layoutSpring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 type DashboardNavProps = {
   isAdmin?: boolean;
@@ -124,19 +125,29 @@ export function DashboardNav({ isAdmin, variant }: DashboardNavProps) {
             </li>
           );
         })}
-      </ul>
-      <div className="space-y-2 border-t border-line p-4">
+        {/* Admin is navigation, not an action — it sits in the nav list. */}
         {isAdmin ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            render={<Link href="/admin" />}
-          >
-            Admin
-          </Button>
+          <li>
+            <Link
+              href="/admin"
+              className="group/nav motion-interactive relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate hover:bg-sand/60 hover:text-navy"
+            >
+              <ShieldCheck
+                className="relative size-4 shrink-0 transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/nav:translate-x-0.5 motion-reduce:transform-none"
+                aria-hidden
+              />
+              <span className="relative">Admin</span>
+            </Link>
+          </li>
         ) : null}
-        <SignOutButton className="w-full" />
+      </ul>
+      <div className="border-t border-line p-4">
+        <SignOutButton
+          variant="ghost"
+          size="sm"
+          withIcon
+          className="w-full justify-start gap-3 px-3 text-slate hover:text-navy"
+        />
       </div>
     </aside>
   );

@@ -64,7 +64,7 @@ export default async function CharityDetailPage({
 
   return (
     <>
-      <MarketingSection variant="navy" className="hero-glow pb-10 pt-10">
+      <MarketingSection fade={false} variant="navy" className="hero-glow pb-10 pt-10">
         <Reveal>
           <div className="mb-6">
             <Button variant="ghost" size="sm" render={<Link href="/charities" />}>

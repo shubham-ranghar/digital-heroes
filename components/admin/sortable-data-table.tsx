@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import {
   editorialTableHead,
   editorialTableNumber,
 } from "@/lib/typography-editorial";
+import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 export type SortableColumn<T> = {
@@ -24,8 +26,16 @@ export type SortableColumn<T> = {
   sortValue?: (row: T) => string | number;
   cell: (row: T) => React.ReactNode;
   className?: string;
-  /** Figures (counts, amounts) — set in the serif number voice. */
+  /** Figures (counts, amounts) — sans, tabular, right-aligned voice. */
   numeric?: boolean;
+};
+
+export type TableFilterGroup<T> = {
+  id: string;
+  label: string;
+  options: { value: string; label: string }[];
+  /** Does `row` match the chosen option? */
+  predicate: (row: T, value: string) => boolean;
 };
 
 type SortableDataTableProps<T> = {
@@ -34,8 +44,15 @@ type SortableDataTableProps<T> = {
   getRowId: (row: T) => string;
   dense?: boolean;
   emptyMessage?: string;
-  /** `navy`: header band as the page's emphasis surface. */
+  /** Primary action shown with the empty state. */
+  emptyAction?: React.ReactNode;
+  /** Admin tables default to the navy header band. */
   headerTone?: "light" | "navy";
+  /** Text to match the search input against; providing it shows the input. */
+  searchText?: (row: T) => string;
+  searchPlaceholder?: string;
+  /** Chip groups above the table; one active option per group ("all" = off). */
+  filterGroups?: TableFilterGroup<T>[];
 };
 
 export function SortableDataTable<T>({
@@ -44,22 +61,45 @@ export function SortableDataTable<T>({
   getRowId,
   dense = true,
   emptyMessage = "No rows to show.",
-  headerTone = "light",
+  emptyAction,
+  headerTone = "navy",
+  searchText,
+  searchPlaceholder = "Search…",
+  filterGroups,
 }: SortableDataTableProps<T>) {
   const navyHeader = headerTone === "navy";
   const [sortId, setSortId] = useState<string | null>(columns[0]?.id ?? null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [query, setQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+
+  const filteredRows = useMemo(() => {
+    let next = rows;
+    const needle = query.trim().toLowerCase();
+    if (searchText && needle) {
+      next = next.filter((row) =>
+        searchText(row).toLowerCase().includes(needle),
+      );
+    }
+    for (const group of filterGroups ?? []) {
+      const value = activeFilters[group.id];
+      if (value) {
+        next = next.filter((row) => group.predicate(row, value));
+      }
+    }
+    return next;
+  }, [rows, query, searchText, filterGroups, activeFilters]);
 
   const sortedRows = useMemo(() => {
     if (!sortId) {
-      return rows;
+      return filteredRows;
     }
     const column = columns.find((col) => col.id === sortId);
     if (!column?.sortValue) {
-      return rows;
+      return filteredRows;
     }
     const getter = column.sortValue;
-    return [...rows].sort((a, b) => {
+    return [...filteredRows].sort((a, b) => {
       const av = getter(a);
       const bv = getter(b);
       if (typeof av === "number" && typeof bv === "number") {
@@ -69,7 +109,7 @@ export function SortableDataTable<T>({
         ? String(av).localeCompare(String(bv))
         : String(bv).localeCompare(String(av));
     });
-  }, [rows, columns, sortId, sortDir]);
+  }, [filteredRows, columns, sortId, sortDir]);
 
   function toggleSort(columnId: string, sortable?: boolean) {
     if (!sortable) {
@@ -83,87 +123,178 @@ export function SortableDataTable<T>({
     setSortDir("asc");
   }
 
+  function toggleFilter(groupId: string, value: string) {
+    setActiveFilters((prev) => {
+      const next = { ...prev };
+      if (next[groupId] === value) {
+        delete next[groupId];
+      } else {
+        next[groupId] = value;
+      }
+      return next;
+    });
+  }
+
+  const hasControls = Boolean(searchText || filterGroups?.length);
+  const isFiltered =
+    query.trim().length > 0 || Object.keys(activeFilters).length > 0;
+
   return (
-    <div
-      className={cn(
-        "min-w-0 overflow-x-auto rounded-[20px] border bg-surface",
-        navyHeader ? "border-navy" : "border-line",
-      )}
-    >
-      <Table className="min-w-[36rem]">
-        <TableHeader>
-          <TableRow
-            className={cn(
-              "hover:bg-transparent",
-              navyHeader && "border-navy bg-navy hover:bg-navy",
-            )}
-          >
-            {columns.map((column) => {
-              const active = sortId === column.id;
-              const Icon = active
-                ? sortDir === "asc"
-                  ? ArrowUp
-                  : ArrowDown
-                : ArrowUpDown;
-              return (
-                <TableHead
-                  key={column.id}
-                  className={cn(
-                    dense && cn("h-9 px-3", editorialTableHead),
-                    navyHeader ? "text-cream/80" : "text-navy/70",
-                    column.className,
-                  )}
+    <div className="space-y-3">
+      {hasControls ? (
+        <div className="flex flex-col gap-3">
+          {searchText ? (
+            <div className="relative max-w-xs">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                className="pl-9"
+              />
+            </div>
+          ) : null}
+          {filterGroups?.length ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {filterGroups.map((group) => (
+                <div
+                  key={group.id}
+                  role="group"
+                  aria-label={group.label}
+                  className="flex flex-wrap items-center gap-1.5"
                 >
-                  {column.sortable ? (
-                    <button
-                      type="button"
-                      className={cn(
-                        "inline-flex items-center gap-1",
-                        navyHeader ? "hover:text-cream" : "hover:text-navy",
-                      )}
-                      onClick={() => toggleSort(column.id, column.sortable)}
-                    >
-                      {column.header}
-                      <Icon className="size-3 opacity-70" aria-hidden />
-                    </button>
-                  ) : (
-                    column.header
-                  )}
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedRows.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="h-24 text-center text-sm text-muted-foreground"
-              >
-                {emptyMessage}
-              </TableCell>
-            </TableRow>
-          ) : (
-            sortedRows.map((row) => (
-              <TableRow key={getRowId(row)} className={dense ? "text-sm" : undefined}>
-                {columns.map((column) => (
-                  <TableCell
+                  <span className="text-xs text-muted-foreground">
+                    {group.label}
+                  </span>
+                  {group.options.map((option) => {
+                    const active = activeFilters[group.id] === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => toggleFilter(group.id, option.value)}
+                        className={cn(
+                          "motion-interactive inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium",
+                          active
+                            ? "border-navy bg-navy text-cream"
+                            : "border-line bg-surface text-navy hover:bg-sand/60",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "min-w-0 overflow-x-auto rounded-[20px] border bg-surface",
+          navyHeader ? "border-navy" : "border-line",
+        )}
+      >
+        <Table className="min-w-[36rem]">
+          <TableHeader>
+            <TableRow
+              className={cn(
+                "hover:bg-transparent",
+                navyHeader && "border-navy bg-navy hover:bg-navy",
+              )}
+            >
+              {columns.map((column) => {
+                const active = sortId === column.id;
+                const Icon = active
+                  ? sortDir === "asc"
+                    ? ArrowUp
+                    : ArrowDown
+                  : ArrowUpDown;
+                return (
+                  <TableHead
                     key={column.id}
                     className={cn(
-                      dense ? "px-3 py-2" : undefined,
-                      column.numeric && editorialTableNumber,
+                      dense && cn("h-9 px-3", editorialTableHead),
+                      navyHeader ? "text-cream/80" : "text-navy/70",
                       column.className,
                     )}
                   >
-                    {column.cell(row)}
-                  </TableCell>
-                ))}
+                    {column.sortable ? (
+                      <button
+                        type="button"
+                        className={cn(
+                          "inline-flex items-center gap-1",
+                          navyHeader ? "hover:text-cream" : "hover:text-navy",
+                        )}
+                        onClick={() => toggleSort(column.id, column.sortable)}
+                      >
+                        {column.header}
+                        <Icon className="size-3 opacity-70" aria-hidden />
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedRows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="h-32">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {isFiltered
+                        ? "Nothing matches your search or filters."
+                        : emptyMessage}
+                    </p>
+                    {!isFiltered && emptyAction ? emptyAction : null}
+                  </div>
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              sortedRows.map((row) => (
+                // Hover is a surface shift, so rows respond without borders moving.
+                <TableRow
+                  key={getRowId(row)}
+                  className={cn("hover:bg-sand/40", dense && "text-sm")}
+                >
+                  {columns.map((column) => (
+                    <TableCell
+                      key={column.id}
+                      className={cn(
+                        dense ? "px-3 py-2" : undefined,
+                        column.numeric && editorialTableNumber,
+                        column.className,
+                      )}
+                    >
+                      {column.cell(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <p
+        className={cn("text-xs text-muted-foreground", tabularImpact)}
+        aria-live="polite"
+      >
+        {isFiltered
+          ? `${sortedRows.length} of ${rows.length} ${rows.length === 1 ? "row" : "rows"}`
+          : `${rows.length} ${rows.length === 1 ? "row" : "rows"}`}
+      </p>
     </div>
   );
 }

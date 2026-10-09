@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <MarketingPageShell>
-      <MarketingSection variant="cream" className="py-12 sm:py-16">
+      <MarketingSection fade={false} variant="cream" className="py-12 sm:py-16">
         <div className="mx-auto max-w-3xl">
           <LegalDocument title="Terms of service" lastUpdated={LAST_UPDATED}>
             <section>

@@ -7,26 +7,21 @@ import {
   useReducedMotion,
   useScroll,
   useTransform,
-  useInView,
 } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { HighlightHeadline } from "@/components/editorial/highlight-headline";
-import { SteppedEdge } from "@/components/editorial/stepped-edge";
 import { LineReveal } from "@/components/motion/line-reveal";
 import { Container } from "@/components/layout/container";
-import { useCountUp } from "@/hooks/use-count-up";
+import { ImpactCount } from "@/components/home/impact-count";
 import { HERO_IMAGE_ALT, HERO_IMAGE_SRC } from "@/lib/home/hero-image";
+import { schoolMealsFor } from "@/lib/impact";
 import { formatAmount } from "@/lib/money";
 import type { HomeStats } from "@/lib/home/stats";
 import type { Variants } from "framer-motion";
-import {
-  DURATION,
-  EASE_IN_OUT,
-  EASE_OUT,
-} from "@/lib/motion";
-import { tabularImpact } from "@/lib/typography";
+import { EASE_IN_OUT, REVEAL, revealDelay } from "@/lib/motion";
+import { editorialBodyOnDark } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,10 +37,11 @@ const heroPanelSlide = {
   transition: { duration: HERO_ENTER, ease: EASE_IN_OUT },
 } as const;
 
+/** Entry only (opacity + rise, no scale); the scroll drift lives on the parent. */
 const heroPhotoEnter = {
-  initial: { opacity: 0, scale: 1.06, y: 20 },
-  animate: { opacity: 1, scale: 1, y: 0 },
-  transition: { duration: HERO_ENTER, ease: EASE_OUT },
+  initial: { opacity: 0, y: REVEAL.rise },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: HERO_ENTER, ease: REVEAL.ease },
 } as const;
 
 const HERO_PANEL_CLIP_DESKTOP_WIDE =
@@ -64,14 +60,14 @@ const HERO_TOP_PADDING = "pt-[calc(72px+clamp(32px,6vh,72px))]";
 const HERO_BOTTOM_PADDING = "pb-[clamp(32px,6vh,64px)]";
 
 const contentStagger: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: REVEAL.rise },
   visible: (index: number) => ({
     opacity: 1,
     y: 0,
     transition: {
-      duration: DURATION.base,
-      ease: EASE_OUT,
-      delay: 0.2 + index * 0.06,
+      duration: REVEAL.duration,
+      ease: REVEAL.ease,
+      delay: revealDelay(index, 0.2),
     },
   }),
 };
@@ -105,16 +101,21 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
       data-tone="navy"
       className="relative isolate min-h-0 overflow-hidden bg-navy md:min-h-[100svh]"
     >
+      {/* Scrub (scroll drift) on the frame, entry on the inner layer: one
+          element never carries both. */}
       <m.div
         className="relative z-0 aspect-[4/3] w-full shrink-0 overflow-hidden md:absolute md:-top-10 md:bottom-[-2.5rem] md:left-[46%] md:right-0 md:aspect-auto xl:left-[39.5%]"
         data-nav-theme="dark"
-        initial={reduceMotion ? false : heroPhotoEnter.initial}
-        animate={reduceMotion ? undefined : heroPhotoEnter.animate}
-        transition={heroPhotoEnter.transition}
         style={
           reduceMotion || !mdUp ? undefined : { y: photoY }
         }
       >
+        <m.div
+          className="absolute inset-0"
+          initial={reduceMotion ? false : heroPhotoEnter.initial}
+          animate={reduceMotion ? undefined : heroPhotoEnter.animate}
+          transition={heroPhotoEnter.transition}
+        >
         <Image
           src={HERO_IMAGE_SRC}
           alt={HERO_IMAGE_ALT}
@@ -124,6 +125,7 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
           className="object-cover object-[center_30%] max-md:transform-none"
           unoptimized
         />
+        </m.div>
         <div className="pointer-events-none absolute inset-0 bg-navy/12" aria-hidden />
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-40 bg-gradient-to-b from-[rgba(20,33,61,0.55)] to-transparent"
@@ -215,12 +217,6 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
           </m.div>
         </Container>
       </div>
-      <SteppedEdge
-        position="bottom"
-        color="var(--navy)"
-        className="relative z-[3]"
-        trigger="mount"
-      />
     </section>
   );
 }
@@ -229,13 +225,12 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
   return (
     <div>
       <HighlightHeadline
-        className="mt-0 max-w-none text-[clamp(40px,11vw,56px)] leading-[0.98] md:max-w-[min(36rem,calc(46vw-var(--gutter)-48px))] md:text-[clamp(44px,6.2vw,104px)] xl:max-w-[min(36rem,calc(39.5vw-var(--gutter)-48px))]"
+        className="mt-0 max-w-none md:max-w-[min(36rem,calc(46vw-var(--gutter)-48px))] xl:max-w-[min(36rem,calc(39.5vw-var(--gutter)-48px))]"
         tone="dark"
       >
         <LineReveal
           playOnMount
           delay={0.16}
-          duration={0.5}
           lineClassName="text-[length:inherit] leading-[inherit]"
           lines={[
             "Your game.",
@@ -244,7 +239,7 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
         />
       </HighlightHeadline>
       <m.p
-        className="mt-6 max-w-[34ch] text-[17px] leading-relaxed text-cream/[0.78]"
+        className={cn(editorialBodyOnDark, "mt-6 max-w-[38ch]")}
         custom={0}
         initial={reduceMotion ? false : "hidden"}
         animate={reduceMotion ? undefined : "visible"}
@@ -262,17 +257,17 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
       >
         <Link
           href="/subscribe"
-          className="group/cta motion-interactive motion-press motion-nudge inline-flex h-12 min-h-11 w-full items-center justify-center gap-2 rounded-full bg-coral px-8 text-base font-medium text-navy shadow-[0_10px_30px_-12px_rgba(242,84,45,0.6)] hover:bg-coral-deep hover:shadow-[0_14px_34px_-12px_rgba(242,84,45,0.75)] sm:w-auto"
+          className="group/cta motion-cta motion-press type-body inline-flex h-14 min-h-11 w-full items-center justify-center gap-2 rounded-full bg-coral px-9 font-medium text-navy hover:bg-coral-deep sm:w-auto"
         >
           Subscribe now
           <ArrowRight
-            className="size-4 transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] group-hover/cta:translate-x-0.5 motion-reduce:transform-none"
+            className="size-4 transition-transform duration-(--dur-hover) ease-(--ease-hover) group-hover/cta:translate-x-0.5 motion-reduce:transform-none"
             aria-hidden
           />
         </Link>
         <Link
           href="#how-it-works"
-          className="motion-link-arrow inline-flex items-center gap-1.5 text-[17px] font-normal text-coral underline decoration-coral/80 underline-offset-4 hover:underline"
+          className="motion-link-arrow type-body inline-flex items-center gap-1.5 text-coral underline decoration-coral/80 underline-offset-4 hover:underline"
         >
           See how it works
           <ArrowRight className="size-4" data-arrow aria-hidden />
@@ -294,14 +289,19 @@ function HeroStats({
   }
 
   return (
-    <HeroStatsCountUp
+    <HeroImpactAnchor
       currencySymbol={currencySymbol}
       totalRaisedDisplay={totalRaisedDisplay}
     />
   );
 }
 
-function HeroStatsCountUp({
+/**
+ * First appearance of the page's impact motif: the cumulative figure, in
+ * clay, with what it means in school meals. It recurs in the charities
+ * ledger and the closing CTA.
+ */
+function HeroImpactAnchor({
   currencySymbol,
   totalRaisedDisplay,
 }: {
@@ -309,34 +309,31 @@ function HeroStatsCountUp({
   totalRaisedDisplay: number;
 }) {
   const reduceMotion = useReducedMotion();
-  const ref = useRef<HTMLParagraphElement>(null);
-  const countRef = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
-
-  const { text: formattedRaised } = useCountUp(countRef, totalRaisedDisplay, {
-    enabled: inView,
-    duration: 1600,
-    format: formatAmount,
-  });
+  const meals = schoolMealsFor(totalRaisedDisplay);
 
   return (
-    <m.p
-      ref={ref}
-      className={cn("text-sm", tabularImpact)}
+    <m.div
+      className="border-t border-cream/15 pt-5"
       custom={2}
       initial={reduceMotion ? false : "hidden"}
       animate={reduceMotion ? undefined : "visible"}
       variants={contentStagger}
     >
-      <span
-        className="block text-[12px] font-normal uppercase tracking-[0.12em] text-cream/70"
-      >
-        Raised for partner causes
-      </span>
-      <span className="mt-1 block font-sans text-3xl font-light text-coral">
-        {currencySymbol}
-        <span ref={countRef}>{formattedRaised}</span>
-      </span>
-    </m.p>
+      <p className="type-eyebrow text-on-dark-quiet">Raised for partner causes</p>
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <ImpactCount
+          startOnMount
+          className="type-subhead text-clay"
+          prefix={currencySymbol}
+          value={totalRaisedDisplay}
+          format={formatAmount}
+        />
+        {meals > 0 ? (
+          <span className="type-body-sm text-on-dark-body">
+            ≈ the cost of {formatAmount(meals)} school meals
+          </span>
+        ) : null}
+      </p>
+    </m.div>
   );
 }

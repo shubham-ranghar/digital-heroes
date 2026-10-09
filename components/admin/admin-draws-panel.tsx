@@ -26,6 +26,7 @@ import {
   runSimulationAction,
 } from "@/lib/draw/admin-actions";
 import type { DrawMode } from "@/lib/draw/simulate";
+import { formatMonthLabel } from "@/lib/dates";
 import { formatCurrency } from "@/lib/money";
 import { tabularImpact } from "@/lib/typography";
 import { editorialKeyNumber } from "@/lib/typography-editorial";
@@ -142,7 +143,7 @@ export function AdminDrawsPanel({
             header: "Month",
             sortable: true,
             sortValue: (row) => row.month,
-            cell: (row) => row.month,
+            cell: (row) => formatMonthLabel(row.month),
           },
           {
             id: "status",
@@ -178,16 +179,24 @@ export function AdminDrawsPanel({
             id: "pick",
             header: "",
             className: "!whitespace-normal",
-            cell: (row) => (
-              <Button
-                type="button"
-                size="sm"
-                variant={row.id === selected?.id ? "default" : "ghost"}
-                onClick={() => selectDraw(row.id)}
-              >
-                Select
-              </Button>
-            ),
+            // The selected row shows a state indicator; only the others get an
+            // affordance to switch (bordered, so it reads as clickable).
+            cell: (row) =>
+              row.id === selected?.id ? (
+                <span className="inline-flex items-center gap-2 px-1 text-sm font-medium text-navy">
+                  <span className="size-2 shrink-0 rounded-full bg-coral" aria-hidden />
+                  Selected
+                </span>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => selectDraw(row.id)}
+                >
+                  Select
+                </Button>
+              ),
           },
         ]}
       />
@@ -196,7 +205,9 @@ export function AdminDrawsPanel({
         <div className="space-y-5 rounded-[20px] border border-line bg-surface p-5 shadow-[var(--shadow-resting)] sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-sans text-lg text-navy">Draw {selected.month}</p>
+              <p className="font-sans text-lg text-navy">
+                Draw · {formatMonthLabel(selected.month)}
+              </p>
               <p className="text-sm text-muted-foreground">
                 Simulation required before publish. Published draws are locked.
               </p>
@@ -337,7 +348,7 @@ function PoolTile({ label, value }: { label: string; value: number }) {
       <p className="text-xs uppercase tracking-wide text-slate">{label}</p>
       <CountUpCurrency
         value={value}
-        className="mt-1 block font-serif text-xl italic text-navy"
+        className="mt-1 block font-sans text-xl font-medium text-navy"
       />
     </div>
   );

@@ -21,7 +21,7 @@ export default async function ContactPage() {
 
   return (
     <MarketingPageShell>
-      <MarketingSection variant="cream" className="py-12 sm:py-16">
+      <MarketingSection fade={false} variant="cream" className="py-12 sm:py-16">
         <Reveal>
           <SectionHeading
             eyebrow="Support"

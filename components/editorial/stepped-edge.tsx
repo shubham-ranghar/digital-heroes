@@ -14,8 +14,10 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useScrubFlag } from "@/hooks/use-scrub-flag";
 import {
   STEPPED_EDGE_COLUMNS_FIVE,
+  STEPPED_EDGE_COLUMNS_SEVEN,
   STEPPED_EDGE_COLUMNS_THREE,
   STEPPED_EDGE_ORDER_FIVE,
+  STEPPED_EDGE_ORDER_SEVEN,
   STEPPED_EDGE_ORDER_THREE,
   columnScrollRange,
 } from "@/lib/stepped-edge-config";
@@ -24,7 +26,12 @@ import { cn } from "@/lib/utils";
 
 export type SteppedEdgePosition = "top" | "bottom";
 export type SteppedEdgeTrigger = "scroll" | "mount";
-type SteppedEdgeVariant = "five" | "three";
+type SteppedEdgeVariant = "seven" | "five" | "three";
+/**
+ * `dramatic` is the page's single big seam: seven columns up to four units,
+ * on a step roughly twice the standard (smaller step, same shape, on phones).
+ */
+export type SteppedEdgeScale = "standard" | "dramatic";
 
 type SteppedEdgeProps = {
   position: SteppedEdgePosition;
@@ -46,15 +53,20 @@ type SteppedEdgeProps = {
   fillBand?: boolean;
   /** Fixed column layout. Scroll edges default to five on md+, three below. */
   variant?: SteppedEdgeVariant;
+  scale?: SteppedEdgeScale;
 };
 
 const COLUMNS = {
+  seven: { units: STEPPED_EDGE_COLUMNS_SEVEN, order: STEPPED_EDGE_ORDER_SEVEN },
   five: { units: STEPPED_EDGE_COLUMNS_FIVE, order: STEPPED_EDGE_ORDER_FIVE },
   three: { units: STEPPED_EDGE_COLUMNS_THREE, order: STEPPED_EDGE_ORDER_THREE },
 } as const;
 
 /** Column step size lives in CSS so band height never depends on hydration. */
-const STEP_CLASS = "[--step-edge:16px] md:[--step-edge:32px]";
+const STEP_CLASS: Record<SteppedEdgeScale, string> = {
+  standard: "[--step-edge:16px] md:[--step-edge:32px]",
+  dramatic: "[--step-edge:22px] md:[--step-edge:44px] xl:[--step-edge:60px]",
+};
 
 type ColumnSpec = {
   key: number;
@@ -72,6 +84,7 @@ export function SteppedEdge({
   static: staticVisible = false,
   fillBand = true,
   variant,
+  scale = "standard",
 }: SteppedEdgeProps) {
   const hydrated = useClientMounted();
   const reduceMotion = useReducedMotion();
@@ -84,7 +97,12 @@ export function SteppedEdge({
   // on-enter would add an IntersectionObserver plus a JS tween per column for
   // no saving, and would feel different from desktop.
   const resolvedVariant: SteppedEdgeVariant =
-    variant ?? (trigger === "scroll" && !mdUp ? "three" : "five");
+    variant ??
+    (scale === "dramatic"
+      ? "seven"
+      : trigger === "scroll" && !mdUp
+        ? "three"
+        : "five");
   const { units, order } = COLUMNS[resolvedVariant];
   const maxUnits = Math.max(...units);
 
@@ -116,7 +134,7 @@ export function SteppedEdge({
       data-nav-theme={navTheme}
       className={cn(
         "pointer-events-none relative w-full overflow-hidden",
-        STEP_CLASS,
+        STEP_CLASS[scale],
         position === "top" ? "-mb-px" : "-mt-px",
         className,
       )}

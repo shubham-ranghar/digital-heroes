@@ -2,159 +2,164 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { m } from "framer-motion";
-import { useMemo, useRef, type ReactNode } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { useMemo } from "react";
 
-import { useClipReveal } from "@/components/motion/clip-reveal";
+import { ImpactCount } from "@/components/home/impact-count";
 import { SectionHeadline } from "@/components/motion/section-headline";
-import { RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
+import { Reveal, RevealStagger, RevealStaggerItem } from "@/components/motion/reveal";
 import { Container } from "@/components/layout/container";
-import { Marquee } from "@/components/motion/marquee";
 import { Button } from "@/components/ui/button";
-import { EditorialCard } from "@/components/ui/editorial-card";
-import type { HomepageCharities } from "@/lib/home/charities";
+import { resolveCharityPhotos } from "@/lib/charity/imagery";
 import type { Charity } from "@/lib/charity/types";
+import type { HomepageCharities } from "@/lib/home/charities";
+import { getMemberImpact, schoolMealsFor, SCHOOL_MEAL_SOURCE } from "@/lib/impact";
+import { CURRENCY_SYMBOL, formatAmount } from "@/lib/money";
+import { formatPlayedOnLabel } from "@/lib/scores/dates";
 import {
   editorialBodyOnDark,
   editorialDisplayMd,
-  editorialLinkOnDark,
+  editorialEyebrow,
+  editorialFigure,
   editorialParenLabelOnDark,
+  editorialRoll,
+  editorialTitle,
 } from "@/lib/typography-editorial";
-import { HERO_IMAGE_SRC } from "@/lib/home/hero-image";
-import { formatPlayedOnLabel } from "@/lib/scores/dates";
 import { cn } from "@/lib/utils";
 
 type EditorialCharitySpotlightProps = {
   data: HomepageCharities;
+  /** Cumulative raised (₹), or null when it can't be computed honestly. */
+  totalRaised: number | null;
 };
-
-/** Positioned frame for `fill` images; wipes left→right like `CharityImage`. */
-function ImageWipe({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const clip = useClipReveal(ref, { from: "right" });
-  return (
-    <m.div ref={ref} className="absolute inset-0" {...clip}>
-      {children}
-    </m.div>
-  );
-}
-
-type CharityCardProps = {
-  name: string;
-  slug: string;
-  description: string | null;
-  imageSrc: string | null;
-  featured?: boolean;
-  /**
-   * `marquee` drops the per-card clip wipe (the track is already moving) and
-   * the badge's backdrop blur, which would re-blur every frame as it drifts.
-   */
-  variant?: "grid" | "marquee";
-};
-
-function CharityCard({
-  name,
-  slug,
-  description,
-  imageSrc,
-  featured,
-  variant = "grid",
-}: CharityCardProps) {
-  const image = imageSrc ? (
-    <Image
-      src={imageSrc}
-      alt=""
-      fill
-      className="object-cover"
-      sizes={IMAGE_SIZES[variant]}
-      unoptimized
-    />
-  ) : (
-    <Image
-      src={HERO_IMAGE_SRC}
-      alt=""
-      fill
-      className="object-cover opacity-90"
-      sizes={IMAGE_SIZES[variant]}
-    />
-  );
-
-  return (
-    <EditorialCard
-      notch="top"
-      borderClassName={featured ? "bg-coral/40" : "bg-cream/20"}
-      className="motion-card-hover flex h-full min-h-0 flex-col text-cream"
-    >
-      <article className="flex h-full min-h-0 flex-col overflow-hidden rounded-[inherit] bg-surface/30">
-        <div className="relative aspect-[16/10] w-full shrink-0 bg-navy/50">
-          {featured ? (
-            <span
-              className={cn(
-                "absolute left-4 top-4 z-10 rounded-full border border-cream/25 bg-navy/80 px-3 py-1 font-sans text-xs font-medium tracking-wide text-cream",
-                variant === "grid" && "backdrop-blur-sm",
-              )}
-            >
-              Featured
-            </span>
-          ) : null}
-          {variant === "grid" ? <ImageWipe>{image}</ImageWipe> : image}
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
-          <h3 className="font-sans text-lg font-medium leading-snug tracking-tight text-cream sm:text-xl">
-            {name}
-          </h3>
-          <p
-            className={cn(
-              "mt-2 line-clamp-3 min-h-[4.5rem] flex-1 text-[15px] leading-relaxed sm:min-h-[4.875rem]",
-              editorialBodyOnDark,
-            )}
-          >
-            {description ?? "Programmes funded by member subscriptions."}
-          </p>
-          <Link
-            href={`/charities/${slug}`}
-            className={cn("mt-4 inline-flex w-fit text-[14px]", editorialLinkOnDark)}
-          >
-            ( Visit )
-          </Link>
-        </div>
-      </article>
-    </EditorialCard>
-  );
-}
-
-const IMAGE_SIZES = {
-  grid: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
-  marquee: "280px",
-} as const;
-
-/** Marquee card pitch: 280px card + 16px gap (`w-[17.5rem]`, `gap-4 pr-4`). */
-const MARQUEE_PITCH_PX = 296;
-/** Widest viewport that shows the marquee (it's `md:hidden`). */
-const MARQUEE_MAX_VIEWPORT_PX = 767;
-/** Drift speed; a set of four takes ~47s, fewer sets clamp to 40s. */
-const MARQUEE_SPEED_PX_PER_SEC = 25;
 
 /**
- * Sets needed so that, with the first set scrolled fully away, the rest still
- * cover the widest marquee viewport (one charity needs four sets, four need two).
+ * Second appearance of the impact motif, on its clay surface: what members
+ * have raised, what that is in school meals, and what scale buys.
  */
-function marqueeCopies(count: number) {
-  return 1 + Math.ceil(MARQUEE_MAX_VIEWPORT_PX / (MARQUEE_PITCH_PX * count));
+function ImpactLedger({ totalRaised }: { totalRaised: number | null }) {
+  const perHundred = getMemberImpact().mealsPerHundredMembersMonthly;
+
+  return (
+    <Reveal className="h-full">
+      <aside
+        aria-label="Impact so far"
+        className="flex h-full flex-col justify-between gap-8 bg-clay p-6 text-navy sm:p-8 lg:p-10"
+      >
+        {totalRaised != null ? (
+          <div>
+            <p className={editorialEyebrow}>Raised for partner causes so far</p>
+            <ImpactCount
+              className={cn(editorialFigure, "mt-3 block text-navy")}
+              prefix={CURRENCY_SYMBOL}
+              value={totalRaised}
+              format={formatAmount}
+            />
+            <p className="type-body-sm mt-3 text-navy/85">
+              ≈ the cost of {formatAmount(schoolMealsFor(totalRaised))} school
+              meals.
+            </p>
+          </div>
+        ) : null}
+        <div className={cn(totalRaised != null && "border-t border-navy/20 pt-6")}>
+          <p className={editorialTitle}>
+            Every 100 members ≈ {formatAmount(perHundred)} school meals a month.
+          </p>
+          <p className="type-caption mt-2 text-navy/75">
+            At the minimum 10% share. {SCHOOL_MEAL_SOURCE}.
+          </p>
+        </div>
+      </aside>
+    </Reveal>
+  );
 }
 
-function marqueeDuration(count: number) {
-  const seconds = (MARQUEE_PITCH_PX * count) / MARQUEE_SPEED_PX_PER_SEC;
-  return Math.min(60, Math.max(40, Math.round(seconds)));
+/**
+ * Partner names as the page's largest type. Each row carries its tinted
+ * photo; hover (or focus) warms the name to clay and lets colour back into
+ * the photo.
+ */
+function CauseRoll({
+  charities,
+  featuredId,
+}: {
+  charities: Charity[];
+  featuredId: string;
+}) {
+  const photos = useMemo(() => resolveCharityPhotos(charities), [charities]);
+
+  return (
+    <RevealStagger as="ol" className="mt-16 border-b border-cream/15 lg:mt-24" stagger={0.06}>
+      {charities.map((charity, index) => {
+        const photo = photos.get(charity.id)!;
+        return (
+          <RevealStaggerItem as="li" key={charity.id} className="border-t border-cream/15">
+            <Link
+              href={`/charities/${charity.slug}`}
+              className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-3 py-7 outline-offset-4 md:grid-cols-[3.5rem_minmax(0,1fr)_auto] md:gap-x-8 md:py-10"
+            >
+              <span
+                className="type-caption hidden self-start pt-3 text-on-dark-quiet md:block"
+                aria-hidden
+              >
+                ( {String(index + 1).padStart(2, "0")} )
+              </span>
+              <span className="min-w-0">
+                <span
+                  className={cn(
+                    editorialRoll,
+                    "block text-cream transition-colors duration-(--dur-hover) ease-(--ease-hover) group-hover:text-clay group-focus-visible:text-clay",
+                  )}
+                >
+                  {charity.name}
+                </span>
+                <span className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  {charity.category ? (
+                    <span className={cn(editorialEyebrow, "text-clay")}>
+                      {charity.category}
+                    </span>
+                  ) : null}
+                  {charity.id === featuredId ? (
+                    <span className={cn(editorialEyebrow, "text-on-dark-quiet")}>
+                      Featured
+                    </span>
+                  ) : null}
+                  {charity.description ? (
+                    <span className="type-body-sm hidden text-on-dark-body sm:inline">
+                      {charity.description}
+                    </span>
+                  ) : null}
+                </span>
+              </span>
+              <span className="flex items-center gap-4 md:gap-6">
+                <span className="photo-tint relative block aspect-[4/3] w-24 shrink-0 sm:w-36 lg:w-56">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 96px, (max-width: 1024px) 144px, 224px"
+                    unoptimized={!photo.src.startsWith("/")}
+                  />
+                </span>
+                <ArrowUpRight
+                  className="hidden size-6 text-cream transition-transform duration-(--dur-hover) ease-(--ease-hover) group-hover:-translate-y-0.5 group-hover:translate-x-0.5 md:block motion-reduce:transform-none"
+                  aria-hidden
+                />
+              </span>
+            </Link>
+          </RevealStaggerItem>
+        );
+      })}
+    </RevealStagger>
+  );
 }
 
 function CharitiesEmptyState() {
   return (
-    <div className="mt-12 rounded-[20px] border border-cream/15 bg-surface/15 px-6 py-12 text-center sm:px-10">
-      <h3 className="font-sans text-2xl font-medium text-cream">
-        No causes listed yet
-      </h3>
-      <p className={cn("mx-auto mt-3 max-w-md", editorialBodyOnDark)}>
+    <div className="mt-12 border border-cream/15 px-6 py-12 text-center sm:px-10">
+      <h3 className={cn(editorialTitle, "text-cream")}>No causes listed yet</h3>
+      <p className={cn(editorialBodyOnDark, "mx-auto mt-3")}>
         Partner listings will show here once charities are added to the platform.
       </p>
       <Button
@@ -169,44 +174,43 @@ function CharitiesEmptyState() {
   );
 }
 
-function FeaturedEventsPanel({
+function FeaturedEvents({
   charityName,
   events,
 }: {
   charityName: string;
   events: HomepageCharities["featuredEvents"];
 }) {
+  if (events.length === 0) {
+    return null;
+  }
   return (
-    <div className="mt-10 rounded-[20px] border border-cream/15 bg-cream/[0.06] p-6 sm:p-8">
-      <h3 className="font-sans text-sm font-medium uppercase tracking-wide text-cream/65">
+    <div className="mt-14 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-8">
+      <h3 className={cn(editorialEyebrow, "text-on-dark-quiet")}>
         Upcoming at {charityName}
       </h3>
-      {events.length > 0 ? (
-        <ul className="mt-4 space-y-3 text-[15px] leading-relaxed text-cream/[0.82]">
-          {events.slice(0, 3).map((event) => (
-            <li
-              key={event.id}
-              className="flex flex-col gap-0.5 border-b border-cream/10 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
-            >
-              <span className="font-medium text-cream">{event.title}</span>
-              <span className="shrink-0 text-cream/70">
-                {formatPlayedOnLabel(event.event_date)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className={cn("mt-3", editorialBodyOnDark)}>
-          Upcoming community events will be listed here.
-        </p>
-      )}
+      <ul className="type-body-sm text-on-dark-body">
+        {events.slice(0, 3).map((event) => (
+          <li
+            key={event.id}
+            className="flex flex-col gap-0.5 border-b border-cream/10 py-3 first:pt-0 last:border-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+          >
+            <span className="font-medium text-cream">{event.title}</span>
+            <span className="shrink-0 text-on-dark-quiet">
+              {formatPlayedOnLabel(event.event_date)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightProps) {
+export function EditorialCharitySpotlight({
+  data,
+  totalRaised,
+}: EditorialCharitySpotlightProps) {
   const { featured, others, featuredEvents } = data;
-  const hasCharities = Boolean(featured);
 
   const charities = useMemo((): Charity[] => {
     if (!featured) {
@@ -222,85 +226,46 @@ export function EditorialCharitySpotlight({ data }: EditorialCharitySpotlightPro
       data-nav-theme="dark"
       className="bg-navy text-cream"
     >
-      <Container className="py-16 sm:py-20 lg:py-24">
-        <header className="mx-auto max-w-3xl text-center">
-          <SectionHeadline
-            label="Charities"
-            labelClassName={editorialParenLabelOnDark}
-            headlineClassName={cn(editorialDisplayMd, "text-cream text-balance")}
-            lines={[
-              <>Causes members</>,
-              <><em className="text-coral">fund</em></>,
-            ]}
-          />
-          <p
-            className={cn(
-              "mx-auto mt-5 max-w-[52ch] text-balance text-[17px] leading-relaxed",
-              editorialBodyOnDark,
-            )}
-          >
-            Every membership sends a share of your fee to the partner you choose at
-            signup. Explore causes below and visit a profile to learn more.
-          </p>
-        </header>
+      <Container className="py-16 sm:py-20 lg:py-28">
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-stretch lg:gap-12">
+          <header className="lg:col-span-7">
+            <SectionHeadline
+              align="left"
+              label="Charities"
+              labelClassName={editorialParenLabelOnDark}
+              headlineClassName={cn(editorialDisplayMd, "text-cream")}
+              lines={[
+                <>Causes members</>,
+                <>
+                  <em className="text-coral">fund</em>
+                </>,
+              ]}
+            />
+            <p className={cn(editorialBodyOnDark, "mt-6")}>
+              Every membership sends a share of its fee to the partner its
+              member chooses at signup, at least 10%, and more if they like.
+              These are the causes on the platform today.
+            </p>
+          </header>
+          <div className="lg:col-span-5">
+            <ImpactLedger totalRaised={totalRaised} />
+          </div>
+        </div>
 
-        {!hasCharities ? (
+        {charities.length === 0 ? (
           <CharitiesEmptyState />
         ) : (
           <>
-            {/* Below md: ambient loop instead of a long single-column stack.
-                md+ keeps the grid (all four fit at once); reduced motion gets
-                the grid at every width. The swap is CSS-only, so SSR and
-                hydration agree and nothing shifts on mount. */}
-            <Marquee
-              copies={marqueeCopies(charities.length)}
-              durationSec={marqueeDuration(charities.length)}
-              className="-mx-[var(--gutter)] mt-12 h-[25.5rem] md:hidden motion-reduce:hidden"
-            >
-              {charities.map((charity) => (
-                <li key={charity.id} className="h-full w-[17.5rem] shrink-0">
-                  <CharityCard
-                    variant="marquee"
-                    featured={charity.id === featured!.id}
-                    name={charity.name}
-                    slug={charity.slug}
-                    description={charity.description}
-                    imageSrc={charity.images[0] ?? null}
-                  />
-                </li>
-              ))}
-            </Marquee>
-
-            <RevealStagger
-              className="mt-12 hidden grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 md:grid xl:grid-cols-4 xl:gap-8 motion-reduce:grid"
-              stagger={0.06}
-            >
-              {charities.map((charity) => (
-                <RevealStaggerItem key={charity.id} className="min-h-0 h-full">
-                  <CharityCard
-                    featured={charity.id === featured!.id}
-                    name={charity.name}
-                    slug={charity.slug}
-                    description={charity.description}
-                    imageSrc={charity.images[0] ?? null}
-                  />
-                </RevealStaggerItem>
-              ))}
-            </RevealStagger>
-
-            <FeaturedEventsPanel
-              charityName={featured!.name}
-              events={featuredEvents}
-            />
-
-            <div className="mt-12 flex justify-center">
+            <CauseRoll charities={charities} featuredId={featured!.id} />
+            <FeaturedEvents charityName={featured!.name} events={featuredEvents} />
+            <div className="mt-14 flex justify-center">
               <Button
                 variant="secondary"
                 size="lg"
                 className="border-cream/35 text-cream hover:border-cream hover:bg-cream/10"
                 render={<Link href="/charities" />}
               >
-                Browse causes
+                Browse all causes
               </Button>
             </div>
           </>

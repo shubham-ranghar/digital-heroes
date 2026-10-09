@@ -25,7 +25,7 @@ type UseCountUpOptions = {
 export function useCountUp(
   ref: RefObject<HTMLElement | null>,
   end: number,
-  { duration = 1600, enabled = true, format }: UseCountUpOptions,
+  { duration = 1200, enabled = true, format }: UseCountUpOptions,
 ) {
   const reduceMotion = useReducedMotion();
   const [settledEnd, setSettledEnd] = useState<number | null>(null);

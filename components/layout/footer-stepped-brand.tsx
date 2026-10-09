@@ -4,11 +4,12 @@ import Link from "next/link";
 import { m, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 
+import { ParenLabel } from "@/components/editorial/paren-label";
 import { Container } from "@/components/layout/container";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import type { FooterContactBlock } from "@/lib/footer-links";
 import { DURATION, revealTransition } from "@/lib/motion";
-import { cn } from "@/lib/utils";
+import { editorialParenLabelOnDark } from "@/lib/typography-editorial";
 
 type FooterSteppedBrandProps = {
   contact: FooterContactBlock;
@@ -17,48 +18,42 @@ type FooterSteppedBrandProps = {
 
 function FooterWordmark() {
   return (
-    <p className="font-sans text-xl font-semibold tracking-tight text-cream md:text-2xl">
+    <p className="footer-wordmark font-medium text-cream">
       digital<span className="text-coral">.HEROES</span>
       <sup className="ml-1 text-[0.45em] font-normal text-cream/70">®</sup>
     </p>
   );
 }
 
+const contactLinkClass =
+  "motion-transition-colors underline decoration-cream/35 underline-offset-4 hover:text-coral hover:decoration-coral";
+
+/** Body-scale contact under a `( Contact )` label — the wordmark leads, not the inbox. */
 function ContactLines({ contact }: { contact: FooterContactBlock }) {
-  const contactTextClass = cn(
-    "text-center font-sans font-light tracking-[-0.03em] text-cream",
-    "text-[clamp(1.5rem,3vw,2.5rem)] leading-[1.15] [overflow-wrap:anywhere]",
-  );
-
-  if (contact.kind === "fallback") {
-    return (
-      <p className={contactTextClass}>
-        Questions?{" "}
-        <Link
-          href="/contact"
-          className="motion-transition-colors underline-offset-4 hover:text-coral hover:underline"
-        >
-          Reach us via the contact page
-        </Link>
-      </p>
-    );
-  }
-
-  const email = contact.email;
-
   return (
-    <div className={contactTextClass}>
-      <p>
-        <a
-          href={`mailto:${email}`}
-          className="motion-transition-colors hover:text-coral"
-        >
-          {email}
-        </a>
-      </p>
-      {contact.kind === "full"
-        ? contact.addressLines.map((line) => <p key={line}>{line}</p>)
-        : null}
+    <div className="flex flex-col items-center gap-3 text-center">
+      <ParenLabel className={editorialParenLabelOnDark}>Contact</ParenLabel>
+      <div className="type-body text-on-dark-body wrap-anywhere">
+        {contact.kind === "fallback" ? (
+          <p>
+            Questions?{" "}
+            <Link href="/contact" className={contactLinkClass}>
+              Write to us on the contact page
+            </Link>
+          </p>
+        ) : (
+          <>
+            <p>
+              <a href={`mailto:${contact.email}`} className={contactLinkClass}>
+                {contact.email}
+              </a>
+            </p>
+            {contact.kind === "full"
+              ? contact.addressLines.map((line) => <p key={line}>{line}</p>)
+              : null}
+          </>
+        )}
+      </div>
     </div>
   );
 }

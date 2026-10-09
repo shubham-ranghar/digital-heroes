@@ -7,7 +7,10 @@ import {
   editorialBodyOnDark,
   editorialDisplayMd,
   editorialParenLabelOnDark,
+  editorialStatement,
+  editorialTitle,
 } from "@/lib/typography-editorial";
+import { tabularImpact } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 const steps = [
@@ -43,16 +46,13 @@ export function EditorialHowItWorks() {
           labelClassName={editorialParenLabelOnDark}
           headlineClassName={cn(editorialDisplayMd, "text-cream")}
           lines={[
-            <>
-              Three steps to <em className="text-coral">play &amp; give</em>
-            </>,
+            <>Three steps to play &amp; give</>,
           ]}
         />
 
         <RevealStagger
           as="ol"
           className="mt-14 grid gap-10 md:grid-cols-3"
-          stagger={0.12}
         >
           {steps.map((step, index) => (
             <RevealStaggerItem
@@ -64,12 +64,10 @@ export function EditorialHowItWorks() {
                 index === 2 && "md:translate-y-24",
               )}
             >
-              <p
-                className="font-serif text-[clamp(56px,6vw,96px)] italic leading-none text-coral"
-              >
+              <p className={cn(editorialStatement, "text-coral", tabularImpact)}>
                 {step.number}
               </p>
-              <h3 className="mt-3 font-sans text-[clamp(28px,2vw,32px)] font-light tracking-tight text-cream">
+              <h3 className={cn(editorialTitle, "mt-4 text-cream")}>
                 {step.title}
               </h3>
               <p className={cn("mt-3", editorialBodyOnDark)}>{step.body}</p>
