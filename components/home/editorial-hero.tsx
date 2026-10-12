@@ -74,9 +74,11 @@ const contentStagger: Variants = {
 
 type EditorialHeroProps = {
   stats: HomeStats;
+  /** Admins get a link to the admin console instead of Subscribe. */
+  isAdmin?: boolean;
 };
 
-export function EditorialHero({ stats }: EditorialHeroProps) {
+export function EditorialHero({ stats, isAdmin = false }: EditorialHeroProps) {
   const reduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const [mdUp, setMdUp] = useState(false);
@@ -180,7 +182,7 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
               data-nav-theme="dark"
               className="pointer-events-auto flex flex-col gap-8 py-10"
             >
-              <HeroCopy reduceMotion={reduceMotion} />
+              <HeroCopy reduceMotion={reduceMotion} isAdmin={isAdmin} />
               <HeroStats
                 currencySymbol={stats.currencySymbol}
                 totalRaisedDisplay={stats.totalRaisedDisplay}
@@ -205,7 +207,7 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
           >
             <div className="flex min-h-0 flex-1 flex-col justify-center">
               <div className={HERO_CONTENT_MAX}>
-                <HeroCopy reduceMotion={reduceMotion} />
+                <HeroCopy reduceMotion={reduceMotion} isAdmin={isAdmin} />
               </div>
             </div>
             <div className={cn(HERO_CONTENT_MAX, "shrink-0")}>
@@ -221,7 +223,13 @@ export function EditorialHero({ stats }: EditorialHeroProps) {
   );
 }
 
-function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
+function HeroCopy({
+  reduceMotion,
+  isAdmin,
+}: {
+  reduceMotion: boolean | null;
+  isAdmin: boolean;
+}) {
   return (
     <div>
       <HighlightHeadline
@@ -256,10 +264,10 @@ function HeroCopy({ reduceMotion }: { reduceMotion: boolean | null }) {
         variants={contentStagger}
       >
         <Link
-          href="/subscribe"
+          href={isAdmin ? "/admin" : "/subscribe"}
           className="group/cta motion-cta motion-press type-body inline-flex h-14 min-h-11 w-full items-center justify-center gap-2 rounded-full bg-coral px-9 font-medium text-navy hover:bg-coral-deep sm:w-auto"
         >
-          Subscribe now
+          {isAdmin ? "Go to admin console" : "Subscribe now"}
           <ArrowRight
             className="size-4 transition-transform duration-(--dur-hover) ease-(--ease-hover) group-hover/cta:translate-x-0.5 motion-reduce:transform-none"
             aria-hidden

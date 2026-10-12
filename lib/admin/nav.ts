@@ -5,6 +5,7 @@ import {
   Heart,
   LayoutDashboard,
   Mail,
+  Settings,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -23,4 +24,5 @@ export const adminNavItems: AdminNavItem[] = [
   { href: "/admin/winners", label: "Winners", icon: Gift },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/messages", label: "Messages", icon: Mail },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

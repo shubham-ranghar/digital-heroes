@@ -42,6 +42,8 @@ export async function updateDisplayNameAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/settings");
+  // The admin sidebar shows the display name.
+  revalidatePath("/admin", "layout");
   return { ok: true, message: "Display name updated." };
 }
 

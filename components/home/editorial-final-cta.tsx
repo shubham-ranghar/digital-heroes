@@ -13,9 +13,11 @@ import { cn } from "@/lib/utils";
 type EditorialFinalCtaProps = {
   /** Cumulative raised (₹): the impact figure's last appearance. */
   totalRaised: number | null;
+  /** Admins get a link to the admin console instead of Subscribe. */
+  isAdmin?: boolean;
 };
 
-export function EditorialFinalCta({ totalRaised }: EditorialFinalCtaProps) {
+export function EditorialFinalCta({ totalRaised, isAdmin = false }: EditorialFinalCtaProps) {
   return (
     <section data-nav-section data-nav-theme="dark" className="bg-navy text-cream">
       <Container className="py-20 sm:py-28 lg:py-32">
@@ -39,10 +41,10 @@ export function EditorialFinalCta({ totalRaised }: EditorialFinalCtaProps) {
             lines={[<>Ready to play for something bigger?</>]}
           />
           <Link
-            href="/subscribe"
+            href={isAdmin ? "/admin" : "/subscribe"}
             className="motion-cta type-body group/cta mt-12 inline-flex h-16 items-center gap-3 rounded-full bg-coral px-12 font-medium text-navy hover:bg-coral-deep"
           >
-            Subscribe now
+            {isAdmin ? "Go to admin console" : "Subscribe now"}
             <ArrowRight
               className="size-5 transition-transform duration-(--dur-hover) ease-(--ease-hover) group-hover/cta:translate-x-0.5 motion-reduce:transform-none"
               aria-hidden

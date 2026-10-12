@@ -47,12 +47,6 @@ export function AdminChrome({
             digital<span className="text-coral">.HEROES</span>
           </Link>
           <p className="mt-1 text-xs text-slate">Admin console</p>
-          <Link
-            href="/dashboard"
-            className="motion-link-arrow mt-3 block text-xs text-slate motion-interactive hover:text-navy"
-          >
-            ← Member dashboard
-          </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {adminNavItems.map((item) => {
@@ -119,15 +113,7 @@ export function AdminChrome({
             </Link>
             <p className="text-[0.6875rem] text-slate">Admin console</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="motion-link-arrow text-xs text-slate motion-interactive hover:text-navy"
-            >
-              ← Dashboard
-            </Link>
-            <SignOutButton className="min-w-[5.5rem]" />
-          </div>
+          <SignOutButton className="min-w-[5.5rem]" />
         </header>
         <nav
           className="flex gap-1 overflow-x-auto border-b border-line bg-surface px-3 py-2 lg:hidden"

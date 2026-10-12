@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { ProfileRole } from "@/lib/supabase/middleware";
 import { createClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 type RequireUserOptions = {
   /** Path passed to login as `next` (must start with /). */
@@ -42,6 +43,30 @@ export async function requireAdmin() {
   }
 
   return { supabase, user, role: profile.role as ProfileRole };
+}
+
+/** Whether the current visitor is a signed-in admin. Never redirects. */
+export async function getViewerIsAdmin() {
+  if (!hasSupabaseEnv()) {
+    return false;
+  }
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return false;
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    return profile?.role === "admin";
+  } catch {
+    return false;
+  }
 }
 
 export { requireActiveSubscription, getSubscriptionAccess } from "@/lib/subscription/access";

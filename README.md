@@ -1,253 +1,203 @@
-# digital.HEROES
+# digital.HEROES — README
+
+## What this is
+
+A charity-first subscription platform. Members pay a monthly or yearly fee, log Stableford golf scores, and enter a monthly prize draw. At least 10% of every subscription goes to a charity the member picks.
+
+Admins simulate and publish draws, verify winner proof, and manage charity partners.
 
 **Live:** https://digital-heroes-silk.vercel.app
 
-Charity-first subscription platform: members log Stableford scores (latest five kept), enter monthly prize draws, and direct at least 10% of subscription fees to a chosen charity. Admins simulate and publish draws, verify winner proof, and manage partners.
+|  |  |
+| --- | --- |
+| Framework | Next.js 16 (App Router), TypeScript |
+| Styling | Tailwind 4 |
+| Backend | Supabase — Auth, Postgres, Storage, RLS |
+| Payments | Razorpay subscriptions (INR) |
+| Tests | Vitest |
 
-**Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Auth, Postgres, Storage, RLS), Razorpay (subscriptions), Vitest.
+## Quick start
 
----
-
-## Prerequisites
-
-- Node.js 20+
-- [Supabase](https://supabase.com) project
-- [Razorpay](https://razorpay.com) test account (or use `PAYMENT_PROVIDER=mock` for demos)
-
----
-
-## Setup
-
-### 1. Install dependencies
+You need Node.js 20+, a Supabase project, and either a Razorpay test account or `PAYMENT_PROVIDER=mock`.
 
 ```bash
 npm install --legacy-peer-deps
+cp .env.example .env.local   # fill in the values below
+supabase db push             # or run supabase/migrations/ in order
+npm run seed                 # demo accounts + a full draw lifecycle
+npm run dev                  # http://localhost:3000
 ```
 
-### 2. Environment variables
+Run tests with `npm test`.
 
-Copy the example file and fill in values:
+For the fastest demo, set `PAYMENT_PROVIDER=mock` in `.env.local` — checkout activates membership immediately with no gateway involved.
 
-```bash
-cp .env.example .env.local
+Seeding needs `SUPABASE_SERVICE_ROLE_KEY`. Run `supabase/seed.sql` first for sample charities, then `npm run seed`. Re-running is safe: nothing duplicates, and demo winner states reset. If last month already holds a real draw, the script leaves it alone.
+
+## Environment variables
+
+**Core — always required**
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key for client + RLS |
+| `NEXT_PUBLIC_SITE_URL` | App origin, e.g. `http://localhost:3000` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Bypasses RLS for admin lists, draw sync, homepage stats, seeding |
+
+**Payments**
+
+| Variable | Purpose |
+| --- | --- |
+| `PAYMENT_PROVIDER` | `razorpay` or `mock` |
+| `RAZORPAY_KEY_ID` | Dashboard → API keys (`rzp_test_…`) |
+| `RAZORPAY_KEY_SECRET` | Paired secret |
+| `RAZORPAY_WEBHOOK_SECRET` | Webhook signing secret |
+| `RAZORPAY_PLAN_ID_MONTHLY` | Monthly subscription plan ID |
+| `RAZORPAY_PLAN_ID_YEARLY` | Yearly subscription plan ID |
+
+**Draw configuration**
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DRAW_FEE_PER_SUBSCRIBER_INR` | `250` | Contribution per active subscriber, whole rupees |
+| `DRAW_PRIZE_POOL_PERCENTAGE` | `100` | Share of fees entering the pool |
+
+The legacy name `DRAW_FEE_PER_SUBSCRIBER` is still read as a fallback.
+
+**Display and footer — all optional**
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` | Monthly fee shown on the charity slider (default `499`) |
+| `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR_YEARLY` | Yearly display fee |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Footer + Support → Contact mailto |
+| `NEXT_PUBLIC_CONTACT_ADDRESS` | Pipe-separated address lines |
+| `NEXT_PUBLIC_SOCIAL_LINKEDIN_URL` | Hidden if unset |
+| `NEXT_PUBLIC_SOCIAL_FACEBOOK_URL` | Hidden if unset |
+| `NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL` | Hidden if unset |
+| `NEXT_PUBLIC_SOCIAL_YOUTUBE_URL` | Hidden if unset |
+
+## Payments
+
+**Demo without Razorpay.** Set `PAYMENT_PROVIDER=mock`. Checkout writes an active membership straight to the database.
+
+**Razorpay test mode.**
+
+1. Create monthly and yearly **Subscription plans** in the Razorpay Dashboard.
+2. Set the plan IDs, API keys, and `PAYMENT_PROVIDER=razorpay`.
+3. Add a webhook pointing to `https://your-domain/api/payments/webhook` and subscribe to subscription and payment events. Locally, tunnel with ngrok.
+4. Copy the signing secret into `RAZORPAY_WEBHOOK_SECRET`.
+
+Checkout opens Razorpay Checkout client-side; success redirects to `/dashboard?checkout=success`. Webhooks update the `subscriptions` table, storing gateway IDs in `external_subscription_id` and `external_customer_id`.
+
+Use [Razorpay test cards and UPI](https://razorpay.com/docs/payments/payments/test-card-upi-details/) in Checkout.
+
+One migration note: `payment_webhook_events` was created as `stripe_webhook_events` in migration 4 and renamed in migration 10 after the move to Razorpay.
+
+## Demo data and test accounts
+
+`npm run seed` creates six accounts (all fake, `@digital-heroes.test`) plus a complete draw lifecycle, so draw and prize screens are populated on a fresh database.
+
+| Account | Email | Password | Shows |
+| --- | --- | --- | --- |
+| Admin | `admin@digital-heroes.test` | `TestAdmin!digital25` | Published draw, winners queue in every state, draft ready to simulate, non-zero reports |
+| Subscriber | `subscriber@digital-heroes.test` | `TestMember!digital25` | Five scores at the rolling limit, entered in this month's draft, an approved and paid jackpot win, a ₹500 donation |
+| No subscription | `nosub@digital-heroes.test` | `TestNoSub!digital25` | Inactive dashboard, subscribe CTA, gated scores |
+| Winner — proof to review | `winner.pending@digital-heroes.test` | `TestWinner!digital25` | Tier-4 prize, proof uploaded, pending review |
+| Winner — awaiting proof | `winner.noproof@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize, the member upload flow |
+| Winner — proof rejected | `winner.rejected@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize, the re-upload path |
+
+The seed also writes **last month** as a published random-mode draw with entries and four winners (one per verification state), and **this month** as a draft already holding the subscriber's entry. Prize amounts and `jackpot_carryover` come from the real draw engine, exactly as a publish would compute them; the script prints the breakdown.
+
+To create accounts through the app instead: sign up at `/signup` for a member. For an admin, sign up and then run `UPDATE public.profiles SET role = 'admin' WHERE id = '<user-uuid>';` in Supabase SQL — role cannot be self-promoted.
+
+If Supabase requires email verification, use the inbox link or disable confirmation in Auth settings for local dev. `/login` supports a `?next=/path` redirect.
+
+## How the draw works
+
+Prize pools are computed in code, not read from Razorpay plan amounts:
+
+```
+totalPool (₹) = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER_INR × (DRAW_PRIZE_POOL_PERCENTAGE / 100)
 ```
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key (client + RLS) |
-| `NEXT_PUBLIC_SITE_URL` | Yes | App origin, e.g. `http://localhost:3000` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Admin/reports | Bypasses RLS for admin lists, draw sync, homepage stats |
-| `PAYMENT_PROVIDER` | Subscribe | `razorpay` (live test mode) or `mock` (instant activation, no gateway) |
-| `RAZORPAY_KEY_ID` | Razorpay | Dashboard → API keys (`rzp_test_…`) |
-| `RAZORPAY_KEY_SECRET` | Razorpay | Secret key paired with `RAZORPAY_KEY_ID` |
-| `RAZORPAY_WEBHOOK_SECRET` | Razorpay | Webhook signing secret from Dashboard |
-| `RAZORPAY_PLAN_ID_MONTHLY` | Razorpay | Subscription plan ID for monthly billing |
-| `RAZORPAY_PLAN_ID_YEARLY` | Razorpay | Subscription plan ID for yearly billing |
-| `DRAW_FEE_PER_SUBSCRIBER_INR` | Draws | Draw fund contribution per active subscriber, in whole rupees (default `250`). Legacy name `DRAW_FEE_PER_SUBSCRIBER` is still read as a fallback. |
-| `DRAW_PRIZE_POOL_PERCENTAGE` | Draws | % of fees into pool (default `100`) |
-| `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR` | UI | Display-only monthly fee for charity ₹ slider (default `499`) |
-| `NEXT_PUBLIC_SUBSCRIPTION_FEE_INR_YEARLY` | UI | Optional yearly display fee |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Footer | Public contact email (optional; also used for Support → Contact mailto) |
-| `NEXT_PUBLIC_CONTACT_ADDRESS` | Footer | Pipe-separated address lines for stepped footer block (optional) |
-| `NEXT_PUBLIC_SOCIAL_LINKEDIN_URL` | Footer | LinkedIn profile URL (optional; hidden if unset) |
-| `NEXT_PUBLIC_SOCIAL_FACEBOOK_URL` | Footer | Facebook page URL (optional) |
-| `NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL` | Footer | Instagram profile URL (optional) |
-| `NEXT_PUBLIC_SOCIAL_YOUTUBE_URL` | Footer | YouTube channel URL (optional) |
+See `lib/draw/db.ts` → `getDrawFeeConfig()` and `lib/draw/pools.ts`.
 
-### 3. Database
+That total splits across three tiers, defined in `lib/draw/constants.ts`:
 
-Apply migrations (Supabase CLI linked to your project):
+| Matches | Share of pool |
+| --- | --- |
+| 5 | 40% |
+| 4 | 35% |
+| 3 | 25% |
 
-```bash
-supabase db push
-```
+Each tier pool divides equally among its winners. With **no 5-match winners**, the whole 5-match tier rolls into `jackpot_carryover` on next month's draw (`splitPrizes()` in `lib/draw/pools.ts`).
 
-Or run SQL from `supabase/migrations/` in order in the Supabase SQL editor.
+Entries need a draft or simulated draw row for the current month. Admins create one under **Admin → Draws**; `npm run seed` creates one too. Members sync entries when they save scores, and `lib/draw/sync-entry.ts` also runs before an admin simulates or publishes.
 
-**Note:** The `payment_webhook_events` table was originally created as `stripe_webhook_events` in migration 4, renamed to `payment_webhook_events` in migration 10 after switching to Razorpay.
-
-**Sample charities** (optional, local/demo):
-
-```bash
-# Supabase SQL editor, or after linking: supabase db execute -f supabase/seed.sql
-```
-
-**Demo data** (local / demo only — requires `SUPABASE_SERVICE_ROLE_KEY`). Run `supabase/seed.sql` first (sample charities), then:
-
-```bash
-npm run seed   # npx tsx scripts/seed.ts
-```
-
-This creates the test accounts below plus a full draw lifecycle, so draw and prize screens are populated on a fresh database:
-
-- **Last month:** a published draw (random mode) with entries and four winners — one per verification state.
-- **This month:** a draft draw, already holding the subscriber's entry, so members can sync scores straight away.
-- **Subscriber extras:** active monthly subscription, charity choice, five recent scores (rolling-5 at its limit), and one succeeded ₹500 donation.
-
-Prize amounts and the draft's `jackpot_carryover` are computed by the draw engine (`lib/draw/pools.ts`) from `DRAW_FEE_PER_SUBSCRIBER_INR` and the active-subscriber count, exactly as a real publish would; the script prints the breakdown. Last month has a tier-5 winner, so carryover is ₹0. Re-running is safe: nothing is duplicated, and the demo winners' states reset to the values below. If last month already has a real draw, the script leaves it (and the current draft's carryover) alone; it never rolls a simulated or published current-month draw back to draft.
-
-**Seed charities (example):**
-
-```sql
-INSERT INTO public.charities (name, slug, description, is_featured, images)
-VALUES
-  ('Community Futures', 'community-futures', 'Youth programmes and food security.', true, '[]'::jsonb),
-  ('Green Hearth', 'green-hearth', 'Shelter and rehousing support.', false, '[]'::jsonb);
-```
-
-**Create a draft draw for the current month** manually (the seed and the admin UI both do this for you):
-
-```sql
-INSERT INTO public.draws (month, status, mode)
-VALUES (date_trunc('month', CURRENT_DATE)::date, 'draft', 'random')
-ON CONFLICT (month) DO NOTHING;
-```
-
-### 4. Payments (Razorpay)
-
-**Demo without Razorpay:** set `PAYMENT_PROVIDER=mock` in `.env.local`. Checkout activates membership in the database immediately.
-
-**Razorpay test mode:**
-
-1. Create **Subscription plans** for monthly and yearly billing in the Razorpay Dashboard.
-2. Set `RAZORPAY_PLAN_ID_MONTHLY`, `RAZORPAY_PLAN_ID_YEARLY`, API keys, and `PAYMENT_PROVIDER=razorpay`.
-3. Add a webhook endpoint pointing to `https://your-domain/api/payments/webhook` (local: use a tunnel such as ngrok). Subscribe to subscription and payment events.
-4. Copy the webhook signing secret into `RAZORPAY_WEBHOOK_SECRET`.
-
-Checkout opens Razorpay Checkout on the client; success redirects to `/dashboard?checkout=success`. Webhooks update `subscriptions` (same table/columns as before; external IDs stored in `external_subscription_id` / `external_customer_id`).
-
-### 5. Run the app
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### 6. Tests
-
-```bash
-npm test
-```
-
----
-
-## Test credentials & roles
-
-`npm run seed` creates these accounts (all fake, `@digital-heroes.test`):
-
-| Account | Email | Password | Demonstrates |
-|---------|-------|----------|--------------|
-| Admin | `admin@digital-heroes.test` | `TestAdmin!digital25` | Admin panel: last month's published draw, a winners queue in every state (approve/reject/mark paid), this month's draft ready to simulate, non-zero reports |
-| Subscriber | `subscriber@digital-heroes.test` | `TestMember!digital25` | Member dashboard: five scores at the rolling limit, entered in this month's draft, an approved + paid jackpot win, a ₹500 donation |
-| No subscription | `nosub@digital-heroes.test` | `TestNoSub!digital25` | Logged-in member without a subscription: inactive dashboard, subscribe CTA, gated scores |
-| Demo winner — proof to review | `winner.pending@digital-heroes.test` | `TestWinner!digital25` | Tier-4 prize, proof uploaded, pending admin review |
-| Demo winner — awaiting proof | `winner.noproof@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize with no proof yet: the member upload flow |
-| Demo winner — proof rejected | `winner.rejected@digital-heroes.test` | `TestWinner!digital25` | Tier-3 prize whose proof was rejected: the re-upload path |
-
-To create real accounts through the app instead:
-
-| Role | How to create |
-|------|----------------|
-| **Member** | [Sign up](/signup) — pick charity + ≥10% share, confirm email if enabled |
-| **Admin** | Sign up, then in Supabase SQL: `UPDATE public.profiles SET role = 'admin' WHERE id = '<user-uuid>';` |
-
-**Razorpay test mode:** use [Razorpay test cards and UPI](https://razorpay.com/docs/payments/payments/test-card-upi-details/) in Checkout.
-
-**Login:** `/login` — supports `?next=/path` redirect after sign-in.
-
-**Email confirmation:** If Supabase requires email verification, use the link in the inbox or disable confirmation in Supabase Auth settings for local dev.
-
----
-
-## Feature checklist (implementation map)
-
-| Area | Location | Notes |
-|------|----------|--------|
-| Sign up / login | `app/signup`, `app/login`, `lib/auth/actions.ts` | Charity + % on signup; auth callback route |
-| Monthly / yearly subscription | `lib/payments/*`, webhook `app/api/payments/webhook` | Razorpay Checkout + mock provider; `subscriptions` table |
-| 5-score rolling | DB trigger + `lib/scores/rolling.ts` | One score per calendar date; latest five kept |
-| Draw simulation / publish | `lib/draw/*`, `lib/draw/admin-actions.ts` | Random or algorithmic; publish after `simulated` |
-| Draw entries | `lib/draw/sync-entry.ts` | Synced on score save + before admin simulate/publish |
-| Charity contribution | `lib/charity/contribution.ts` | Min 10%; dashboard slider + signup |
-| Winner verification / payout | `lib/winners/*`, `/dashboard/prizes`, `/admin/winners` | Private storage bucket; approve/reject/paid |
-| Member dashboard | `app/dashboard/*` | Overview (login-only), settings, scores (sub-gated), prizes |
-| Admin panel | `app/admin/*` | Users, draws, charities, winners, reports |
-| Responsive UI | Tailwind breakpoints, mobile subscribe bar | Dashboard bottom nav; admin horizontal tabs |
-
----
+All money is INR. Prize amounts and carryover are stored as rupees in `numeric(12,2)`; donations are stored as integer paise in `donations.amount_cents`. Display goes through `lib/money.ts` with `en-IN` grouping.
 
 ## Access control
 
-Server-side subscription checks use `requireActiveSubscription()` from `lib/subscription/access.ts` (admins bypass). Lapsed or never-subscribed members can still open `/dashboard` and `/dashboard/settings`; they are redirected to `/subscribe` only when hitting subscription-gated routes.
+Server-side checks use `requireActiveSubscription()` from `lib/subscription/access.ts`. Admins bypass it. Lapsed and never-subscribed members can still reach `/dashboard` and `/dashboard/settings`; they are redirected to `/subscribe` only on gated routes.
 
-| Route / action | Auth | Active subscription |
-|----------------|------|---------------------|
-| `/dashboard` (overview) | Required | **Not** required — shows inactive state + subscribe CTA |
-| `/dashboard/settings` | Required | **Not** required — profile, charity %, billing portal |
-| `/dashboard/scores` | Required | Required (`app/dashboard/(member)/layout.tsx`) |
-| `/dashboard/prizes` | Required | **Not** required — winners may upload proof after lapse |
-| `/subscribe`, Razorpay checkout (`lib/payments/actions.ts`) | Required | Not required (subscribe flow) |
-| One-off donations (`lib/payments/donation-actions.ts`) | Required | Not required |
-| Score mutations + draw entry sync (`lib/scores/actions.ts`) | Required | Required |
-| Charity % updates (`lib/charity/actions.ts`, `lib/profile/actions.ts`) | Required | **Not** required (settings / overview display) |
-| `/admin/*` | Admin role | N/A (admins bypass subscription) |
-| Marketing, `/charities`, login, signup | Public / auth as listed | N/A |
+| Route or action | Login | Active subscription |
+| --- | --- | --- |
+| `/dashboard` overview | Yes | No — shows inactive state + CTA |
+| `/dashboard/settings` | Yes | No — profile, charity %, billing |
+| `/dashboard/scores` | Yes | **Yes** |
+| `/dashboard/prizes` | Yes | No — winners may upload proof after lapse |
+| `/subscribe`, checkout | Yes | No |
+| One-off donations | Yes | No |
+| Score mutations + entry sync | Yes | **Yes** |
+| Charity % updates | Yes | No |
+| `/admin/*` | Admin role | N/A |
+| Marketing, `/charities`, login, signup | Public | N/A |
 
-Middleware (`lib/supabase/middleware.ts`) enforces login for `/dashboard`, `/subscribe`, and `/admin`, and blocks non-admins from `/admin`.
+Middleware (`lib/supabase/middleware.ts`) enforces login for `/dashboard`, `/subscribe`, and `/admin`, and blocks non-admins from `/admin`. The payment webhook is excluded from session refresh.
 
----
-
-## Prize pool calculation
-
-Monthly draw prize pools are **not** read from Razorpay plan amounts in code. They are computed as:
-
-`totalPool (₹) = activeSubscribers × DRAW_FEE_PER_SUBSCRIBER_INR × (DRAW_PRIZE_POOL_PERCENTAGE / 100)`
-
-Defaults in `.env.example`: **`DRAW_FEE_PER_SUBSCRIBER_INR=250`**, **`DRAW_PRIZE_POOL_PERCENTAGE=100`** (see `lib/draw/db.ts` → `getDrawFeeConfig()` and `lib/draw/pools.ts`).
-
-That total is split across tiers **40% / 35% / 25%** for 5-, 4-, and 3-match winners (`lib/draw/constants.ts`). Each tier pool is divided equally among winners in that tier. If there are **no 5-match winners**, the entire 5-match tier pool rolls into **`jackpot_carryover`** on the next month’s draw (`splitPrizes()` in `lib/draw/pools.ts`).
-
-All money is **INR (₹)**, matching Razorpay. Display goes through `lib/money.ts` (`en-IN` grouping).
-
----
-
-## Assumptions & limitations
-
-1. **Currency:** The whole app uses **INR (₹)**. Prize amounts (`winners.prize_amount`, `draws.jackpot_carryover`) are stored as rupees in `numeric(12,2)`, while donations (`donations.amount_cents`) are stored as integer paise. Legacy Stripe-era donation rows may carry `currency = 'gbp'` and are excluded from INR totals.
-2. **Draw entries** require a **draft/simulated draw row** for the current month; admins create it under **Admin → Draws** (`npm run seed` creates one). Members sync entries when they save scores (if a draw exists).
-3. **Active subscription** is determined server-side from `subscriptions` (+ cancelled-until-renewal-date). Razorpay webhooks (or `mock` checkout) must run for checkout to grant access.
-4. **Admin user list / reports** need `SUPABASE_SERVICE_ROLE_KEY`. Winner verification works with admin session + RLS alone.
-5. **Homepage “total raised”** uses donations + estimated subscription commitments when `SUPABASE_SERVICE_ROLE_KEY` is set; otherwise the hero stat is hidden (no fabricated number).
-6. **No automated emails** for draw results or winner status (in-app only).
-7. **Charity images** are URL strings in JSON (`charities.images`), not Supabase Storage uploads in admin.
-8. **Draw participation counts** depend on `draw_entries` rows; empty until members log scores and a draw exists.
-9. **Profile role** cannot be self-promoted to admin (DB trigger + RLS); only SQL or existing admin can set `role = 'admin'`.
-10. **Middleware** protects `/dashboard`, `/admin`, `/subscribe`; payment webhook is excluded from session refresh.
-
----
-
-## Project structure (high level)
+## Where things live
 
 ```
-app/                 Routes (marketing, dashboard, admin, API)
+app/                 Routes — marketing, dashboard, admin, API
 components/          UI, home, dashboard, admin, charity
 lib/                 Auth, scores, draw, payments, winners, admin queries
 supabase/migrations/ Schema, RLS, storage policies
 ```
 
+| Feature | Location |
+| --- | --- |
+| Sign up / login | `app/signup`, `app/login`, `lib/auth/actions.ts` |
+| Subscriptions | `lib/payments/*`, webhook at `app/api/payments/webhook` |
+| 5-score rolling window | DB trigger + `lib/scores/rolling.ts` |
+| Draw simulate / publish | `lib/draw/*`, `lib/draw/admin-actions.ts` |
+| Draw entries | `lib/draw/sync-entry.ts` |
+| Charity contribution | `lib/charity/contribution.ts` |
+| Winner verification and payout | `lib/winners/*`, `/dashboard/prizes`, `/admin/winners` |
+| Member dashboard | `app/dashboard/*` |
+| Admin panel | `app/admin/*` |
+
+Scores are capped at one per calendar date, with the latest five kept. Charity share has a 10% minimum, set on signup and adjustable from the dashboard slider. Winner proof uploads go to a private Storage bucket; admins approve, reject, or mark paid.
+
+## Deploying
+
+- [ ] Set every env var on the host (Vercel or equivalent)
+- [ ] Run migrations against production Supabase
+- [ ] Point the Razorpay webhook at `https://your-domain/api/payments/webhook`
+- [ ] Confirm the `winner-proofs` Storage bucket exists (migration `20261007140000_winner_proof_storage.sql`)
+- [ ] Create a draft draw for the current month under Admin → Draws
+
+## Known limitations
+
+- **No automated emails.** Draw results and winner status are in-app only.
+- **Homepage total raised** needs `SUPABASE_SERVICE_ROLE_KEY`. Without it the hero stat is hidden rather than estimated — no fabricated number.
+- **Admin user list and reports** need the service role key. Winner verification works on admin session + RLS alone.
+- **Charity images** are URL strings in `charities.images` JSON, not Storage uploads from admin.
+- **Draw participation counts** stay empty until a draw row exists and members log scores.
+- **Legacy Stripe-era donations** may carry `currency = 'gbp'` and are excluded from INR totals.
+- **Active subscription** is resolved server-side from `subscriptions`, including cancelled-until-renewal. Webhooks (or mock checkout) must run for access to be granted.
+
 ---
-
-## Production deploy
-
-- Set all env vars on the host (e.g. Vercel).
-- Point Razorpay webhook to `https://your-domain/api/payments/webhook`.
-- Run migrations on production Supabase.
-- Ensure Storage bucket `winner-proofs` exists (migration `20261007140000_winner_proof_storage.sql`).
-
----
-
-## License
 
 Private / project-specific — see repository owner.

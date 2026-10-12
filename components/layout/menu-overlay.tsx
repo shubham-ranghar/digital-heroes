@@ -52,15 +52,15 @@ function buildPrimaryMenuLinks(
 
   const links: MenuLink[] = [
     home,
-    ...(isLoggedIn
-      ? [{ href: "/dashboard", label: "Dashboard", key: "dashboard" }]
-      : [{ href: "/login", label: "Login", key: "login" }]),
-    { href: "/subscribe", label: "Subscribe", key: "subscribe" },
+    // Admins never use the member hub, so their account link is the admin console.
+    ...(isAdmin
+      ? [{ href: "/admin", label: "Admin", key: "admin" }]
+      : isLoggedIn
+        ? [{ href: "/dashboard", label: "Dashboard", key: "dashboard" }]
+        : [{ href: "/login", label: "Login", key: "login" }]),
+    ...(isAdmin ? [] : [{ href: "/subscribe", label: "Subscribe", key: "subscribe" }]),
     ...restBrowse,
   ];
-  if (isAdmin) {
-    links.push({ href: "/admin", label: "Admin", key: "admin" });
-  }
   return links;
 }
 
@@ -170,9 +170,11 @@ function BrowseRow({
 function MenuOverlayTopBarMobile({
   onClose,
   closeButtonId,
+  showSubscribe,
 }: {
   onClose: () => void;
   closeButtonId: string;
+  showSubscribe: boolean;
 }) {
   return (
     <div
@@ -201,17 +203,19 @@ function MenuOverlayTopBarMobile({
           >
             Close
           </button>
-          <div>
-            <Link
-              href="/subscribe"
-              className={cn(
-                menuFocusRing,
-                "motion-interactive motion-press inline-flex h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep",
-              )}
-            >
-              Subscribe
-            </Link>
-          </div>
+          {showSubscribe ? (
+            <div>
+              <Link
+                href="/subscribe"
+                className={cn(
+                  menuFocusRing,
+                  "motion-interactive motion-press inline-flex h-11 items-center rounded-full bg-coral px-4 text-sm font-medium text-navy hover:bg-coral-deep",
+                )}
+              >
+                Subscribe
+              </Link>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -221,9 +225,11 @@ function MenuOverlayTopBarMobile({
 function MenuOverlayTopBarDesktop({
   onClose,
   closeButtonId,
+  showSubscribe,
 }: {
   onClose: () => void;
   closeButtonId: string;
+  showSubscribe: boolean;
 }) {
   return (
     <div className="hidden shrink-0 border-b border-line md:block">
@@ -250,17 +256,19 @@ function MenuOverlayTopBarDesktop({
           >
             Close
           </button>
-          <div>
-            <Link
-              href="/subscribe"
-              className={cn(
-                menuFocusRing,
-                "motion-interactive motion-press inline-flex h-10 items-center rounded-full bg-coral px-5 text-sm font-medium text-navy hover:bg-coral-deep",
-              )}
-            >
-              Subscribe
-            </Link>
-          </div>
+          {showSubscribe ? (
+            <div>
+              <Link
+                href="/subscribe"
+                className={cn(
+                  menuFocusRing,
+                  "motion-interactive motion-press inline-flex h-10 items-center rounded-full bg-coral px-5 text-sm font-medium text-navy hover:bg-coral-deep",
+                )}
+              >
+                Subscribe
+              </Link>
+            </div>
+          ) : null}
         </div>
       </Container>
     </div>
@@ -415,10 +423,12 @@ export function MenuOverlay({
           <MenuOverlayTopBarMobile
             onClose={onClose}
             closeButtonId={menuControlId}
+            showSubscribe={!isAdmin}
           />
           <MenuOverlayTopBarDesktop
             onClose={onClose}
             closeButtonId={menuControlId}
+            showSubscribe={!isAdmin}
           />
 
           {/* Mobile menu body */}

@@ -170,10 +170,12 @@ function PlanCard({
   plan,
   selected,
   index,
+  showCta,
 }: {
   plan: Plan;
   selected: boolean;
   index: number;
+  showCta: boolean;
 }) {
   const Icon = plan.icon;
   const inverted = plan.recommended;
@@ -244,7 +246,9 @@ function PlanCard({
           </span>
         </p>
 
+        {/* The wrapper stays even without the CTA: it holds a subgrid row. */}
         <div className="mt-8">
+          {showCta ? (
           <Link
             href="/subscribe"
             aria-label={`Subscribe ${plan.name.toLowerCase()}`}
@@ -257,6 +261,7 @@ function PlanCard({
           >
             Subscribe
           </Link>
+          ) : null}
         </div>
 
         <p className="type-body-sm mt-8 font-medium">{plan.featureHeading}</p>
@@ -282,9 +287,11 @@ function PlanCard({
 type EditorialPricingProps = {
   /** Cumulative raised (₹), or null when it can't be computed honestly. */
   totalRaised: number | null;
+  /** Admins see the plans but no Subscribe buttons. */
+  isAdmin?: boolean;
 };
 
-export function EditorialPricing({ totalRaised }: EditorialPricingProps) {
+export function EditorialPricing({ totalRaised, isAdmin = false }: EditorialPricingProps) {
   const [billing, setBilling] = useState<SubscriptionPlan>("yearly");
   const plans = buildPlans();
   const yearlySaving = plans.find((plan) => plan.id === "yearly")?.saving ?? null;
@@ -315,6 +322,7 @@ export function EditorialPricing({ totalRaised }: EditorialPricingProps) {
               plan={plan}
               index={index}
               selected={billing === plan.id}
+              showCta={!isAdmin}
             />
           ))}
         </RevealStagger>

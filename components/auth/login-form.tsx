@@ -15,10 +15,9 @@ import { PasswordInput } from "@/components/ui/password-input";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
+  // Empty means "no explicit destination": the server picks /admin or /dashboard by role.
   const redirectTo =
-    searchParams.get("redirect") ??
-    searchParams.get("next") ??
-    "/dashboard";
+    searchParams.get("redirect") ?? searchParams.get("next") ?? "";
   const callbackError = searchParams.get("error") === "auth_callback";
 
   const [result, setResult] = useState<AuthActionResult | null>(

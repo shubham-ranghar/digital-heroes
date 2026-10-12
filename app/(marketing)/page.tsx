@@ -7,6 +7,7 @@ import {
   HomepageCurtain,
 } from "@/components/home/homepage-curtain";
 import { EditorialMobileSubscribeBar } from "@/components/home/editorial-mobile-subscribe-bar";
+import { getViewerIsAdmin } from "@/lib/auth/session";
 import { getHomepageCharities } from "@/lib/home/charities";
 import { getHomeStats } from "@/lib/home/stats";
 import { createClient } from "@/lib/supabase/server";
@@ -35,12 +36,16 @@ async function CharitySpotlightLoader({
 
 export default async function Home() {
   await connection();
-  const stats = await getHomeStats();
+  const [stats, isAdmin] = await Promise.all([
+    getHomeStats(),
+    getViewerIsAdmin(),
+  ]);
 
   return (
     <>
-      <EditorialHero stats={stats} />
+      <EditorialHero stats={stats} isAdmin={isAdmin} />
       <HomepageCurtain
+        isAdmin={isAdmin}
         totalRaised={stats.totalRaisedDisplay}
         charitySlot={
           <HomepageCharitySlot>
@@ -48,8 +53,13 @@ export default async function Home() {
           </HomepageCharitySlot>
         }
       />
-      <EditorialMobileSubscribeBar />
-      <div className="h-20 md:hidden" aria-hidden />
+      {/* Admins don't subscribe, so they get no subscribe bar. */}
+      {isAdmin ? null : (
+        <>
+          <EditorialMobileSubscribeBar />
+          <div className="h-20 md:hidden" aria-hidden />
+        </>
+      )}
     </>
   );
 }

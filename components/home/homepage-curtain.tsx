@@ -15,9 +15,15 @@ type HomepageCurtainProps = {
   charitySlot: ReactNode;
   /** Cumulative raised (₹) for the pricing impact line and the closing CTA. */
   totalRaised: number | null;
+  /** Admins see no subscribe CTAs. */
+  isAdmin?: boolean;
 };
 
-export function HomepageCurtain({ charitySlot, totalRaised }: HomepageCurtainProps) {
+export function HomepageCurtain({
+  charitySlot,
+  totalRaised,
+  isAdmin = false,
+}: HomepageCurtainProps) {
   // Hero above is navy. Stepped edges are rationed to two seams here (the
   // footer silhouette is the page's third): a standard one leaving the hero,
   // and one dramatic edge into the charities, the emotional core. Every other
@@ -43,10 +49,10 @@ export function HomepageCurtain({ charitySlot, totalRaised }: HomepageCurtainPro
         <HumanMoment />
       </CurtainSection>
       <CurtainSection tone="cream" edgeColor="var(--cream)" surfaceClassName="bg-cream" edge="none">
-        <EditorialPricing totalRaised={totalRaised} />
+        <EditorialPricing totalRaised={totalRaised} isAdmin={isAdmin} />
       </CurtainSection>
       <CurtainSection tone="navy" edgeColor="var(--navy)" surfaceClassName="bg-navy" edge="none">
-        <EditorialFinalCta totalRaised={totalRaised} />
+        <EditorialFinalCta totalRaised={totalRaised} isAdmin={isAdmin} />
       </CurtainSection>
     </CurtainStack>
   );

@@ -86,7 +86,7 @@ export function SiteNavbar({
   const accountLabel = isLoggedIn ? "Dashboard" : "Login";
   const showLoginLink = !isLoggedIn && pathname !== "/login";
   const showDashboardLink = isLoggedIn;
-  const showSubscribe = pathname !== "/signup";
+  const showSubscribe = !isAdmin && pathname !== "/signup";
 
   return (
     <>
@@ -129,8 +129,11 @@ export function SiteNavbar({
               {showDashboardLink ? (
                 <>
                   <div className="hidden min-w-0 md:block">
-                    <Link href="/dashboard" className={navBtnSecondary}>
-                      Dashboard
+                    <Link
+                      href={isAdmin ? "/admin" : "/dashboard"}
+                      className={navBtnSecondary}
+                    >
+                      {isAdmin ? "Admin" : "Dashboard"}
                     </Link>
                   </div>
                   <div className="hidden min-w-0 md:block">

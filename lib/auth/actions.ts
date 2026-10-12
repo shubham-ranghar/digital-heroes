@@ -37,7 +37,7 @@ export async function signInAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signIn, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
@@ -53,9 +53,18 @@ export async function signInAction(
   }
 
   const nextPath = formData.get("redirect") ?? formData.get("next");
-  const destination = safeRedirectPath(
-    typeof nextPath === "string" ? nextPath : null,
-  );
+  let destination: string;
+  if (typeof nextPath === "string" && nextPath) {
+    destination = safeRedirectPath(nextPath);
+  } else {
+    // No explicit destination: admins land on the admin console, not the member hub.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", signIn.user.id)
+      .maybeSingle();
+    destination = profile?.role === "admin" ? "/admin" : "/dashboard";
+  }
 
   revalidatePath("/dashboard");
   redirect(destination);

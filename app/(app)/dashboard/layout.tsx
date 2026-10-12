@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { DashboardChrome } from "@/components/layout/dashboard-chrome";
@@ -19,8 +20,13 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  // The member hub is for members only; admins work from the admin console.
+  if (profile?.role === "admin") {
+    redirect("/admin");
+  }
+
   return (
-    <DashboardChrome isAdmin={profile?.role === "admin"}>
+    <DashboardChrome>
       {children}
     </DashboardChrome>
   );

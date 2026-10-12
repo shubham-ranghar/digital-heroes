@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -9,7 +10,7 @@ import { SubscribePlanCheckout } from "@/components/subscription/subscribe-plan-
 import { ConfigMissingState } from "@/components/ui/page-state";
 import { hasPaymentsEnv } from "@/lib/payments/env";
 import { getPlanPriceDisplay, type PlanPriceDisplay } from "@/lib/payments/prices";
-import { requireUser } from "@/lib/auth/session";
+import { getViewerIsAdmin, requireUser } from "@/lib/auth/session";
 import {
   getSubscriptionAccess,
   getSubscriptionAccessLabel,
@@ -102,6 +103,10 @@ async function SubscribeMembership({
   await connection();
 
   const { supabase, user } = await requireUser({ loginNext: "/subscribe" });
+  // Admins don't hold subscriptions.
+  if (await getViewerIsAdmin()) {
+    redirect("/admin");
+  }
   const access = await getSubscriptionAccess(supabase, user.id);
   const params = await searchParams;
   const cancelled = params.checkout === "cancelled";
