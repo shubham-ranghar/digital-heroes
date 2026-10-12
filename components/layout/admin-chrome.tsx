@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { m, useReducedMotion } from "framer-motion";
+import { useEffect, useRef } from "react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { adminNavItems } from "@/lib/admin/nav";
@@ -32,6 +33,14 @@ export function AdminChrome({
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const indicatorTransition = reduceMotion ? { duration: 0 } : layoutSpring;
+  const mobileNavRef = useRef<HTMLElement>(null);
+
+  // The mobile tab strip scrolls sideways; keep the current section in view
+  // so Reports/Messages/Settings don't open with their tab off-screen.
+  useEffect(() => {
+    const active = mobileNavRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    active?.scrollIntoView({ block: "nearest", inline: "center", behavior: "auto" });
+  }, [pathname]);
 
   return (
     <div className="shell-dashboard min-h-screen lg:flex">
@@ -113,10 +122,11 @@ export function AdminChrome({
             </Link>
             <p className="text-[0.6875rem] text-slate">Admin console</p>
           </div>
-          <SignOutButton className="min-w-[5.5rem]" />
+          <SignOutButton size="sm" className="h-9 min-h-9 px-4" />
         </header>
         <nav
-          className="flex gap-1 overflow-x-auto border-b border-line bg-surface px-3 py-2 lg:hidden"
+          ref={mobileNavRef}
+          className="flex gap-1 overflow-x-auto border-b border-line bg-surface px-3 py-2 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
           aria-label="Admin sections"
         >
           {adminNavItems.map((item) => {

@@ -47,13 +47,17 @@ function SimpleBarChart({
         return (
           <div
             key={String(item[labelKey])}
-            className="flex flex-1 flex-col items-center gap-2"
+            className="flex h-full min-w-0 flex-1 flex-col items-center gap-2"
           >
             <span className="font-serif text-sm italic tabular-impact text-navy">{value}</span>
-            <div
-              className="w-full rounded-t-lg bg-coral/80"
-              style={{ height: `${height}%` }}
-            />
+            {/* The % height needs a parent with a definite height: the column
+                is full-height, and this track takes what the labels leave. */}
+            <div className="flex min-h-0 w-full flex-1 items-end">
+              <div
+                className="w-full rounded-t-lg bg-coral/80"
+                style={{ height: `${height}%` }}
+              />
+            </div>
             <span className="text-[10px] text-slate text-center leading-tight">
               {String(item[labelKey])}
             </span>
@@ -100,7 +104,7 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
         <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <p className="text-slate">Committed per month</p>
-            <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-navy")}>
+            <p className={cn("mt-1 text-2xl sm:text-[2rem]", editorialKeyNumber, "text-navy")}>
               {formatWholeRupees(reports.charityCommitmentPerMonthInr)}
               <span className="ml-1 text-base text-slate">/ month</span>
             </p>
@@ -110,7 +114,7 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
           </div>
           <div>
             <p className="text-slate">One-off donations (all time)</p>
-            <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-navy")}>
+            <p className={cn("mt-1 text-2xl sm:text-[2rem]", editorialKeyNumber, "text-navy")}>
               {formatWholeRupees(reports.donationTotalInr)}
             </p>
             <p className="mt-1 text-xs text-slate">Completed donations only</p>
@@ -121,7 +125,29 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
         {reports.charityBreakdown.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No charities yet.</p>
         ) : (
-          <Table className="mt-2">
+          <>
+          <ul className="mt-3 divide-y divide-line sm:hidden">
+            {reports.charityBreakdown.map((row) => (
+              <li key={row.charityId} className="py-3">
+                <p className="font-medium text-navy">{row.name}</p>
+                <dl className={cn("mt-2 grid grid-cols-3 gap-2 text-sm", tabularImpact)}>
+                  <div>
+                    <dt className="text-[0.6875rem] text-muted-foreground">Supporters</dt>
+                    <dd className="text-navy">{row.activeSupporters}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[0.6875rem] text-muted-foreground">Per month</dt>
+                    <dd className="text-navy">{formatWholeRupees(row.commitmentPerMonthInr)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[0.6875rem] text-muted-foreground">Donations</dt>
+                    <dd className="text-navy">{formatWholeRupees(row.donationTotalInr)}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <Table className="mt-2 hidden sm:table">
             <TableHeader>
               <TableRow>
                 <TableHead>Charity</TableHead>
@@ -147,6 +173,7 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
               ))}
             </TableBody>
           </Table>
+          </>
         )}
       </div>
 
@@ -156,13 +183,13 @@ export function AdminReportsPanel({ reports }: AdminReportsPanelProps) {
           <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-slate">Paid out</p>
-              <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-status-active")}>
+              <p className={cn("mt-1 text-2xl sm:text-[2rem]", editorialKeyNumber, "text-status-active")}>
                 {formatCurrency(reports.totalPrizePaid)}
               </p>
             </div>
             <div>
               <p className="text-slate">Pending</p>
-              <p className={cn("mt-1 text-[2rem]", editorialKeyNumber, "text-status-pending")}>
+              <p className={cn("mt-1 text-2xl sm:text-[2rem]", editorialKeyNumber, "text-status-pending")}>
                 {formatCurrency(reports.totalPrizePending)}
               </p>
             </div>

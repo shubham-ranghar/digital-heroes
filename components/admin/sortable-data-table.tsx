@@ -31,6 +31,15 @@ export type SortableColumn<T> = {
   numeric?: boolean;
 };
 
+/**
+ * Below `md` each row renders as a card: the first column is its title,
+ * header-less and "actions" columns span the card's foot, the rest are
+ * label/value pairs. Wide tables otherwise hid their actions off-screen.
+ */
+function isFootColumn<T>(column: SortableColumn<T>) {
+  return column.id === "actions" || column.header.trim() === "";
+}
+
 export type TableFilterGroup<T> = {
   id: string;
   label: string;
@@ -170,6 +179,10 @@ export function SortableDataTable<T>({
     setLocalFilters(next);
   }
 
+  const sortableColumns = columns.filter((column) => column.sortable);
+  const [titleColumn, ...restColumns] = columns;
+  const fieldColumns = restColumns.filter((column) => !isFootColumn(column));
+  const footColumns = restColumns.filter(isFootColumn);
   const hasControls = Boolean(searchText || filterGroups?.length);
   const appliedQuery = server ? server.query : query.trim();
   const isFiltered =
@@ -180,7 +193,7 @@ export function SortableDataTable<T>({
       {hasControls ? (
         <div className="flex flex-col gap-3">
           {searchText ? (
-            <div className="relative max-w-xs">
+            <div className="relative w-full sm:max-w-xs">
               <Search
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
@@ -233,10 +246,110 @@ export function SortableDataTable<T>({
         </div>
       ) : null}
 
+      {sortableColumns.length > 0 && sortedRows.length > 1 ? (
+        <div className="flex items-center gap-2 md:hidden">
+          <label
+            htmlFor="mobile-table-sort"
+            className="text-xs text-muted-foreground"
+          >
+            Sort by
+          </label>
+          <select
+            id="mobile-table-sort"
+            value={sortId ?? ""}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              if (server) {
+                server.onSortChange(nextId, sortDir);
+              } else {
+                setLocalSortId(nextId);
+              }
+            }}
+            className="h-8 min-w-0 flex-1 rounded-full border border-line bg-surface px-3 text-xs font-medium text-navy"
+          >
+            {sortableColumns.map((column) => (
+              <option key={column.id} value={column.id}>
+                {column.header}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => sortId && toggleSort(sortId, true)}
+            aria-label={sortDir === "asc" ? "Sorted ascending" : "Sorted descending"}
+            className="motion-interactive inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-navy hover:bg-sand/60"
+          >
+            {sortDir === "asc" ? (
+              <ArrowUp className="size-3.5" aria-hidden />
+            ) : (
+              <ArrowDown className="size-3.5" aria-hidden />
+            )}
+          </button>
+        </div>
+      ) : null}
+
+      <ul
+        aria-busy={server?.pending || undefined}
+        className={cn(
+          "space-y-3 transition-opacity md:hidden",
+          server?.pending && "opacity-60",
+        )}
+      >
+        {sortedRows.length === 0 ? (
+          <li className="flex flex-col items-center gap-3 rounded-[20px] border border-line bg-surface px-4 py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isFiltered ? "Nothing matches your search or filters." : emptyMessage}
+            </p>
+            {!isFiltered && emptyAction ? emptyAction : null}
+          </li>
+        ) : (
+          sortedRows.map((row) => (
+            <li
+              key={getRowId(row)}
+              className="min-w-0 rounded-[20px] border border-line bg-surface p-4"
+            >
+              {titleColumn ? (
+                <div className="min-w-0 font-medium text-navy wrap-anywhere [&_.truncate]:whitespace-normal">
+                  {titleColumn.cell(row)}
+                </div>
+              ) : null}
+              {fieldColumns.length > 0 ? (
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  {fieldColumns.map((column) => (
+                    <div key={column.id} className="min-w-0">
+                      <dt className="text-[0.6875rem] font-medium tracking-wide text-muted-foreground uppercase">
+                        {column.header}
+                      </dt>
+                      <dd
+                        className={cn(
+                          "mt-0.5 min-w-0 text-navy wrap-anywhere [&_.truncate]:whitespace-normal",
+                          column.numeric && editorialTableNumber,
+                          column.numeric && "text-left",
+                        )}
+                      >
+                        {column.cell(row)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+              {footColumns.map((column) => (
+                <div
+                  key={column.id}
+                  className="mt-4 border-t border-line pt-3 *:w-full"
+                >
+                  {column.cell(row)}
+                </div>
+              ))}
+            </li>
+          ))
+        )}
+      </ul>
+
       <div
         aria-busy={server?.pending || undefined}
         className={cn(
-          "min-w-0 overflow-x-auto rounded-[20px] border bg-surface transition-opacity",
+          "hidden min-w-0 overflow-x-auto rounded-[20px] border bg-surface transition-opacity md:block",
           navyHeader ? "border-navy" : "border-line",
           server?.pending && "opacity-60",
         )}

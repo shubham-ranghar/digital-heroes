@@ -63,7 +63,9 @@ export function AdminDrawsPanel({
     draws.find((draw) => draw.id === selectedDrawId) ?? draws[0] ?? null;
 
   function selectDraw(drawId: string) {
-    router.push(`/admin/draws?draw=${drawId}`);
+    // The hash brings the detail panel into view; on a phone it sits below
+    // the whole list of draws.
+    router.push(`/admin/draws?draw=${drawId}#draw-detail`);
   }
 
   function createDraft() {
@@ -200,7 +202,10 @@ export function AdminDrawsPanel({
       />
 
       {selected ? (
-        <div className="space-y-5 rounded-[20px] border border-line bg-surface p-5 shadow-[var(--shadow-resting)] sm:p-6">
+        <div
+          id="draw-detail"
+          className="scroll-mt-4 space-y-5 rounded-[20px] border border-line bg-surface p-5 shadow-[var(--shadow-resting)] sm:p-6"
+        >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-sans text-lg text-navy">
