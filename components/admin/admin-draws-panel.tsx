@@ -76,7 +76,6 @@ export function AdminDrawsPanel({
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 
@@ -96,7 +95,6 @@ export function AdminDrawsPanel({
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 
@@ -113,7 +111,6 @@ export function AdminDrawsPanel({
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 

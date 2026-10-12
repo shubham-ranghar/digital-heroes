@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -51,7 +50,6 @@ type AdminUsersPanelProps = {
 };
 
 export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
-  const router = useRouter();
   const { controls, hrefFor } = useServerTable(table);
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<AdminUserRow | null>(null);
@@ -110,7 +108,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 
@@ -130,7 +127,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 
@@ -157,7 +153,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
       setScoreValue("");
       setPlayedOn(todayIsoDate());
       setEditingScoreId(undefined);
-      router.refresh();
     });
   }
 
@@ -180,7 +175,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
       if (refreshed.ok) {
         setScores(refreshed.scores);
       }
-      router.refresh();
     });
   }
 

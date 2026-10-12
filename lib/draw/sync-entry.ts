@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { keepLatestScores } from "@/lib/scores/rolling";
 import { loadActiveSubscriberIds } from "@/lib/draw/db";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 /** First calendar day of the current UTC month (draw month key). */
 export function currentDrawMonthIso(date = new Date()): string {
@@ -124,18 +125,95 @@ export async function syncUserDrawEntryForCurrentMonth(
   await syncUserDrawEntry(admin, userId, drawId);
 }
 
-/** Admin: refresh all active subscribers' entries for a draw before simulation. */
+/** Rows per upsert request, and ids per `.in()` filter (kept short for URL length). */
+const UPSERT_CHUNK = 500;
+const DELETE_CHUNK = 100;
+
+/**
+ * Admin: refresh all active subscribers' entries for a draw before simulation.
+ * Same result as `syncUserDrawEntry` per member, but in a handful of bulk
+ * queries instead of three round trips per member. Pass `activeUserIds` when
+ * the caller already loaded them.
+ */
 export async function syncAllDrawEntriesForDraw(
   supabase: SupabaseClient,
   drawId: string,
+  activeUserIds?: Set<string>,
 ): Promise<number> {
-  const activeUserIds = await loadActiveSubscriberIds(supabase);
+  const [{ data: draw, error: drawError }, activeIds, scoreRows, entryRows] =
+    await Promise.all([
+      supabase.from("draws").select("id, status").eq("id", drawId).maybeSingle(),
+      activeUserIds ?? loadActiveSubscriberIds(supabase),
+      fetchAllRows<ScoreRow & { user_id: string }>((from, to) =>
+        supabase
+          .from("scores")
+          .select("id, user_id, score, played_on, created_at")
+          .order("id")
+          .range(from, to),
+      ),
+      fetchAllRows<{ user_id: string }>((from, to) =>
+        supabase
+          .from("draw_entries")
+          .select("user_id")
+          .eq("draw_id", drawId)
+          .order("user_id")
+          .range(from, to),
+      ),
+    ]);
 
-  let synced = 0;
-  for (const userId of activeUserIds) {
-    await syncUserDrawEntry(supabase, userId, drawId);
-    synced += 1;
+  if (drawError) {
+    throw new Error(drawError.message);
+  }
+  if (!draw || draw.status === "published") {
+    return 0;
   }
 
-  return synced;
+  const scoresByUser = new Map<string, ScoreRow[]>();
+  for (const row of scoreRows) {
+    if (!activeIds.has(row.user_id)) {
+      continue;
+    }
+    const list = scoresByUser.get(row.user_id) ?? [];
+    list.push(row);
+    scoresByUser.set(row.user_id, list);
+  }
+
+  const upserts = Array.from(scoresByUser, ([userId, rows]) => ({
+    draw_id: drawId,
+    user_id: userId,
+    score_snapshot: keepLatestScores(rows).map((row) => row.score),
+  }));
+
+  // Active members with no scores left lose their entry (stale snapshot).
+  const staleUserIds = entryRows
+    .map((row) => row.user_id)
+    .filter((userId) => activeIds.has(userId) && !scoresByUser.has(userId));
+
+  const writes: PromiseLike<{ error: { message: string } | null }>[] = [];
+  for (let i = 0; i < upserts.length; i += UPSERT_CHUNK) {
+    writes.push(
+      supabase
+        .from("draw_entries")
+        .upsert(upserts.slice(i, i + UPSERT_CHUNK), {
+          onConflict: "draw_id,user_id",
+        }),
+    );
+  }
+  for (let i = 0; i < staleUserIds.length; i += DELETE_CHUNK) {
+    writes.push(
+      supabase
+        .from("draw_entries")
+        .delete()
+        .eq("draw_id", drawId)
+        .in("user_id", staleUserIds.slice(i, i + DELETE_CHUNK)),
+    );
+  }
+
+  for (const { error } of await Promise.all(writes)) {
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  return activeIds.size;
 }

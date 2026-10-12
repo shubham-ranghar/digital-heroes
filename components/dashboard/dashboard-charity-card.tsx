@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { m, useInView, useReducedMotion, useSpring } from "framer-motion";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Heart } from "lucide-react";
@@ -35,7 +34,6 @@ export function DashboardCharityCard({
   plan,
   hasAccess,
 }: DashboardCharityCardProps) {
-  const router = useRouter();
   const [percentage, setPercentage] = useState(charity?.percentage ?? 10);
   const [savedPercentage, setSavedPercentage] = useState(charity?.percentage ?? 10);
   const [isPending, startTransition] = useTransition();
@@ -69,7 +67,6 @@ export function DashboardCharityCard({
       }
       toast.success(result.message);
       setSavedPercentage(result.percentage);
-      router.refresh();
     });
   }
 

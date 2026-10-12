@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -36,7 +35,6 @@ type AdminWinnersTableProps = {
 };
 
 export function AdminWinnersTable({ winners, table, total }: AdminWinnersTableProps) {
-  const router = useRouter();
   const { controls, hrefFor } = useServerTable(table);
   const [isPending, startTransition] = useTransition();
   const [previewWinner, setPreviewWinner] = useState<WinnerWithDraw | null>(null);
@@ -52,7 +50,6 @@ export function AdminWinnersTable({ winners, table, total }: AdminWinnersTablePr
         return;
       }
       toast.success(result.message);
-      router.refresh();
     });
   }
 

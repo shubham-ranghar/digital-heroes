@@ -89,11 +89,14 @@ async function runSimulation(input: {
     return { ok: false, message: "Published draws cannot be re-simulated." };
   }
 
-  const syncedCount = await syncAllDrawEntriesForDraw(admin, draw.id);
-
-  const rawEntries = await loadDrawEntries(admin, draw.id);
   const { activeCount, scores, activeUserIds } =
     await loadActiveSubscriberScores(admin);
+  const syncedCount = await syncAllDrawEntriesForDraw(
+    admin,
+    draw.id,
+    activeUserIds,
+  );
+  const rawEntries = await loadDrawEntries(admin, draw.id);
   const entries = filterDrawEntriesToActiveSubscribers(
     rawEntries,
     activeUserIds,
@@ -191,11 +194,10 @@ async function publishDraw(input: {
     return { ok: false, message: "Draw is missing simulated winning numbers." };
   }
 
-  await syncAllDrawEntriesForDraw(admin, draw.id);
-
-  const rawEntries = await loadDrawEntries(admin, draw.id);
   const { activeCount, scores, activeUserIds } =
     await loadActiveSubscriberScores(admin);
+  await syncAllDrawEntriesForDraw(admin, draw.id, activeUserIds);
+  const rawEntries = await loadDrawEntries(admin, draw.id);
   const entries = filterDrawEntriesToActiveSubscribers(
     rawEntries,
     activeUserIds,

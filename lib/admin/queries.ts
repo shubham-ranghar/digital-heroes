@@ -240,8 +240,10 @@ export async function getDrawSimulationPreview(
     return null;
   }
 
-  const entries = await loadDrawEntries(client, drawId);
-  const { activeCount, scores } = await loadActiveSubscriberScores(client);
+  const [entries, { activeCount, scores }] = await Promise.all([
+    loadDrawEntries(client, drawId),
+    loadActiveSubscriberScores(client),
+  ]);
   const { feePerSubscriber, poolPercentage } = getDrawFeeConfig();
 
   return withMemberLabels(

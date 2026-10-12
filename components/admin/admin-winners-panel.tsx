@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { FormError } from "@/components/auth/form-message";
@@ -22,7 +21,6 @@ type AdminWinnersPanelProps = {
 };
 
 export function AdminWinnersPanel({ winners }: AdminWinnersPanelProps) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -37,7 +35,6 @@ export function AdminWinnersPanel({ winners }: AdminWinnersPanelProps) {
         setError(result.message);
         return;
       }
-      router.refresh();
     });
   }
 

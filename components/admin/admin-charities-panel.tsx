@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
@@ -44,7 +43,6 @@ const emptyForm = {
 };
 
 export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -80,7 +78,6 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
       }
       toast.success(result.message);
       setFormOpen(false);
-      router.refresh();
     });
   }
 
@@ -96,7 +93,6 @@ export function AdminCharitiesPanel({ charities }: AdminCharitiesPanelProps) {
       }
       toast.success(result.message);
       setDeleteTarget(null);
-      router.refresh();
     });
   }
 
