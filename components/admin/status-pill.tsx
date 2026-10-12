@@ -2,6 +2,8 @@ import { cn } from "@/lib/utils";
 
 type StatusPillProps = {
   value: string;
+  /** Overrides the shown text; tone still comes from `value`. */
+  label?: string;
   className?: string;
 };
 
@@ -52,8 +54,10 @@ function resolveStatus(raw: string): { label: string; tone: StatusTone } {
   return { label, tone: TONE_BY_VALUE[key] ?? "neutral" };
 }
 
-export function StatusPill({ value, className }: StatusPillProps) {
-  const { label, tone } = resolveStatus(value);
+export function StatusPill({ value, label: labelOverride, className }: StatusPillProps) {
+  const resolved = resolveStatus(value);
+  const label = labelOverride ?? resolved.label;
+  const tone = resolved.tone;
 
   return (
     <span

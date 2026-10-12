@@ -279,7 +279,14 @@ function AnimatedCount({ value, label }: { value: number; label: string }) {
   );
 }
 
-function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: number; winCount: number; paymentPill: string }) {
+/** The pill shows payout status, not verification: "Pending" alone read as unapproved. */
+const PAYOUT_LABELS: Record<DashboardWinnings["paymentPill"], string> = {
+  none: "No payouts yet",
+  pending: "Payout pending",
+  paid: "Paid out",
+};
+
+function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: number; winCount: number; paymentPill: DashboardWinnings["paymentPill"] }) {
   return (
     <div className="space-y-4">
       <div>
@@ -296,7 +303,11 @@ function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: numbe
       </div>
       <div className="flex items-center gap-2">
         <Wallet className="size-4 text-cream/70" aria-hidden />
-        <StatusPill value={paymentPill} className="text-cream" />
+        <StatusPill
+          value={paymentPill}
+          label={PAYOUT_LABELS[paymentPill]}
+          className="text-cream"
+        />
       </div>
     </div>
   );

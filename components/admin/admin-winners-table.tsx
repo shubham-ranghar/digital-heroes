@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Eye, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -20,12 +21,21 @@ import { formatMonthLabel } from "@/lib/dates";
 import { formatCurrency } from "@/lib/money";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+/**
+ * Compact row actions. Every enabled action has a visible border so it reads
+ * as a button; disabled ones fade to an outline instead of the global filled
+ * muted surface, which in a dense row looked more clickable than the live ones.
+ */
+const rowAction =
+  "h-8 min-h-8 gap-1.5 px-3 text-xs disabled:not-aria-busy:border-line disabled:not-aria-busy:bg-transparent disabled:not-aria-busy:text-muted-foreground disabled:not-aria-busy:opacity-60";
 
 type AdminWinnersTableProps = {
   /** One page of winners, already searched, filtered and sorted by the server. */
@@ -151,45 +161,57 @@ export function AdminWinnersTable({ winners, table, total }: AdminWinnersTablePr
           {
             id: "proof",
             header: "Proof",
-            cell: (row) => (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={!row.proof_url}
-                onClick={() => setPreviewWinner(row)}
-              >
-                Preview
-              </Button>
-            ),
+            cell: (row) =>
+              row.proof_url ? (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  className={cn(rowAction, "border-line hover:border-navy")}
+                  onClick={() => setPreviewWinner(row)}
+                >
+                  <Eye aria-hidden />
+                  Preview
+                </Button>
+              ) : (
+                <span className="text-xs text-muted-foreground">No proof yet</span>
+              ),
           },
           {
             id: "actions",
             header: "Actions",
             className: "!whitespace-normal",
             cell: (row) => (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
+                  className={rowAction}
                   disabled={isPending || row.verification === "approved"}
                   onClick={() => runAction(approveWinnerAction, row.id)}
                 >
+                  <Check aria-hidden />
                   Approve
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
-                  variant="secondary"
+                  size="xs"
+                  variant="outline"
+                  className={cn(
+                    rowAction,
+                    "border-status-danger/40 text-status-danger hover:border-status-danger hover:bg-status-danger/10",
+                  )}
                   disabled={isPending || row.verification === "rejected"}
                   onClick={() => runAction(rejectWinnerAction, row.id)}
                 >
+                  <X aria-hidden />
                   Reject
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
-                  variant="ghost"
+                  size="xs"
+                  variant="outline"
+                  className={cn(rowAction, "hover:bg-navy hover:text-cream")}
                   disabled={
                     isPending ||
                     row.verification !== "approved" ||
@@ -197,7 +219,8 @@ export function AdminWinnersTable({ winners, table, total }: AdminWinnersTablePr
                   }
                   onClick={() => runAction(markWinnerPaidAction, row.id)}
                 >
-                  Paid
+                  <Wallet aria-hidden />
+                  Mark paid
                 </Button>
               </div>
             ),
