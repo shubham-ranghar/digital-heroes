@@ -20,6 +20,11 @@ export type DashboardWinnings = {
   totalWon: number;
   winCount: number;
   paymentPill: "none" | "pending" | "paid";
+  /**
+   * Most urgent claim step across all wins: "action" = proof missing or
+   * rejected, "review" = proof awaiting admin, "approved" = nothing to do.
+   */
+  claimStatus: "none" | "action" | "review" | "approved";
 };
 
 function firstDayOfMonthIso(date: Date): string {
@@ -126,7 +131,7 @@ export async function getDashboardWinnings(
 ): Promise<DashboardWinnings> {
   const { data, error } = await supabase
     .from("winners")
-    .select("prize_amount, payment")
+    .select("prize_amount, payment, verification, proof_url")
     .eq("user_id", userId);
 
   if (error) {
@@ -135,7 +140,7 @@ export async function getDashboardWinnings(
 
   const rows = data ?? [];
   if (rows.length === 0) {
-    return { totalWon: 0, winCount: 0, paymentPill: "none" };
+    return { totalWon: 0, winCount: 0, paymentPill: "none", claimStatus: "none" };
   }
 
   const totalWon = rows.reduce(
@@ -145,9 +150,17 @@ export async function getDashboardWinnings(
   const hasPending = rows.some((row) => row.payment === "pending");
   const allPaid = rows.every((row) => row.payment === "paid");
 
+  const needsAction = rows.some(
+    (row) =>
+      row.verification === "rejected" ||
+      (row.verification === "pending" && !row.proof_url),
+  );
+  const inReview = rows.some((row) => row.verification === "pending");
+
   return {
     totalWon,
     winCount: rows.length,
     paymentPill: hasPending ? "pending" : allPaid ? "paid" : "pending",
+    claimStatus: needsAction ? "action" : inReview ? "review" : "approved",
   };
 }

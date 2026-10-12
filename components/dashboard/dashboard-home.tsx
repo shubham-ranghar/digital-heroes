@@ -7,10 +7,12 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
+  Clock,
   CreditCard,
   Sparkles,
   Target,
   Trophy,
+  Upload,
   Wallet,
 } from "lucide-react";
 
@@ -228,14 +230,26 @@ export function DashboardHome(props: DashboardHomeProps) {
             tone="navy"
             headerAction={
               props.winnings.winCount > 0 ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-cream/80 hover:bg-cream/10 hover:text-cream"
-                  render={<Link href="/dashboard/prizes" />}
-                >
-                  Claims
-                </Button>
+                props.winnings.claimStatus === "action" ? (
+                  <Button
+                    size="sm"
+                    className="h-8 min-h-8 px-3"
+                    render={<Link href="/dashboard/prizes" />}
+                  >
+                    Claim prize
+                    <ArrowRight aria-hidden />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 min-h-8 px-3 text-cream/80 hover:bg-cream/10 hover:text-cream"
+                    render={<Link href="/dashboard/prizes" />}
+                  >
+                    {props.winnings.claimStatus === "review" ? "View status" : "View details"}
+                    <ArrowRight aria-hidden />
+                  </Button>
+                )
               ) : null
             }
           >
@@ -248,7 +262,7 @@ export function DashboardHome(props: DashboardHomeProps) {
                 tone="navy"
               />
             ) : (
-              <AnimatedWinnings totalWon={props.winnings.totalWon} winCount={props.winnings.winCount} paymentPill={props.winnings.paymentPill} />
+              <AnimatedWinnings totalWon={props.winnings.totalWon} winCount={props.winnings.winCount} paymentPill={props.winnings.paymentPill} claimStatus={props.winnings.claimStatus} />
             )}
           </BentoCard>
         </RevealStaggerItem>
@@ -286,7 +300,19 @@ const PAYOUT_LABELS: Record<DashboardWinnings["paymentPill"], string> = {
   paid: "Paid out",
 };
 
-function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: number; winCount: number; paymentPill: DashboardWinnings["paymentPill"] }) {
+/** Claim step shown above the payout pill, so "approved" never reads as "go claim". */
+const CLAIM_STEP: Record<
+  Exclude<DashboardWinnings["claimStatus"], "none">,
+  { icon: typeof Check; text: string; className: string }
+> = {
+  action: { icon: Upload, text: "Upload proof to claim", className: "text-coral" },
+  review: { icon: Clock, text: "Proof under review", className: "text-cream/85" },
+  approved: { icon: Check, text: "Claim approved", className: "text-cream/85" },
+};
+
+function AnimatedWinnings({ totalWon, winCount, paymentPill, claimStatus }: { totalWon: number; winCount: number; paymentPill: DashboardWinnings["paymentPill"]; claimStatus: DashboardWinnings["claimStatus"] }) {
+  const step = claimStatus === "none" ? null : CLAIM_STEP[claimStatus];
+  const StepIcon = step?.icon;
   return (
     <div className="space-y-4">
       <div>
@@ -301,6 +327,12 @@ function AnimatedWinnings({ totalWon, winCount, paymentPill }: { totalWon: numbe
           Total won · {winCount} {winCount === 1 ? "prize" : "prizes"}
         </p>
       </div>
+      {step && StepIcon ? (
+        <p className={cn("flex items-center gap-2 text-sm font-medium", step.className)}>
+          <StepIcon className="size-4" aria-hidden />
+          {step.text}
+        </p>
+      ) : null}
       <div className="flex items-center gap-2">
         <Wallet className="size-4 text-cream/70" aria-hidden />
         <StatusPill
