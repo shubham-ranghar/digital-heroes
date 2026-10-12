@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -35,7 +36,6 @@ import {
   deleteAdminScoreAction,
   fetchAdminUserScoresAction,
   saveAdminScoreAction,
-  updateAdminProfileAction,
   updateAdminSubscriptionAction,
 } from "@/lib/admin/users-actions";
 import type { ScoreRow } from "@/lib/scores/types";
@@ -49,6 +49,18 @@ type AdminUsersPanelProps = {
   total: number;
 };
 
+const PLAN_ITEMS = [
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+const STATUS_ITEMS = [
+  { value: "active", label: "Active" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "lapsed", label: "Lapsed" },
+  { value: "past_due", label: "Past due" },
+];
+
 export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
   const { controls, hrefFor } = useServerTable(table);
   const [isPending, startTransition] = useTransition();
@@ -56,8 +68,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [scoreToDelete, setScoreToDelete] = useState<ScoreRow | null>(null);
 
-  const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"subscriber" | "admin">("subscriber");
   const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
   const [subStatus, setSubStatus] = useState<
     "active" | "cancelled" | "lapsed" | "past_due"
@@ -67,15 +77,13 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
   const [scoreValue, setScoreValue] = useState("");
   const [playedOn, setPlayedOn] = useState(todayIsoDate());
   const [editingScoreId, setEditingScoreId] = useState<string | undefined>();
-  const [manageTab, setManageTab] = useState<
-    "profile" | "subscription" | "scores"
-  >("profile");
+  const [manageTab, setManageTab] = useState<"subscription" | "scores">(
+    "subscription",
+  );
 
   function openUser(user: AdminUserRow) {
     setSelected(user);
-    setManageTab("profile");
-    setDisplayName(user.displayName ?? "");
-    setRole(user.role);
+    setManageTab("subscription");
     setPlan(user.plan ?? "monthly");
     setSubStatus(user.subscriptionStatus ?? "active");
     setRenewalDate(user.renewalDate ?? "");
@@ -90,24 +98,6 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
       } else {
         toast.error(result.message);
       }
-    });
-  }
-
-  function saveProfile() {
-    if (!selected) {
-      return;
-    }
-    startTransition(async () => {
-      const result = await updateAdminProfileAction({
-        userId: selected.id,
-        displayName,
-        role,
-      });
-      if (!result.ok) {
-        toast.error(result.message);
-        return;
-      }
-      toast.success(result.message);
     });
   }
 
@@ -295,23 +285,30 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
                 <DialogDescription className="text-left">
                   {selected.email ?? "No email on file"}
                 </DialogDescription>
-                <p className="text-[0.6875rem] text-muted-foreground break-all">
-                  {selected.id}
-                </p>
+                <button
+                  type="button"
+                  className="inline-flex w-fit items-center gap-1 text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(selected.id)
+                      .then(() => toast.success("Member ID copied."))
+                      .catch(() => toast.error("Could not copy the ID."));
+                  }}
+                >
+                  <Copy className="size-3" aria-hidden />
+                  Copy ID
+                </button>
               </DialogHeader>
 
               <Tabs
                 value={manageTab}
                 onValueChange={(value) =>
                   value &&
-                  setManageTab(value as "profile" | "subscription" | "scores")
+                  setManageTab(value as "subscription" | "scores")
                 }
                 className="min-h-0 flex-1 gap-3"
               >
-                <TabsList className="grid h-auto w-full grid-cols-3 gap-0.5 p-1">
-                  <TabsTrigger value="profile" className="px-2 py-1.5 text-xs sm:text-sm">
-                    Profile
-                  </TabsTrigger>
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-0.5 p-1">
                   <TabsTrigger
                     value="subscription"
                     className="px-2 py-1.5 text-xs sm:text-sm"
@@ -323,48 +320,17 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="profile" className="space-y-3 pt-0">
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Display name
-                    </span>
-                    <Input
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Display name"
-                    />
-                  </label>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">Role</span>
-                    <Select
-                      value={role}
-                      onValueChange={(v) => v && setRole(v as "subscriber" | "admin")}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="subscriber">Subscriber</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full sm:w-auto"
-                    disabled={isPending}
-                    onClick={saveProfile}
-                  >
-                    Save profile
-                  </Button>
-                </TabsContent>
-
                 <TabsContent value="subscription" className="space-y-3 pt-0">
+                  <p className="rounded-xl bg-sand px-3 py-2 text-xs text-navy">
+                    Changes here update this site only, not Razorpay billing. Use
+                    them to fix a payment that didn&apos;t sync. To stop charges,
+                    cancel in the Razorpay dashboard.
+                  </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block space-y-1.5">
                       <span className="text-xs font-medium text-muted-foreground">Plan</span>
                       <Select
+                        items={PLAN_ITEMS}
                         value={plan}
                         onValueChange={(v) => v && setPlan(v as "monthly" | "yearly")}
                       >
@@ -380,6 +346,7 @@ export function AdminUsersPanel({ users, table, total }: AdminUsersPanelProps) {
                     <label className="block space-y-1.5">
                       <span className="text-xs font-medium text-muted-foreground">Status</span>
                       <Select
+                        items={STATUS_ITEMS}
                         value={subStatus}
                         onValueChange={(v) =>
                           v &&

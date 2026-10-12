@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { ImageUp } from "lucide-react";
+import { useId, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { FormError, FormSuccess } from "@/components/auth/form-message";
@@ -12,27 +12,53 @@ import type { WinnerWithDraw } from "@/lib/winners/types";
 import { formatCurrency } from "@/lib/money";
 import { editorialKeyNumber } from "@/lib/typography-editorial";
 import { cn } from "@/lib/utils";
-import { StatusPill } from "@/components/admin/status-pill";
-import { Badge } from "@/components/ui/badge";
 import { WinnerProofPreview } from "@/components/winners/winner-proof-preview";
+
+type ClaimTone = "active" | "pending" | "danger";
+
+const CLAIM_DOT: Record<ClaimTone, string> = {
+  active: "bg-status-active",
+  pending: "bg-status-pending",
+  danger: "bg-status-danger",
+};
+
+/** One plain-language line for where the claim stands (verification + payment). */
+function claimStatus(winner: WinnerWithDraw): { label: string; tone: ClaimTone } {
+  if (winner.verification === "rejected") {
+    return { label: "Proof rejected — upload a new screenshot", tone: "danger" };
+  }
+  if (winner.verification === "approved") {
+    return winner.payment === "paid"
+      ? { label: "Paid", tone: "active" }
+      : { label: "Approved — payout on the way", tone: "active" };
+  }
+  return winner.proof_url
+    ? { label: "Proof under review", tone: "pending" }
+    : { label: "Upload proof to claim your prize", tone: "pending" };
+}
 
 type WinnerProofUploadProps = {
   winner: WinnerWithDraw;
+  /** Proof preview URL signed during the page render. */
+  proofSignedUrl?: string;
   /** `navy` for the page's emphasis claim (the most recent). */
   tone?: "light" | "navy";
 };
 
 export function WinnerProofUpload({
   winner,
+  proofSignedUrl,
   tone = "light",
 }: WinnerProofUploadProps) {
   const navy = tone === "navy";
-  const router = useRouter();
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const claim = claimStatus(winner);
   const canUpload =
     winner.verification === "pending" || winner.verification === "rejected";
 
@@ -74,7 +100,7 @@ export function WinnerProofUpload({
         if (inputRef.current) {
           inputRef.current.value = "";
         }
-        router.refresh();
+        setFileName(null);
         return;
       }
       toast.error(result.message);
@@ -105,10 +131,18 @@ export function WinnerProofUpload({
             </span>
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{winner.verification}</Badge>
-          <StatusPill value={winner.payment} className={navy ? "text-cream" : undefined} />
-        </div>
+        <p
+          className={cn(
+            "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium",
+            navy ? "bg-cream/10 text-cream" : "bg-sand text-navy",
+          )}
+        >
+          <span
+            className={cn("size-2 shrink-0 rounded-full", CLAIM_DOT[claim.tone])}
+            aria-hidden
+          />
+          {claim.label}
+        </p>
       </div>
 
       {/* Keyed by path so a replaced screenshot fetches a fresh signed URL. */}
@@ -116,6 +150,7 @@ export function WinnerProofUpload({
         key={winner.proof_url ?? "none"}
         winnerId={winner.id}
         hasProof={Boolean(winner.proof_url)}
+        signedUrl={proofSignedUrl}
         messageClassName={navy ? "text-cream/75" : undefined}
       />
 
@@ -129,18 +164,36 @@ export function WinnerProofUpload({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             ref={inputRef}
+            id={inputId}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            className={cn(
-              "text-sm file:mr-3 file:rounded-full file:border-0 file:bg-coral file:px-4 file:py-2 file:text-sm file:font-medium file:text-navy file:transition-colors file:duration-200 hover:file:bg-coral-deep",
-              navy ? "text-cream/80" : "text-slate",
-            )}
+            className="sr-only"
             disabled={isPending}
+            onChange={(event) => {
+              setFileName(event.target.files?.[0]?.name ?? null);
+              setError(null);
+            }}
           />
+          <label
+            htmlFor={inputId}
+            className={cn(
+              "flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-full border border-dashed px-4 py-2.5 text-sm transition-colors duration-200 focus-within:ring-2 focus-within:ring-coral",
+              navy
+                ? "border-cream/30 text-cream/80 hover:border-cream/60"
+                : "border-line text-slate hover:border-navy/40",
+              isPending && "pointer-events-none opacity-60",
+            )}
+          >
+            <ImageUp className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">
+              {fileName ?? "Choose a PNG, JPEG or WebP screenshot (max 4MB)"}
+            </span>
+          </label>
           <Button
             type="button"
             className="w-full sm:w-auto"
             loading={isPending}
+            disabled={!fileName}
             onClick={handleUpload}
           >
             {isPending ? "Uploading…" : "Upload screenshot"}

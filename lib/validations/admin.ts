@@ -7,17 +7,6 @@ export const adminUserIdSchema = z.object({
   userId: z.string().uuid(),
 });
 
-export const adminProfileSchema = z.object({
-  userId: z.string().uuid(),
-  displayName: z
-    .string()
-    .trim()
-    .max(120)
-    .optional()
-    .or(z.literal("")),
-  role: z.enum(["subscriber", "admin"]),
-});
-
 export const adminSubscriptionSchema = z.object({
   userId: z.string().uuid(),
   plan: z.enum(["monthly", "yearly"]),

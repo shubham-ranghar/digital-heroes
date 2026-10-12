@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 type WinnerProofPreviewProps = {
   winnerId: string;
   hasProof: boolean;
+  /** Pre-signed URL from the server render; skips the client fetch. */
+  signedUrl?: string;
   className?: string;
   /** Overrides the empty / error message colour (e.g. on navy). */
   messageClassName?: string;
@@ -17,14 +19,15 @@ type WinnerProofPreviewProps = {
 export function WinnerProofPreview({
   winnerId,
   hasProof,
+  signedUrl,
   className,
   messageClassName,
 }: WinnerProofPreviewProps) {
-  const [url, setUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(signedUrl ?? null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasProof) {
+    if (!hasProof || signedUrl) {
       return;
     }
 
@@ -43,7 +46,7 @@ export function WinnerProofPreview({
     return () => {
       cancelled = true;
     };
-  }, [winnerId, hasProof]);
+  }, [winnerId, hasProof, signedUrl]);
 
   if (!hasProof) {
     return (

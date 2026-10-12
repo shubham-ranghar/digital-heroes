@@ -9,7 +9,7 @@ import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppPageHeading } from "@/components/layout/app-page-heading";
 import { requireUser } from "@/lib/auth/session";
-import { listWinnersForUser } from "@/lib/winners/queries";
+import { listWinnersForUser, signWinnerProofUrls } from "@/lib/winners/queries";
 
 export const metadata: Metadata = {
   title: "Prize claims",
@@ -21,6 +21,11 @@ export default async function PrizesPage() {
   await connection();
   const { supabase, user } = await requireUser();
   const winners = await listWinnersForUser(supabase, user.id);
+  // Signed here in one call; per-card client fetches run one action at a time.
+  const proofUrls = await signWinnerProofUrls(
+    supabase,
+    winners.flatMap((winner) => (winner.proof_url ? [winner.proof_url] : [])),
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -50,6 +55,9 @@ export default async function PrizesPage() {
             <RevealStaggerItem key={winner.id} fast>
               <WinnerProofUpload
                 winner={winner}
+                proofSignedUrl={
+                  winner.proof_url ? proofUrls.get(winner.proof_url) : undefined
+                }
                 tone={index === 0 ? "navy" : "light"}
               />
             </RevealStaggerItem>

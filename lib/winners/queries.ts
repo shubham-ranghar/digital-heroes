@@ -7,6 +7,7 @@ import {
   type AdminTableState,
   type PageResult,
 } from "@/lib/admin/pagination";
+import { proofBucket } from "@/lib/winners/storage";
 import type { WinnerRow, WinnerWithDraw } from "@/lib/winners/types";
 
 export async function listWinnersForUser(
@@ -94,4 +95,33 @@ function mapWinnerWithDraw(row: Record<string, unknown>): WinnerWithDraw {
     member_name: row.member_name ? String(row.member_name) : null,
     member_email: row.member_email ? String(row.member_email) : null,
   };
+}
+
+/**
+ * Signed preview URLs for proof screenshots, keyed by storage path, in one
+ * storage call. Paths that fail to sign are left out (the preview falls back
+ * to fetching its own URL).
+ */
+export async function signWinnerProofUrls(
+  supabase: SupabaseClient,
+  paths: string[],
+  expiresInSeconds = 3600,
+): Promise<Map<string, string>> {
+  const urls = new Map<string, string>();
+  if (paths.length === 0) {
+    return urls;
+  }
+  const { data, error } = await supabase.storage
+    .from(proofBucket())
+    .createSignedUrls(paths, expiresInSeconds);
+  if (error) {
+    console.error("Could not sign proof previews:", error);
+    return urls;
+  }
+  for (const row of data ?? []) {
+    if (row.path && row.signedUrl && !row.error) {
+      urls.set(row.path, row.signedUrl);
+    }
+  }
+  return urls;
 }

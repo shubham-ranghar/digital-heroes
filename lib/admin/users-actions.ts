@@ -10,7 +10,6 @@ import { mapScoreWriteError, outsideLatestFiveError } from "@/lib/scores/errors"
 import { findRetentionCutoff } from "@/lib/scores/rolling";
 import type { ScoreRow } from "@/lib/scores/types";
 import {
-  adminProfileSchema,
   adminScoreDeleteSchema,
   adminScoreSchema,
   adminSubscriptionSchema,
@@ -41,32 +40,6 @@ export async function fetchAdminUserScoresAction(
       message: error instanceof Error ? error.message : "Could not load scores.",
     };
   }
-}
-
-async function updateAdminProfile(
-  input: unknown,
-): Promise<AdminMutationResult> {
-  const parsed = adminProfileSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, message: "Invalid profile data." };
-  }
-
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("profiles")
-    .update({
-      display_name: parsed.data.displayName || null,
-      role: parsed.data.role,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", parsed.data.userId);
-
-  if (error) {
-    return { ok: false, message: error.message };
-  }
-
-  revalidateAdminUsers();
-  return { ok: true, message: "Profile updated." };
 }
 
 async function updateAdminSubscription(
@@ -210,17 +183,6 @@ async function deleteAdminScore(
 
 // Exported actions: auth first (its redirect must not be caught), then the
 // work, with any unexpected error returned as { ok: false } instead of thrown.
-
-export async function updateAdminProfileAction(
-  input: unknown,
-): Promise<AdminMutationResult> {
-  await requireAdmin();
-  try {
-    return await updateAdminProfile(input);
-  } catch (error) {
-    return actionFailure(error, "update the profile", { exposeMessage: true });
-  }
-}
 
 export async function updateAdminSubscriptionAction(
   input: unknown,
