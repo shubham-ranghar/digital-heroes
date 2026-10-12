@@ -1,7 +1,11 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/session";
-import { getPaymentProvider, hasPaymentsEnv } from "@/lib/payments";
+import {
+  getPaymentProvider,
+  getPaymentProviderForSubscription,
+  hasPaymentsEnv,
+} from "@/lib/payments";
 import { RazorpayApiError } from "@/lib/payments/razorpay-client";
 import { getLatestSubscription } from "@/lib/subscription/access";
 import { checkoutPlanSchema } from "@/lib/validations/subscription";
@@ -94,7 +98,9 @@ export async function cancelSubscriptionAction(): Promise<CancelSubscriptionResu
     };
   }
 
-  const provider = getPaymentProvider();
+  const provider = getPaymentProviderForSubscription(
+    subscription.external_subscription_id,
+  );
   try {
     await provider.cancelSubscription(subscription.external_subscription_id);
   } catch (error) {
@@ -127,7 +133,9 @@ export async function resumeSubscriptionAction(): Promise<ResumeSubscriptionResu
     };
   }
 
-  const provider = getPaymentProvider();
+  const provider = getPaymentProviderForSubscription(
+    subscription.external_subscription_id,
+  );
   try {
     await provider.resumeSubscription(subscription.external_subscription_id);
   } catch (error) {
