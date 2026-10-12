@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { FormError, FormSuccess } from "@/components/auth/form-message";
 import { uploadWinnerProofAction } from "@/lib/winners/actions";
+import { PROOF_ALLOWED_MIME, PROOF_MAX_BYTES } from "@/lib/winners/constants";
 import { Button } from "@/components/ui/button";
 import type { WinnerWithDraw } from "@/lib/winners/types";
 import { formatCurrency } from "@/lib/money";
@@ -41,6 +42,16 @@ export function WinnerProofUpload({
       setError("Choose an image file first.");
       return;
     }
+    // Checked here too: an oversized body is rejected before the action runs,
+    // so the server's own message would never arrive.
+    if (file.size > PROOF_MAX_BYTES) {
+      setError("Image must be 4MB or smaller. Crop it or save it as JPEG.");
+      return;
+    }
+    if (!PROOF_ALLOWED_MIME.has(file.type)) {
+      setError("Use a PNG, JPEG, or WebP screenshot.");
+      return;
+    }
 
     const formData = new FormData();
     formData.set("winnerId", winner.id);
@@ -50,7 +61,12 @@ export function WinnerProofUpload({
     setMessage(null);
 
     startTransition(async () => {
-      const result = await uploadWinnerProofAction(formData);
+      let result: Awaited<ReturnType<typeof uploadWinnerProofAction>>;
+      try {
+        result = await uploadWinnerProofAction(formData);
+      } catch {
+        result = { ok: false, message: "Upload failed. Check your connection and try again." };
+      }
       if (result.ok) {
         const text = result.message ?? "Proof uploaded — awaiting admin review.";
         setMessage(text);
@@ -95,7 +111,9 @@ export function WinnerProofUpload({
         </div>
       </div>
 
+      {/* Keyed by path so a replaced screenshot fetches a fresh signed URL. */}
       <WinnerProofPreview
+        key={winner.proof_url ?? "none"}
         winnerId={winner.id}
         hasProof={Boolean(winner.proof_url)}
         messageClassName={navy ? "text-cream/75" : undefined}

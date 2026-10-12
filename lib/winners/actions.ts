@@ -31,7 +31,7 @@ export async function uploadWinnerProofAction(
   }
 
   if (file.size > PROOF_MAX_BYTES) {
-    return { ok: false, message: "Image must be 5MB or smaller." };
+    return { ok: false, message: "Image must be 4MB or smaller." };
   }
 
   if (!PROOF_ALLOWED_MIME.has(file.type)) {
